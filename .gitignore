@@ -1,0 +1,10 @@
+build/
+bin/
+**/tmp/
+**/testdata/
+
+**/.env
+coverage.tmp
+coverage.txt
+profile.out
+.null-ls*

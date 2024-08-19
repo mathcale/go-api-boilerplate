@@ -1,0 +1,17 @@
+FROM golang:1.23.0-alpine3.20 AS builder
+
+WORKDIR /app
+COPY . .
+
+RUN go mod download
+RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s -buildid=" -trimpath -o ./bin/api ./cmd/api/main.go
+
+# ----------------------------
+
+FROM alpine:3.20
+
+WORKDIR /app
+COPY --from=builder /app/api .
+COPY --from=builder /app/.env .
+
+ENTRYPOINT [ "./api" ]

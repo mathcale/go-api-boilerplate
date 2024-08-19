@@ -1,0 +1,26 @@
+package main
+
+import (
+	"log"
+
+	"github.com/mathcale/go-api-boilerplate/config"
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/di"
+)
+
+func main() {
+	cfg, configsErr := config.Load(".")
+	if configsErr != nil {
+		panic(configsErr)
+	}
+
+	inj := di.NewDependencyInjector(cfg)
+
+	deps, err := inj.Inject()
+	if err != nil {
+		log.Fatalf("Failed to inject dependencies: %v", err)
+	}
+
+	if err := deps.WebServer.Start(); err != nil {
+		log.Fatalf("Failed to start web server: %v", err)
+	}
+}
