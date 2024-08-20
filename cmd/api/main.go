@@ -8,9 +8,9 @@ import (
 )
 
 func main() {
-	cfg, configsErr := config.Load(".")
-	if configsErr != nil {
-		panic(configsErr)
+	cfg, err := config.Load(".")
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
 	inj := di.NewDependencyInjector(cfg)
