@@ -8,13 +8,13 @@ run:
 	@air -c .air.toml
 
 test:
-	./scripts/test.sh
+	@./scripts/test.sh
 
 tidy:
 	@go mod tidy
 
 install-deps:
-	go install github.com/cosmtrek/air@latest
-	go mod tidy
+	@go install github.com/cosmtrek/air@latest
+	@go mod tidy
 
 setup: install-deps
