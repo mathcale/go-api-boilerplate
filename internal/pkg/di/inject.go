@@ -1,6 +1,8 @@
 package di
 
 import (
+	"database/sql"
+
 	"github.com/mathcale/go-api-boilerplate/config"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
 	counteruc "github.com/mathcale/go-api-boilerplate/internal/usecases/counter"
@@ -16,14 +18,18 @@ type DependencyInjector interface {
 
 type dependencyInjector struct {
 	config *config.Config
+	db     *sql.DB
 }
 
 type Dependencies struct {
 	WebServer web.Server
 }
 
-func NewDependencyInjector(config *config.Config) DependencyInjector {
-	return &dependencyInjector{config: config}
+func NewDependencyInjector(cfg *config.Config, db *sql.DB) DependencyInjector {
+	return &dependencyInjector{
+		config: cfg,
+		db:     db,
+	}
 }
 
 func (di *dependencyInjector) Inject() (*Dependencies, error) {
