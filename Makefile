@@ -14,7 +14,7 @@ tidy:
 	@go mod tidy
 
 install-deps:
-	@go install github.com/cosmtrek/air@latest
+	@go install github.com/air-verse/air@latest
 	@go mod tidy
 
 setup: install-deps
