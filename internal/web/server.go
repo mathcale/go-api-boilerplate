@@ -37,7 +37,7 @@ func (s *server) Start() error {
 		s.router.HandleFunc(fmt.Sprintf("%s %s", h.method, h.path), h.handlerFunc)
 	}
 
-	s.logger.Info("Starting server", map[string]interface{}{
+	s.logger.Info("Starting http server", map[string]interface{}{
 		"port": s.port,
 	})
 
