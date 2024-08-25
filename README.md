@@ -2,6 +2,9 @@
 
 A slightly opinionated HTTP API boilerplate with the Go programming language, following (some) Clean Architecture principles.
 
+![Go Version](https://img.shields.io/badge/go%20version-%3E=1.23-61CFDD.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mathcale/go-api-boilerplate)](https://goreportcard.com/report/github.com/mathcale/go-api-boilerplate)
+
 ## Features
 
 - HTTP server with [net/http](https://pkg.go.dev/net/http#hdr-Servers);
