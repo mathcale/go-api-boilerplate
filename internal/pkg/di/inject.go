@@ -10,6 +10,7 @@ import (
 	"github.com/mathcale/go-api-boilerplate/internal/web/handlers"
 	counterhandler "github.com/mathcale/go-api-boilerplate/internal/web/handlers/counter"
 	"github.com/mathcale/go-api-boilerplate/internal/web/handlers/hello"
+	"github.com/mathcale/go-api-boilerplate/internal/web/middlewares"
 )
 
 type DependencyInjector interface {
@@ -40,13 +41,17 @@ func (di *dependencyInjector) Inject() (*Dependencies, error) {
 	// Use-cases
 	counterUseCase := counteruc.NewCounterUseCase(logger)
 
+	// Middlewares
+	loggingMiddleware := middlewares.NewLoggingMiddleware(logger)
+
 	// Handlers
 	helloHandler := hello.NewHelloHandler(rh)
 	counterHandler := counterhandler.NewCounterHandler(rh, counterUseCase)
 
 	// Web server setup
 	handlers := web.NewRouter(helloHandler, counterHandler).Handlers()
-	webServer := web.NewServer(logger, handlers, di.config.WebServerPort)
+	middlewares := web.NewMiddlewaresResolver(loggingMiddleware).Resolve()
+	webServer := web.NewServer(logger, di.config.WebServerPort, handlers, middlewares)
 
 	return &Dependencies{
 		WebServer: webServer,
