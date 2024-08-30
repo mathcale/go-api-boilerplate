@@ -15,7 +15,10 @@ A slightly opinionated HTTP API boilerplate with the Go programming language, fo
 
 ## Running
 
-```bash
+```sh
+# Start database
+docker compose up -d
+
 # Install dependencies
 make setup
 
@@ -23,8 +26,16 @@ make setup
 make run
 ```
 
+## Testing
+
+To execute all test suites, just run:
+
+```sh
+make tests
+```
+
 ## Next Steps
 
 - [X] Add database connection
 - [ ] Add JWT user authentication
-- [ ] Add logging and tracing middlewares
+- [-] Add logging and tracing middlewares
