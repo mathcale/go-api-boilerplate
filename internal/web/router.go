@@ -25,7 +25,7 @@ type router struct {
 func NewRouter(
 	helloHandler hello.HelloHandler,
 	counterHandler counter.CounterHandler,
-) *router {
+) Router {
 	return &router{
 		helloHandler:   helloHandler,
 		counterHandler: counterHandler,
