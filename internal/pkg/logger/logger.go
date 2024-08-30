@@ -1,15 +1,16 @@
 package logger
 
 import (
+	"io"
 	"os"
 	"time"
 
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog/pkgerrors"
 )
 
 type logger struct {
-	level zerolog.Level
+	instance zerolog.Logger
 }
 
 type Logger interface {
@@ -21,53 +22,43 @@ type Logger interface {
 }
 
 func NewLogger(level string) Logger {
-	lvl := setup(level)
+	var writer io.Writer = os.Stdout
+	lvl := toZerologLevel(level)
+
+	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
+
+	if lvl == zerolog.DebugLevel || lvl == zerolog.TraceLevel {
+		writer = zerolog.ConsoleWriter{
+			Out:        os.Stdout,
+			TimeFormat: time.RFC3339,
+		}
+	}
+
+	instance := zerolog.New(writer).Level(lvl).With().Timestamp().Logger()
 
 	return &logger{
-		level: lvl,
+		instance: instance,
 	}
 }
 
 func (l *logger) Info(msg string, tags map[string]interface{}) {
-	l.instance().Info().Fields(tags).Msg(msg)
+	l.instance.Info().Fields(tags).Msg(msg)
 }
 
 func (l *logger) Warn(msg string, tags map[string]interface{}) {
-	l.instance().Warn().Fields(tags).Msg(msg)
+	l.instance.Warn().Fields(tags).Msg(msg)
 }
 
 func (l *logger) Error(msg string, err error, tags map[string]interface{}) {
-	ev := l.instance().Error().Fields(tags).Err(err)
-
-	if l.level == zerolog.DebugLevel {
-		ev = ev.Stack()
-	}
-
-	ev.Msg(msg)
+	l.instance.Error().Fields(tags).Err(err).Stack().Msg(msg)
 }
 
 func (l *logger) Debug(msg string, tags map[string]interface{}) {
-	l.instance().Debug().Fields(tags).Msg(msg)
+	l.instance.Debug().Fields(tags).Msg(msg)
 }
 
 func (l *logger) Trace(msg string, tags map[string]interface{}) {
-	l.instance().Trace().Fields(tags).Msg(msg)
-}
-
-func setup(level string) zerolog.Level {
-	lvl := toZerologLevel(level)
-	zerolog.SetGlobalLevel(lvl)
-
-	log.Logger = log.Output(zerolog.ConsoleWriter{
-		Out:        os.Stdout,
-		TimeFormat: time.RFC3339,
-	})
-
-	return lvl
-}
-
-func (l *logger) instance() *zerolog.Logger {
-	return &log.Logger
+	l.instance.Trace().Fields(tags).Msg(msg)
 }
 
 func toZerologLevel(level string) zerolog.Level {
