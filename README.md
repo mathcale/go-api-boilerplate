@@ -37,5 +37,5 @@ make tests
 ## Next Steps
 
 - [X] Add database connection
+- [X] Add logging middleware
 - [ ] Add JWT user authentication
-- [-] Add logging and tracing middlewares
