@@ -75,4 +75,4 @@ make build
 - [X] Add database connection
 - [X] Add logging middleware
 - [ ] Add JWT user authentication
-- [ ] Add Github Actions CI workflow
+- [X] Add Github Actions CI workflow
