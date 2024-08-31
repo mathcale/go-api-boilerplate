@@ -13,7 +13,7 @@ A slightly opinionated HTTP API boilerplate with the Go programming language, fo
 - Logging with [zerolog](https://github.com/rs/zerolog);
 - Configuration with [viper](https://github.com/spf13/viper);
 
-## Running
+## Running locally
 
 ```sh
 # Start database
@@ -32,6 +32,34 @@ To execute all test suites, just run:
 
 ```sh
 make tests
+```
+
+## Building for production
+
+### With Docker
+
+There's a `Dockerfile.prod` included with the project to build an optimized image based on [distroless](https://github.com/GoogleContainerTools/distroless), so you just need to adapt it for your needs and publish to your desired registry.
+
+```sh
+# This should be set by your CI/CD system
+export BUILD_ID="$(uuidgen)"
+
+# Building the image
+docker build . \
+  -t mathcale/go-api-boilerplate \
+  -f Dockerfile.prod \
+  --build-arg BUILD_ID
+
+# Clean intermediate images
+docker image prune \
+  --filter label=stage=builder \
+  --filter label=build=$BUILD_ID
+```
+
+### Manually
+
+```sh
+make build
 ```
 
 ## Next Steps
