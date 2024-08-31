@@ -74,5 +74,5 @@ make build
 
 - [X] Add database connection
 - [X] Add logging middleware
-- [ ] Add JWT user authentication
 - [X] Add Github Actions CI workflow
+- [ ] Add database usage example
