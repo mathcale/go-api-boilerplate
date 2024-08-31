@@ -5,6 +5,7 @@ go 1.23.0
 require (
 	github.com/justinas/alice v1.2.0
 	github.com/lib/pq v1.10.9
+	github.com/rs/xid v1.6.0
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
