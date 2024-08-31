@@ -2,8 +2,9 @@
 
 A slightly opinionated HTTP API boilerplate with the Go programming language, following (some) Clean Architecture principles.
 
-![Go Version](https://img.shields.io/badge/go%20version-%3E=1.23-61CFDD.svg)
+[![Continuous Integration](https://github.com/mathcale/go-api-boilerplate/actions/workflows/ci.yaml/badge.svg)](https://github.com/mathcale/go-api-boilerplate/actions/workflows/ci.yaml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mathcale/go-api-boilerplate)](https://goreportcard.com/report/github.com/mathcale/go-api-boilerplate)
+![Go Version](https://img.shields.io/badge/go%20version-%3E=1.23-61CFDD.svg)
 
 ## Features
 
@@ -12,6 +13,13 @@ A slightly opinionated HTTP API boilerplate with the Go programming language, fo
 - Live reload with [air](https://github.com/air-verse/air);
 - Logging with [zerolog](https://github.com/rs/zerolog);
 - Configuration with [viper](https://github.com/spf13/viper);
+- Pre-configured CI job with Github Actions;
+
+## Requirements
+
+- [Go](https://go.dev/) 1.23 (or newer)
+- [GNU Make](https://www.gnu.org/software/make/)
+- [Docker](https://www.docker.com/)
 
 ## Running locally
 
@@ -67,3 +75,4 @@ make build
 - [X] Add database connection
 - [X] Add logging middleware
 - [ ] Add JWT user authentication
+- [ ] Add Github Actions CI workflow
