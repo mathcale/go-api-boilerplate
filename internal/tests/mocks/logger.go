@@ -27,3 +27,7 @@ func (m *LoggerMock) Debug(msg string, tags map[string]interface{}) {
 func (m *LoggerMock) Trace(msg string, tags map[string]interface{}) {
 	m.Called(msg, tags)
 }
+
+func (m *LoggerMock) SetGlobalValue(key string, value any) {
+	m.Called(key, value)
+}
