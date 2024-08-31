@@ -1,5 +1,4 @@
 .PHONY: build run test tidy install-deps setup
-include .env
 
 build:
 	@go build -ldflags="-w -s -buildid=" -trimpath -o ./bin/api ./cmd/api/main.go
