@@ -33,13 +33,19 @@ A slightly opinionated HTTP API boilerplate with the Go programming language, fo
 cp .env.example .env
 ```
 
-2. Run setup script
+2. Rename packages to your project's name
+
+```sh
+make rename-pkgs
+```
+
+3. Run setup script
 
 ```sh
 make setup
 ```
 
-3. Start server
+4. Start server
 
 ```sh
 make run
@@ -87,4 +93,4 @@ make build
 - [X] Add logging middleware
 - [X] Add Github Actions CI workflow
 - [X] Add database usage example
-- [ ] Add authentication
+- [X] Add authentication

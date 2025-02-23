@@ -1,4 +1,4 @@
-.PHONY: build run test tidy run-containers init-database create-migration migrate-up migrate-down install-deps setup clean all
+.PHONY: build run test tidy run-containers init-database create-migration migrate-up migrate-down install-deps setup clean rename-pkgs all
 include .env
 
 platform := $(shell uname -s | tr '[:upper:]' '[:lower:]')
@@ -41,5 +41,8 @@ install-deps:
 	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.5
 
 	@echo "==> Done!"
+
+rename-pkgs:
+	@./scripts/rename-pkgs.sh
 
 setup: install-deps run-containers init-database migrate-up
