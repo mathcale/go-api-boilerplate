@@ -5,18 +5,19 @@ import (
 	"net/http"
 )
 
-type ResponseHandler interface {
+type Response interface {
 	Respond(w http.ResponseWriter, statusCode int, data interface{}, headers map[string]string)
+	RespondPlainText(w http.ResponseWriter, statusCode int, data string, headers map[string]string)
 	RespondWithError(w http.ResponseWriter, statusCode int, err error, headers map[string]string)
 }
 
-type responseHandler struct{}
+type response struct{}
 
-func NewResponseHandler() *responseHandler {
-	return &responseHandler{}
+func NewResponse() *response {
+	return &response{}
 }
 
-func (h *responseHandler) Respond(w http.ResponseWriter, statusCode int, data interface{}, headers map[string]string) {
+func (h *response) Respond(w http.ResponseWriter, statusCode int, data interface{}, headers map[string]string) {
 	setHeaders(w, headers)
 	w.WriteHeader(statusCode)
 
@@ -25,7 +26,14 @@ func (h *responseHandler) Respond(w http.ResponseWriter, statusCode int, data in
 	}
 }
 
-func (h *responseHandler) RespondWithError(w http.ResponseWriter, statusCode int, err error, headers map[string]string) {
+func (h *response) RespondPlainText(w http.ResponseWriter, statusCode int, data string, headers map[string]string) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(statusCode)
+
+	w.Write([]byte(data))
+}
+
+func (h *response) RespondWithError(w http.ResponseWriter, statusCode int, err error, headers map[string]string) {
 	setHeaders(w, headers)
 	w.WriteHeader(statusCode)
 

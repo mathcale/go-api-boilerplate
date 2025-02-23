@@ -3,8 +3,7 @@ package web
 import (
 	"net/http"
 
-	"github.com/mathcale/go-api-boilerplate/internal/web/handlers/counter"
-	"github.com/mathcale/go-api-boilerplate/internal/web/handlers/hello"
+	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
 )
 
 type Router interface {
@@ -18,16 +17,16 @@ type handler struct {
 }
 
 type router struct {
-	helloHandler   hello.HelloHandler
-	counterHandler counter.CounterHandler
+	pingHandler    handlers.PingHandler
+	counterHandler handlers.CounterHandler
 }
 
 func NewRouter(
-	helloHandler hello.HelloHandler,
-	counterHandler counter.CounterHandler,
+	pingHandler handlers.PingHandler,
+	counterHandler handlers.CounterHandler,
 ) Router {
 	return &router{
-		helloHandler:   helloHandler,
+		pingHandler:    pingHandler,
 		counterHandler: counterHandler,
 	}
 }
@@ -35,9 +34,9 @@ func NewRouter(
 func (r *router) Handlers() []handler {
 	return []handler{
 		{
-			path:        "/v1/hello",
+			path:        "/ping",
 			method:      http.MethodGet,
-			handlerFunc: r.helloHandler.Handle,
+			handlerFunc: r.pingHandler.Handle,
 		},
 		{
 			path:        "/v1/counter",

@@ -1,10 +1,9 @@
-package counter
+package handlers
 
 import (
 	"net/http"
 
 	uc "github.com/mathcale/go-api-boilerplate/internal/usecases/counter"
-	"github.com/mathcale/go-api-boilerplate/internal/web/handlers"
 )
 
 type CounterHandler interface {
@@ -12,24 +11,24 @@ type CounterHandler interface {
 }
 
 type counterHandler struct {
-	responseHandler handlers.ResponseHandler
-	counterUseCase  uc.CounterUseCase
+	response       Response
+	counterUseCase uc.CounterUseCase
 }
 
 func NewCounterHandler(
-	rh handlers.ResponseHandler,
+	r Response,
 	uc uc.CounterUseCase,
 ) CounterHandler {
 	return &counterHandler{
-		responseHandler: rh,
-		counterUseCase:  uc,
+		response:       r,
+		counterUseCase: uc,
 	}
 }
 
 func (h *counterHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	counter, err := h.counterUseCase.Execute()
 	if err != nil {
-		h.responseHandler.RespondWithError(w, http.StatusInternalServerError, err, nil)
+		h.response.RespondWithError(w, http.StatusInternalServerError, err, nil)
 		return
 	}
 
@@ -37,5 +36,5 @@ func (h *counterHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		"counter": counter,
 	}
 
-	h.responseHandler.Respond(w, http.StatusOK, data, nil)
+	h.response.Respond(w, http.StatusOK, data, nil)
 }

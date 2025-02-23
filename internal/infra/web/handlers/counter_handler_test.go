@@ -1,4 +1,4 @@
-package counter
+package handlers
 
 import (
 	"errors"
@@ -11,19 +11,18 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
-	"github.com/mathcale/go-api-boilerplate/internal/web/handlers"
 )
 
 type CounterHandlerTestSuite struct {
 	suite.Suite
-	ResponseHandler    handlers.ResponseHandler
+	ResponseHandler    Response
 	CounterUseCaseMock *mocks.CounterUseCaseMock
 
 	CounterHandler CounterHandler
 }
 
 func (s *CounterHandlerTestSuite) SetupTest() {
-	s.ResponseHandler = handlers.NewResponseHandler()
+	s.ResponseHandler = NewResponse()
 	s.CounterUseCaseMock = new(mocks.CounterUseCaseMock)
 
 	s.CounterHandler = NewCounterHandler(s.ResponseHandler, s.CounterUseCaseMock)

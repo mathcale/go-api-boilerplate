@@ -11,13 +11,13 @@ import (
 
 type CounterUseCaseTestSuite struct {
 	suite.Suite
-	LoggerMock *mocks.LoggerMock
+	LoggerMock *mocks.Logger
 
 	UseCase CounterUseCase
 }
 
 func (s *CounterUseCaseTestSuite) SetupTest() {
-	s.LoggerMock = new(mocks.LoggerMock)
+	s.LoggerMock = new(mocks.Logger)
 
 	s.UseCase = NewCounterUseCase(s.LoggerMock)
 }

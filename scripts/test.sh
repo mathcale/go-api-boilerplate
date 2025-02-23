@@ -20,6 +20,7 @@ for d in $(go list ./... | grep -v vendor); do
   fi
 done
 
-cat coverage.tmp | grep -v "/internal/tests/mocks" > coverage.txt
+grep -v -E -f .covignore coverage.tmp > coverage.filtered.out
+mv coverage.filtered.out coverage.tmp
 
-go tool cover -html=coverage.txt
+go tool cover -html=coverage.tmp
