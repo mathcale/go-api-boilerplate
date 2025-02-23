@@ -20,6 +20,7 @@ type Logger interface {
 	Debug(msg string, tags map[string]interface{})
 	Trace(msg string, tags map[string]interface{})
 	SetGlobalValue(key string, value any)
+	Instance() zerolog.Logger
 }
 
 func NewLogger(level string) Logger {
@@ -66,6 +67,10 @@ func (l *logger) SetGlobalValue(key string, value any) {
 	l.instance.UpdateContext(func(c zerolog.Context) zerolog.Context {
 		return c.Any(key, value)
 	})
+}
+
+func (l *logger) Instance() zerolog.Logger {
+	return l.instance
 }
 
 func toZerologLevel(level string) zerolog.Level {

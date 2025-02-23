@@ -1,0 +1,15 @@
+{
+  "editor.rulers": [100],
+  "evenBetterToml.schema.associations": {
+    ".air.toml": "file://.vscode/air.schema.json"
+  },
+  "go.lintFlags": ["--fast"],
+  "go.lintOnSave": "file",
+  "go.lintTool": "golangci-lint",
+  "go.testFlags": ["-v"],
+  "go.toolsManagement.autoUpdate": true,
+  "go.useLanguageServer": true,
+  "gopls": {
+    "formatting.gofumpt": false
+  }
+}

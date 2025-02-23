@@ -1,18 +1,21 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
 	"time"
 
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgx/stdlib"
+	"github.com/jmoiron/sqlx"
+
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
 )
 
 type Database interface {
-	Connect() (*sql.DB, error)
+	Connect() (*sqlx.DB, error)
 }
 
 type database struct {
+	logger              logger.Logger
 	host                string
 	port                int
 	user                string
@@ -26,10 +29,12 @@ type database struct {
 }
 
 func NewDatabase(
+	logger logger.Logger,
 	host, user, password, name, sslMode string,
 	port, maxOpenConns, maxIdleConns, connMaxLifetimeSecs, connMaxIdleTimeSecs int,
 ) Database {
 	return &database{
+		logger:              logger,
 		host:                host,
 		port:                port,
 		user:                user,
@@ -43,25 +48,18 @@ func NewDatabase(
 	}
 }
 
-func (d *database) Connect() (*sql.DB, error) {
-	dsn := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-		d.host, d.port, d.user, d.password, d.name, d.sslMode,
-	)
+func (d *database) Connect() (*sqlx.DB, error) {
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s", d.host, d.user, d.password, d.name, d.port, d.sslMode)
 
-	db, err := sql.Open("postgres", dsn)
+	dbx, err := sqlx.Connect("pgx", dsn)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := db.Ping(); err != nil {
-		return nil, err
-	}
+	dbx.SetMaxOpenConns(d.maxOpenConns)
+	dbx.SetMaxIdleConns(d.maxIdleConns)
+	dbx.SetConnMaxLifetime(time.Duration(d.connMaxLifetimeSecs) * time.Second)
+	dbx.SetConnMaxIdleTime(time.Duration(d.connMaxIdleTimeSecs) * time.Second)
 
-	db.SetMaxOpenConns(d.maxOpenConns)
-	db.SetMaxIdleConns(d.maxIdleConns)
-	db.SetConnMaxLifetime(time.Duration(d.connMaxLifetimeSecs) * time.Second)
-	db.SetConnMaxIdleTime(time.Duration(d.connMaxIdleTimeSecs) * time.Second)
-
-	return db, nil
+	return dbx, nil
 }

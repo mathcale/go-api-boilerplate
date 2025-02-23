@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD029 -->
 # Go API Boilerplate
 
 A slightly opinionated HTTP API boilerplate with the Go programming language, following (some) Clean Architecture principles.
@@ -13,24 +14,34 @@ A slightly opinionated HTTP API boilerplate with the Go programming language, fo
 - Live reload with [air](https://github.com/air-verse/air);
 - Logging with [zerolog](https://github.com/rs/zerolog);
 - Configuration with [viper](https://github.com/spf13/viper);
+- PostgreSQL database connection with [pgx](https://github.com/jackc/pgx) and [sqlx](https://github.com/jmoiron/sqlx)
 - Pre-configured CI job with Github Actions;
 
 ## Requirements
 
-- [Go](https://go.dev/) 1.23 (or newer)
+- [Go](https://go.dev/) 1.24 (or newer)
 - [GNU Make](https://www.gnu.org/software/make/)
 - [Docker](https://www.docker.com/)
+- [air](https://github.com/air-verse/air): live-reloading
+- [migrate](https://github.com/golang-migrate/migrate): database migrations
 
 ## Running locally
 
+1. Create .env file
+
 ```sh
-# Start database
-docker compose up -d
+cp .env.example .env
+```
 
-# Install dependencies
+2. Run setup script
+
+```sh
 make setup
+```
 
-# Run the application
+3. Start server
+
+```sh
 make run
 ```
 
@@ -39,7 +50,7 @@ make run
 To execute all test suites, just run:
 
 ```sh
-make tests
+make test
 ```
 
 ## Building for production
@@ -75,4 +86,5 @@ make build
 - [X] Add database connection
 - [X] Add logging middleware
 - [X] Add Github Actions CI workflow
-- [ ] Add database usage example
+- [X] Add database usage example
+- [ ] Add authentication

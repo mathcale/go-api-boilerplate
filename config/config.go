@@ -15,6 +15,10 @@ type Config struct {
 	DatabaseMaxIdleConns        int    `mapstructure:"DATABASE_MAX_IDLE_CONNS"`
 	DatabaseConnMaxLifetimeSecs int    `mapstructure:"DATABASE_CONN_MAX_LIFETIME_SECS"`
 	DatabaseConnMaxIdleTimeSecs int    `mapstructure:"DATABASE_CONN_MAX_IDLE_TIME_SECS"`
+	AccessTokenSecret           string `mapstructure:"ACCESS_TOKEN_SECRET"`
+	AccessTokenLifetimeMinutes  int    `mapstructure:"ACCESS_TOKEN_LIFETIME_MINUTES"`
+	RefreshTokenSecret          string `mapstructure:"REFRESH_TOKEN_SECRET"`
+	RefreshTokenLifetimeMinutes int    `mapstructure:"REFRESH_TOKEN_LIFETIME_MINUTES"`
 }
 
 func Load(path string) (*Config, error) {
