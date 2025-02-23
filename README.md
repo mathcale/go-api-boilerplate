@@ -16,7 +16,7 @@ A slightly opinionated HTTP API boilerplate with the Go programming language, fo
 - Configuration with [viper](https://github.com/spf13/viper);
 - PostgreSQL database connection with [pgx](https://github.com/jackc/pgx) and [sqlx](https://github.com/jmoiron/sqlx)
 - Pre-configured CI job with Github Actions;
-- JWT authentication (under the [`with-auth`](/mathcale/go-api-boilerplate/tree/with-auth) branch)
+- JWT authentication (under the [`with-auth`](../../tree/with-auth) branch)
 
 ## Requirements
 
