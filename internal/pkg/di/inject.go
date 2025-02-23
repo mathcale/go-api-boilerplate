@@ -5,10 +5,15 @@ import (
 
 	"github.com/mathcale/go-api-boilerplate/config"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/database"
+	"github.com/mathcale/go-api-boilerplate/internal/infra/database/repositories"
+	"github.com/mathcale/go-api-boilerplate/internal/infra/gateways"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/middlewares"
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/bcrypt"
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
+	authucs "github.com/mathcale/go-api-boilerplate/internal/usecases/auth"
 	counteruc "github.com/mathcale/go-api-boilerplate/internal/usecases/counter"
 )
 
@@ -33,28 +38,61 @@ func NewDependencyInjector(cfg *config.Config) DependencyInjector {
 func (di *dependencyInjector) Inject() (*Dependencies, error) {
 	// General
 	logger := logger.NewLogger(di.config.LogLevel)
-	rh := handlers.NewResponse()
+	rh := handlers.NewResponse(logger)
+	bcryptPass := bcrypt.NewPassword()
+	jwtAuth := jwt.NewJWTAuth(
+		logger,
+		[]byte(di.config.AccessTokenSecret),
+		[]byte(di.config.RefreshTokenSecret),
+		di.config.AccessTokenLifetimeMinutes,
+		di.config.RefreshTokenLifetimeMinutes,
+		di.config.TokenIssuer,
+		di.config.TokenAudience,
+	)
 
 	// Database
-	_, err := di.connectToDatabase(logger)
+	db, err := di.connectToDatabase(logger)
 	if err != nil {
 		return nil, err
 	}
 
-	// Use-cases
+	// Repositories
+	userRepo := repositories.NewUserRepository(db)
+
+	// Gateways START
+	// Auth
+	signUpGW := gateways.NewSignUpGateway(userRepo)
+	signInGW := gateways.NewSignInGateway(userRepo)
+	// Gateways END
+
+	// Use-cases START
+	// Auth
+	signUpUC := authucs.NewSignUpUseCase(logger, bcryptPass, signUpGW)
+	signInUC := authucs.NewSignInUseCase(logger, bcryptPass, jwtAuth, signInGW)
+
+	// Counter
 	counterUseCase := counteruc.NewCounterUseCase(logger)
+	// Use-cases END
 
 	// Middlewares
 	loggingMiddleware := middlewares.NewLoggingMiddleware(logger)
+	authMiddleware := middlewares.NewAuthMiddleware(logger, jwtAuth)
 
 	// Handlers
 	pingHandler := handlers.NewPingHandler(rh)
+	authHandler := handlers.NewAuthHandler(rh, signUpUC, signInUC)
 	counterHandler := handlers.NewCounterHandler(rh, counterUseCase)
 
 	// Web server setup
-	handlers := web.NewRouter(pingHandler, counterHandler).Handlers()
+	handlers := web.NewRouter(pingHandler, authHandler, counterHandler).Handlers()
 	middlewares := web.NewMiddlewaresResolver(loggingMiddleware).Resolve()
-	webServer := web.NewServer(logger, di.config.WebServerPort, handlers, middlewares)
+	webServer := web.NewServer(
+		logger,
+		di.config.WebServerPort,
+		handlers,
+		middlewares,
+		authMiddleware,
+	)
 
 	return &Dependencies{
 		WebServer: webServer,

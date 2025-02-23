@@ -6,6 +6,7 @@ import (
 
 	"github.com/justinas/alice"
 
+	"github.com/mathcale/go-api-boilerplate/internal/infra/web/middlewares"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
 )
 
@@ -14,11 +15,12 @@ type Server interface {
 }
 
 type server struct {
-	logger      logger.Logger
-	router      *http.ServeMux
-	handlers    []handler
-	middlewares []middlewareHandler
-	port        int
+	logger         logger.Logger
+	router         *http.ServeMux
+	handlers       []handler
+	middlewares    []middlewareHandler
+	authMiddleware middlewares.MiddlewareHandler
+	port           int
 }
 
 func NewServer(
@@ -26,24 +28,33 @@ func NewServer(
 	port int,
 	handlers []handler,
 	middlewares []middlewareHandler,
+	authMiddleware middlewares.MiddlewareHandler,
 ) Server {
 	return &server{
-		logger:      l,
-		router:      http.NewServeMux(),
-		handlers:    handlers,
-		middlewares: middlewares,
-		port:        port,
+		logger:         l,
+		router:         http.NewServeMux(),
+		handlers:       handlers,
+		middlewares:    middlewares,
+		authMiddleware: authMiddleware,
+		port:           port,
 	}
 }
 
 func (s *server) Start() error {
 	for _, h := range s.handlers {
 		s.logger.Debug("Registering route", map[string]interface{}{
-			"method": h.method,
-			"path":   h.path,
+			"method":    h.method,
+			"path":      h.path,
+			"protected": h.protected,
 		})
 
-		s.router.HandleFunc(fmt.Sprintf("%s %s", h.method, h.path), h.handlerFunc)
+		var handler http.Handler = h.handlerFunc
+
+		if h.protected {
+			handler = s.authMiddleware.Handler(h.handlerFunc)
+		}
+
+		s.router.Handle(fmt.Sprintf("%s %s", h.method, h.path), handler)
 	}
 
 	middlewareChain := alice.New()

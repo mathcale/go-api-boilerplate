@@ -3,6 +3,8 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
 )
 
 type Response interface {
@@ -11,10 +13,14 @@ type Response interface {
 	RespondWithError(w http.ResponseWriter, statusCode int, err error, headers map[string]string)
 }
 
-type response struct{}
+type response struct {
+	logger logger.Logger
+}
 
-func NewResponse() *response {
-	return &response{}
+func NewResponse(l logger.Logger) *response {
+	return &response{
+		logger: l,
+	}
 }
 
 func (h *response) Respond(w http.ResponseWriter, statusCode int, data interface{}, headers map[string]string) {
@@ -36,6 +42,8 @@ func (h *response) RespondPlainText(w http.ResponseWriter, statusCode int, data 
 func (h *response) RespondWithError(w http.ResponseWriter, statusCode int, err error, headers map[string]string) {
 	setHeaders(w, headers)
 	w.WriteHeader(statusCode)
+
+	h.logger.Error(err.Error(), err, nil)
 
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": err.Error(),

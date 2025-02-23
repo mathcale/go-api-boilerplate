@@ -7,7 +7,7 @@ import (
 )
 
 type CounterHandler interface {
-	Handle(w http.ResponseWriter, r *http.Request)
+	Count(w http.ResponseWriter, r *http.Request)
 }
 
 type counterHandler struct {
@@ -25,7 +25,7 @@ func NewCounterHandler(
 	}
 }
 
-func (h *counterHandler) Handle(w http.ResponseWriter, r *http.Request) {
+func (h *counterHandler) Count(w http.ResponseWriter, r *http.Request) {
 	counter, err := h.counterUseCase.Execute()
 	if err != nil {
 		h.response.RespondWithError(w, http.StatusInternalServerError, err, nil)

@@ -19,6 +19,8 @@ type Config struct {
 	AccessTokenLifetimeMinutes  int    `mapstructure:"ACCESS_TOKEN_LIFETIME_MINUTES"`
 	RefreshTokenSecret          string `mapstructure:"REFRESH_TOKEN_SECRET"`
 	RefreshTokenLifetimeMinutes int    `mapstructure:"REFRESH_TOKEN_LIFETIME_MINUTES"`
+	TokenIssuer                 string `mapstructure:"TOKEN_ISSUER"`
+	TokenAudience               string `mapstructure:"TOKEN_AUDIENCE"`
 }
 
 func Load(path string) (*Config, error) {

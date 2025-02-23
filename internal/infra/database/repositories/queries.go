@@ -1,9 +1,13 @@
 package repositories
 
 var (
-	queryExample string
+	queryUserExists     string
+	queryGetUserByEmail string
+	queryInsertUser     string
 )
 
 func init() {
-	queryExample = `SELECT 1`
+	queryUserExists = `SELECT count(*) > 0 AS exists FROM users WHERE email = $1 AND active IS TRUE`
+	queryGetUserByEmail = `SELECT * FROM users WHERE email = $1 AND active IS TRUE`
+	queryInsertUser = `INSERT INTO users (name, email, password, active) VALUES ($1, $2, $3, $4)`
 }
