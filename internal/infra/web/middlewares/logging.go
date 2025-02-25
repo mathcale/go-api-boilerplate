@@ -1,11 +1,8 @@
 package middlewares
 
 import (
-	"context"
 	"net/http"
 	"time"
-
-	"github.com/rs/xid"
 
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
 )
@@ -35,13 +32,6 @@ func newLoggingResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
 func (m *loggingMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		correlationID := xid.New().String()
-
-		ctx := context.WithValue(r.Context(), "correlation_id", correlationID)
-		r = r.WithContext(ctx)
-		m.logger.SetGlobalValue("correlation_id", correlationID)
-
-		w.Header().Add("X-Correlation-ID", correlationID)
 
 		lrw := newLoggingResponseWriter(w)
 
@@ -52,14 +42,23 @@ func (m *loggingMiddleware) Handler(next http.Handler) http.Handler {
 				panic(panicVal)
 			}
 
-			m.logger.Info("Incoming request", map[string]interface{}{
+			m.logger.Info("Finished request", map[string]interface{}{
 				"method":      r.Method,
 				"url":         r.URL.RequestURI(),
 				"status_code": lrw.statusCode,
 				"user_agent":  r.UserAgent(),
+				"time":        time.Now().Format(time.RFC3339),
 				"elapsed_ms":  time.Since(start),
 			})
 		}()
+
+		m.logger.Info("Incoming request", map[string]interface{}{
+			"method":      r.Method,
+			"url":         r.URL.RequestURI(),
+			"status_code": lrw.statusCode,
+			"user_agent":  r.UserAgent(),
+			"time":        time.Now().Format(time.RFC3339),
+		})
 
 		next.ServeHTTP(lrw, r)
 	})

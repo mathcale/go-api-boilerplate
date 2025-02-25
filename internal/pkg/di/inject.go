@@ -75,6 +75,7 @@ func (di *dependencyInjector) Inject() (*Dependencies, error) {
 	// Use-cases END
 
 	// Middlewares
+	correlationIDMiddleware := middlewares.NewCorrelationIDMiddleware(logger)
 	loggingMiddleware := middlewares.NewLoggingMiddleware(logger)
 	authMiddleware := middlewares.NewAuthMiddleware(logger, jwtAuth)
 
@@ -85,7 +86,7 @@ func (di *dependencyInjector) Inject() (*Dependencies, error) {
 
 	// Web server setup
 	handlers := web.NewRouter(pingHandler, authHandler, counterHandler).Handlers()
-	middlewares := web.NewMiddlewaresResolver(loggingMiddleware).Resolve()
+	middlewares := web.NewMiddlewaresResolver(correlationIDMiddleware, loggingMiddleware).Resolve()
 	webServer := web.NewServer(
 		logger,
 		di.config.WebServerPort,

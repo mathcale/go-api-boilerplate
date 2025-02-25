@@ -16,19 +16,26 @@ type middlewareHandler struct {
 }
 
 type middlewareResolver struct {
-	logging middlewares.MiddlewareHandler
+	correlationID middlewares.MiddlewareHandler
+	logging       middlewares.MiddlewareHandler
 }
 
 func NewMiddlewaresResolver(
+	correlationID middlewares.MiddlewareHandler,
 	logging middlewares.MiddlewareHandler,
 ) MiddlewaresResolver {
 	return &middlewareResolver{
-		logging: logging,
+		correlationID: correlationID,
+		logging:       logging,
 	}
 }
 
 func (mr *middlewareResolver) Resolve() []middlewareHandler {
 	return []middlewareHandler{
+		{
+			name:        "correlation_id",
+			handlerFunc: mr.correlationID.Handler,
+		},
 		{
 			name:        "logging",
 			handlerFunc: mr.logging.Handler,
