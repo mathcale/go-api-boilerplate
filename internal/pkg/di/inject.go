@@ -45,6 +45,7 @@ func (di *dependencyInjector) Inject() (*Dependencies, error) {
 	counterUseCase := counteruc.NewCounterUseCase(logger)
 
 	// Middlewares
+	correlationIDMiddleware := middlewares.NewCorrelationIDMiddleware(logger)
 	loggingMiddleware := middlewares.NewLoggingMiddleware(logger)
 
 	// Handlers
@@ -53,7 +54,7 @@ func (di *dependencyInjector) Inject() (*Dependencies, error) {
 
 	// Web server setup
 	handlers := web.NewRouter(pingHandler, counterHandler).Handlers()
-	middlewares := web.NewMiddlewaresResolver(loggingMiddleware).Resolve()
+	middlewares := web.NewMiddlewaresResolver(correlationIDMiddleware, loggingMiddleware).Resolve()
 	webServer := web.NewServer(logger, di.config.WebServerPort, handlers, middlewares)
 
 	return &Dependencies{
