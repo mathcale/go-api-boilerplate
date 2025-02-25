@@ -6,6 +6,7 @@ A slightly opinionated HTTP API boilerplate with the Go programming language, fo
 [![Continuous Integration](https://github.com/mathcale/go-api-boilerplate/actions/workflows/ci.yaml/badge.svg)](https://github.com/mathcale/go-api-boilerplate/actions/workflows/ci.yaml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mathcale/go-api-boilerplate)](https://goreportcard.com/report/github.com/mathcale/go-api-boilerplate)
 ![Go Version](https://img.shields.io/badge/go%20version-%3E=1.24-61CFDD.svg)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 
 ## Features
 
