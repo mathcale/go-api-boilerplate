@@ -21,7 +21,7 @@ type router struct {
 	handlers       []handler
 	pingHandler    handlers.Ping
 	authHandler    handlers.Auth
-	counterHandler handlers.CounterHandler
+	counterHandler handlers.Counter
 }
 
 const (
@@ -32,7 +32,7 @@ const (
 func NewRouter(
 	pingHandler handlers.Ping,
 	authHandler handlers.Auth,
-	counterHandler handlers.CounterHandler,
+	counterHandler handlers.Counter,
 ) Router {
 	return &router{
 		pingHandler:    pingHandler,
@@ -45,6 +45,7 @@ func (r *router) Handlers() []handler {
 	r.setHealthRoutes()
 	r.setAuthRoutes()
 	r.setExampleRoutes()
+	// your routes here!
 
 	return r.handlers
 }

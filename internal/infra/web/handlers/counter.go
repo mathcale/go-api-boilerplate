@@ -6,11 +6,11 @@ import (
 	uc "github.com/mathcale/go-api-boilerplate/internal/usecases/counter"
 )
 
-type CounterHandler interface {
+type Counter interface {
 	Count(w http.ResponseWriter, r *http.Request)
 }
 
-type counterHandler struct {
+type counter struct {
 	response       Response
 	counterUseCase uc.CounterUseCase
 }
@@ -18,14 +18,14 @@ type counterHandler struct {
 func NewCounterHandler(
 	r Response,
 	uc uc.CounterUseCase,
-) CounterHandler {
-	return &counterHandler{
+) Counter {
+	return &counter{
 		response:       r,
 		counterUseCase: uc,
 	}
 }
 
-func (h *counterHandler) Count(w http.ResponseWriter, r *http.Request) {
+func (h *counter) Count(w http.ResponseWriter, r *http.Request) {
 	counter, err := h.counterUseCase.Execute()
 	if err != nil {
 		h.response.RespondWithError(w, http.StatusInternalServerError, err, nil)

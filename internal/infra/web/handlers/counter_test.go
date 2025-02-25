@@ -20,7 +20,7 @@ type CounterHandlerTestSuite struct {
 	response      Response
 	counterUCMock *mocks.CounterUseCase
 
-	handler CounterHandler
+	handler Counter
 }
 
 func (s *CounterHandlerTestSuite) SetupTest() {
