@@ -4,8 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
 	"github.com/rs/xid"
+
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
 )
 
 type correlationIDMiddleware struct {
