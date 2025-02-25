@@ -17,13 +17,14 @@ type handler struct {
 }
 
 type router struct {
-	pingHandler    handlers.PingHandler
-	counterHandler handlers.CounterHandler
+	handlers       []handler
+	pingHandler    handlers.Ping
+	counterHandler handlers.Counter
 }
 
 func NewRouter(
-	pingHandler handlers.PingHandler,
-	counterHandler handlers.CounterHandler,
+	pingHandler handlers.Ping,
+	counterHandler handlers.Counter,
 ) Router {
 	return &router{
 		pingHandler:    pingHandler,
@@ -32,16 +33,32 @@ func NewRouter(
 }
 
 func (r *router) Handlers() []handler {
-	return []handler{
-		{
-			path:        "/ping",
-			method:      http.MethodGet,
-			handlerFunc: r.pingHandler.Handle,
-		},
-		{
-			path:        "/v1/counter",
-			method:      http.MethodGet,
-			handlerFunc: r.counterHandler.Handle,
-		},
+	r.setHealthRoutes()
+	r.setExampleRoutes()
+	// your routes here!
+
+	return r.handlers
+}
+
+func (r *router) setHealthRoutes() {
+	r.handlers = append(r.handlers, []handler{
+		r.newHandler("/ping", http.MethodGet, r.pingHandler.Ping),
+	}...)
+}
+
+func (r *router) setExampleRoutes() {
+	r.handlers = append(r.handlers, []handler{
+		r.newHandler("/v1/counter", http.MethodGet, r.counterHandler.Count),
+	}...)
+}
+
+func (r *router) newHandler(
+	path, method string,
+	handlerFunc http.HandlerFunc,
+) handler {
+	return handler{
+		path:        path,
+		method:      method,
+		handlerFunc: handlerFunc,
 	}
 }

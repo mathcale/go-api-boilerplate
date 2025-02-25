@@ -15,22 +15,22 @@ import (
 
 type CounterHandlerTestSuite struct {
 	suite.Suite
-	ResponseHandler    Response
-	CounterUseCaseMock *mocks.CounterUseCaseMock
+	response      Response
+	counterUCMock *mocks.CounterUseCaseMock
 
-	CounterHandler CounterHandler
+	handler Counter
 }
 
 func (s *CounterHandlerTestSuite) SetupTest() {
-	s.ResponseHandler = NewResponse()
-	s.CounterUseCaseMock = new(mocks.CounterUseCaseMock)
+	s.response = NewResponse()
+	s.counterUCMock = new(mocks.CounterUseCaseMock)
 
-	s.CounterHandler = NewCounterHandler(s.ResponseHandler, s.CounterUseCaseMock)
+	s.handler = NewCounterHandler(s.response, s.counterUCMock)
 }
 
 func (s *CounterHandlerTestSuite) cleanMocks() {
-	s.CounterUseCaseMock.ExpectedCalls = nil
-	s.CounterUseCaseMock.Calls = nil
+	s.counterUCMock.ExpectedCalls = nil
+	s.counterUCMock.Calls = nil
 }
 
 func TestCounterHandler(t *testing.T) {
@@ -44,9 +44,9 @@ func (s *CounterHandlerTestSuite) TestHandle() {
 		r := httptest.NewRequest(http.MethodGet, "/counter", nil)
 		w := httptest.NewRecorder()
 
-		s.CounterUseCaseMock.On("Execute").Return(1, nil)
+		s.counterUCMock.On("Execute").Return(1, nil)
 
-		s.CounterHandler.Handle(w, r)
+		s.handler.Count(w, r)
 
 		res := w.Result()
 		defer res.Body.Close()
@@ -64,9 +64,9 @@ func (s *CounterHandlerTestSuite) TestHandle() {
 		r := httptest.NewRequest(http.MethodGet, "/counter", nil)
 		w := httptest.NewRecorder()
 
-		s.CounterUseCaseMock.On("Execute").Return(0, errors.New("any-error"))
+		s.counterUCMock.On("Execute").Return(0, errors.New("any-error"))
 
-		s.CounterHandler.Handle(w, r)
+		s.handler.Count(w, r)
 
 		res := w.Result()
 		defer res.Body.Close()

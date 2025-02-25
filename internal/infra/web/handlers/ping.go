@@ -4,20 +4,20 @@ import (
 	"net/http"
 )
 
-type PingHandler interface {
-	Handle(w http.ResponseWriter, r *http.Request)
+type Ping interface {
+	Ping(w http.ResponseWriter, r *http.Request)
 }
 
-type helloHandler struct {
+type ping struct {
 	response Response
 }
 
-func NewPingHandler(r Response) PingHandler {
-	return &helloHandler{
+func NewPingHandler(r Response) Ping {
+	return &ping{
 		response: r,
 	}
 }
 
-func (h *helloHandler) Handle(w http.ResponseWriter, r *http.Request) {
+func (h *ping) Ping(w http.ResponseWriter, r *http.Request) {
 	h.response.RespondPlainText(w, http.StatusOK, "pong", nil)
 }

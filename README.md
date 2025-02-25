@@ -26,7 +26,7 @@ A slightly opinionated HTTP API boilerplate with the Go programming language, fo
 - [air](https://github.com/air-verse/air): live-reloading
 - [migrate](https://github.com/golang-migrate/migrate): database migrations
 
-## Running locally
+## First run
 
 1. Create .env file
 
@@ -46,7 +46,9 @@ make rename-pkgs
 make setup
 ```
 
-4. Start server
+## Running locally
+
+To start a local server with live-reload and all necessary containers, execute:
 
 ```sh
 make run
@@ -54,7 +56,7 @@ make run
 
 ## Testing
 
-To execute all test suites, just run:
+To execute all test suites and get a coverage report at the end, just run:
 
 ```sh
 make test
@@ -84,6 +86,8 @@ docker image prune \
 
 ### Manually
 
+By running the following command, the application will be compiled and outputted to the `bin` directory.
+
 ```sh
 make build
 ```
@@ -93,5 +97,7 @@ make build
 - [X] Add database connection
 - [X] Add logging middleware
 - [X] Add Github Actions CI workflow
-- [X] Add database usage example
-- [X] Add authentication
+- [X] Add database
+- [X] Add authentication branch
+- [ ] Add OpenAPI specs on web handlers
+- [ ] Improve project structure documentation
