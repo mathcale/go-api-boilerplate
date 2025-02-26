@@ -33,7 +33,7 @@ func NewDependencyInjector(cfg *config.Config) DependencyInjector {
 func (di *dependencyInjector) Inject() (*Dependencies, error) {
 	// General
 	logger := logger.NewLogger(di.config.LogLevel)
-	rh := handlers.NewResponse()
+	rh := handlers.NewResponse(logger)
 
 	// Database
 	_, err := di.connectToDatabase(logger)
