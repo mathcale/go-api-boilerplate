@@ -35,7 +35,7 @@ func (s *CounterUseCaseTestSuite) TestExecute() {
 	s.Run("should increment counter", func() {
 		defer s.cleanMocks()
 
-		s.LoggerMock.On("Info", mock.Anything, mock.Anything).Return(nil)
+		s.LoggerMock.On("Debug", mock.Anything, mock.Anything).Return(nil)
 
 		counter, err := s.UseCase.Execute()
 

@@ -16,4 +16,5 @@ internal/infra/web/router.go
 internal/infra/web/middlewares.go
 internal/infra/web/middlewares/*
 internal/infra/web/handlers/response.go
+internal/infra/web/handlers/ping.go
 internal/infra/web/handlers/dto/*
