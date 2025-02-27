@@ -7,6 +7,7 @@ import (
 	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
 
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
 )
 
@@ -49,11 +50,17 @@ func NewDatabase(
 }
 
 func (d *database) Connect() (*sqlx.DB, error) {
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s", d.host, d.user, d.password, d.name, d.port, d.sslMode)
+	dsn := fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%d sslmode=%s",
+		d.host, d.user, d.password, d.name, d.port, d.sslMode,
+	)
 
 	dbx, err := sqlx.Connect("pgx", dsn)
 	if err != nil {
-		return nil, err
+		return nil, apperror.New(
+			err, "database connection error", apperror.DatabaseKind,
+			apperror.RepositoryOrigin, "database/connect", nil, nil,
+		)
 	}
 
 	dbx.SetMaxOpenConns(d.maxOpenConns)

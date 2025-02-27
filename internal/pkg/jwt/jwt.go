@@ -6,6 +6,7 @@ import (
 
 	jwtlib "github.com/golang-jwt/jwt/v5"
 
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
 )
 
@@ -87,7 +88,10 @@ func (j *jwtAuth) issue(id string, secret []byte, lifetime int) (*Token, error) 
 
 	tokenStr, err := token.SignedString(secret)
 	if err != nil {
-		return nil, err
+		return nil, apperror.New(
+			err, "token signing failed", apperror.DependencyKind,
+			apperror.PackageOrigin, "jwt", nil, nil,
+		)
 	}
 
 	return j.toToken(&tokenStr, claims)
@@ -98,12 +102,18 @@ func (j *jwtAuth) verify(token string, secret []byte) (*Token, error) {
 		return secret, nil
 	}, jwtlib.WithValidMethods([]string{j.signingMethod.Alg()}))
 	if err != nil {
-		return nil, err
+		return nil, apperror.New(
+			err, "token parsing failed", apperror.ParseKind,
+			apperror.PackageOrigin, "jwt", nil, nil,
+		)
 	}
 
 	claims, ok := t.Claims.(jwtlib.MapClaims)
 	if !ok || !t.Valid {
-		return nil, errors.New("invalid_token")
+		return nil, apperror.New(
+			errors.New("invalid_token"), "invalid jwt token",
+			apperror.ValidationKind, apperror.PackageOrigin, "jwt", nil, nil,
+		)
 	}
 
 	return j.toToken(&token, claims)
@@ -112,12 +122,18 @@ func (j *jwtAuth) verify(token string, secret []byte) (*Token, error) {
 func (j *jwtAuth) toToken(token *string, claims jwtlib.MapClaims) (*Token, error) {
 	iat, err := j.parseTime(claims["iat"])
 	if err != nil {
-		return nil, err
+		return nil, apperror.New(
+			err, "iat claim parse failed", apperror.ParseKind,
+			apperror.PackageOrigin, "jwt", nil, nil,
+		)
 	}
 
 	exp, err := j.parseTime(claims["exp"])
 	if err != nil {
-		return nil, err
+		return nil, apperror.New(
+			err, "exp claim parse failed", apperror.ParseKind,
+			apperror.PackageOrigin, "jwt", nil, nil,
+		)
 	}
 
 	return &Token{
@@ -139,7 +155,10 @@ func (j *jwtAuth) parseTime(v any) (*time.Time, error) {
 	case float64:
 		t = time.Unix(int64(v.(float64)), 0)
 	default:
-		return nil, errors.New("invalid_time")
+		return nil, apperror.New(
+			errors.New("invalid_time"), "invalid time on jwt token", apperror.ParseKind,
+			apperror.PackageOrigin, "jwt", nil, nil,
+		)
 	}
 
 	return &t, nil

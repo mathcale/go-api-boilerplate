@@ -48,7 +48,7 @@ func (s *CounterHandlerTestSuite) TestHandle() {
 		w := httptest.NewRecorder()
 
 		s.loggerMock.On("Error", mock.Anything, mock.Anything, mock.Anything)
-		s.counterUCMock.On("Execute").Return(1, nil)
+		s.counterUCMock.On("Execute", 3).Return(1, nil)
 
 		s.handler.Count(w, r)
 
@@ -69,7 +69,7 @@ func (s *CounterHandlerTestSuite) TestHandle() {
 		w := httptest.NewRecorder()
 
 		s.loggerMock.On("Error", mock.Anything, mock.Anything, mock.Anything)
-		s.counterUCMock.On("Execute").Return(0, errors.New("any-error"))
+		s.counterUCMock.On("Execute", 3).Return(0, errors.New("any-error"))
 		s.loggerMock.On("Error", mock.Anything, mock.Anything, mock.Anything)
 
 		s.handler.Count(w, r)

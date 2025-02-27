@@ -37,9 +37,21 @@ func (s *CounterUseCaseTestSuite) TestExecute() {
 
 		s.LoggerMock.On("Debug", mock.Anything, mock.Anything).Return(nil)
 
-		counter, err := s.UseCase.Execute()
+		counter, err := s.UseCase.Execute(3)
 
 		s.NoError(err)
+		s.Equal(1, counter)
+	})
+
+	s.Run("should return error when counter passes limit of 3", func() {
+		defer s.cleanMocks()
+
+		s.LoggerMock.On("Debug", mock.Anything, mock.Anything).Return(nil)
+
+		counter, err := s.UseCase.Execute(1)
+
+		s.Error(err)
+		s.ErrorContains(err, "maximum counter value of [1] reached")
 		s.Equal(1, counter)
 	})
 }

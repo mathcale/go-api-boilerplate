@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers/dto"
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
 	authuc "github.com/mathcale/go-api-boilerplate/internal/usecases/auth"
 )
 
@@ -34,19 +35,28 @@ func NewAuthHandler(
 func (h *auth) SignIn(w http.ResponseWriter, r *http.Request) {
 	var input dto.SignInInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		h.response.RespondWithError(w, http.StatusBadRequest, err, nil)
+		e := apperror.New(
+			err, "input parse failed", apperror.ParseKind,
+			apperror.WebHandlerOrigin, "auth/signin", nil, nil,
+		)
+
+		h.response.RespondWithError(w, e, nil)
 		return
 	}
 
 	if err := input.Validate(); err != nil {
-		h.response.RespondWithError(w, http.StatusUnprocessableEntity, err, nil)
+		e := apperror.New(
+			err, "input validation failed", apperror.ValidationKind,
+			apperror.WebHandlerOrigin, "auth/signin", nil, nil,
+		)
+
+		h.response.RespondWithError(w, e, nil)
 		return
 	}
 
 	at, rt, err := h.signInUC.Execute(r.Context(), input.ToDomain())
 	if err != nil {
-		// FIXME: use correct status code by error
-		h.response.RespondWithError(w, http.StatusInternalServerError, err, nil)
+		h.response.RespondWithError(w, err, nil)
 		return
 	}
 
@@ -57,18 +67,27 @@ func (h *auth) SignIn(w http.ResponseWriter, r *http.Request) {
 func (h *auth) SignUp(w http.ResponseWriter, r *http.Request) {
 	var input dto.SignUpInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		h.response.RespondWithError(w, http.StatusBadRequest, err, nil)
+		e := apperror.New(
+			err, "input parse failed", apperror.ParseKind,
+			apperror.WebHandlerOrigin, "auth/signup", nil, nil,
+		)
+
+		h.response.RespondWithError(w, e, nil)
 		return
 	}
 
 	if err := input.Validate(); err != nil {
-		h.response.RespondWithError(w, http.StatusUnprocessableEntity, err, nil)
+		e := apperror.New(
+			err, "input validation failed", apperror.ValidationKind,
+			apperror.WebHandlerOrigin, "auth/signup", nil, nil,
+		)
+
+		h.response.RespondWithError(w, e, nil)
 		return
 	}
 
 	if err := h.signUpUC.Execute(r.Context(), input.ToDomain(true)); err != nil {
-		// FIXME: use correct status code by error
-		h.response.RespondWithError(w, http.StatusInternalServerError, err, nil)
+		h.response.RespondWithError(w, err, nil)
 		return
 	}
 

@@ -6,8 +6,8 @@ type CounterUseCase struct {
 	mock.Mock
 }
 
-func (m *CounterUseCase) Execute() (int, error) {
-	args := m.Called()
+func (m *CounterUseCase) Execute(limit int) (int, error) {
+	args := m.Called(limit)
 
 	if args.Get(0) == nil {
 		return 0, args.Error(1)

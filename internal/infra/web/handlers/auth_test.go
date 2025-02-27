@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +11,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
 	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
 )
 
@@ -120,7 +120,7 @@ func (s *AuthHandlerTestSuite) TestSignIn() {
 		s.loggerMock.On("Error", mock.Anything, mock.Anything, mock.Anything)
 		s.signInUCMock.
 			On("Execute", r.Context(), mock.AnythingOfType("domain.User")).
-			Return(nil, nil, errors.New("any-error"))
+			Return(nil, nil, fixtures.NewUseCaseBusinessError())
 
 		s.handler.SignIn(w, r)
 
@@ -128,7 +128,7 @@ func (s *AuthHandlerTestSuite) TestSignIn() {
 		defer res.Body.Close()
 
 		data, _ := io.ReadAll(res.Body)
-		expected := `{"message":"any-error"}`
+		expected := `{"code":null,"message":"any-error"}`
 
 		s.Equal(http.StatusInternalServerError, res.StatusCode)
 		s.Equal(expected, strings.TrimSuffix(string(data), "\n"))
@@ -200,7 +200,7 @@ func (s *AuthHandlerTestSuite) TestSignUp() {
 		s.loggerMock.On("Error", mock.Anything, mock.Anything, mock.Anything)
 		s.signUpUCMock.
 			On("Execute", r.Context(), mock.AnythingOfType("domain.User")).
-			Return(errors.New("any-error"))
+			Return(fixtures.NewUseCaseBusinessError())
 
 		s.handler.SignUp(w, r)
 
@@ -208,7 +208,7 @@ func (s *AuthHandlerTestSuite) TestSignUp() {
 		defer res.Body.Close()
 
 		data, _ := io.ReadAll(res.Body)
-		expected := `{"message":"any-error"}`
+		expected := `{"code":null,"message":"any-error"}`
 
 		s.Equal(http.StatusInternalServerError, res.StatusCode)
 		s.Equal(expected, strings.TrimSuffix(string(data), "\n"))

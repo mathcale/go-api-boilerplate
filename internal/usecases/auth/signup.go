@@ -5,12 +5,9 @@ import (
 	"errors"
 
 	"github.com/mathcale/go-api-boilerplate/internal/domain"
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/bcrypt"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
-)
-
-var (
-	ErrUserExists = errors.New("user_already_exists")
 )
 
 type SignUpUseCase interface {
@@ -51,7 +48,10 @@ func (s *signUpUseCase) Execute(ctx context.Context, user domain.User) error {
 	}
 
 	if *exists {
-		return ErrUserExists
+		return apperror.New(
+			errors.New("user_already_exists"), "user already exists",
+			apperror.ConflictKind, apperror.UseCaseOrigin, "signup", nil, nil,
+		)
 	}
 
 	hashedPass, err := s.bcryptPass.Hash(user.Password)

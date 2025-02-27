@@ -2,13 +2,14 @@ package counter
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
 )
 
 type CounterUseCase interface {
-	Execute() (int, error)
+	Execute(limit int) (int, error)
 }
 
 type counterUseCase struct {
@@ -25,7 +26,7 @@ func NewCounterUseCase(l logger.Logger) CounterUseCase {
 	}
 }
 
-func (uc *counterUseCase) Execute() (int, error) {
+func (uc *counterUseCase) Execute(limit int) (int, error) {
 	next := uc.counterValue + 1
 
 	uc.logger.Debug("Incrementing counter", map[string]interface{}{
@@ -34,8 +35,8 @@ func (uc *counterUseCase) Execute() (int, error) {
 		"next_value":    next,
 	})
 
-	if next > 3 {
-		msg := "maximum counter value reached"
+	if next > limit {
+		msg := fmt.Sprintf("maximum counter value of [%d] reached", limit)
 		businessCode := apperror.BUSINESS_E100
 
 		return uc.counterValue, apperror.New(

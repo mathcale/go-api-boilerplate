@@ -29,10 +29,12 @@ func (s *BcryptPasswordTestSuite) TestHash() {
 	})
 
 	s.Run("should return error when hasing fails", func() {
-		hash, err := s.bp.Hash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+		hash, err := s.bp.Hash(
+			"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		)
 
 		s.Error(err)
-		s.ErrorContains(err, "password length exceeds 72 bytes")
+		s.ErrorContains(err, "password hashing failed")
 		s.Nil(hash)
 	})
 }

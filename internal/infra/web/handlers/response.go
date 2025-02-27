@@ -100,7 +100,7 @@ func (h *response) setHeaders(w http.ResponseWriter, headers map[string]string) 
 
 func (h *response) getStatusCodeByErrorKind(err apperror.AppError) int {
 	switch err.Kind() {
-	case apperror.ParseErrorKind:
+	case apperror.ParseKind:
 		return http.StatusBadRequest
 	case apperror.ValidationKind:
 		return http.StatusUnprocessableEntity
@@ -111,8 +111,10 @@ func (h *response) getStatusCodeByErrorKind(err apperror.AppError) int {
 			return http.StatusNotFound
 		}
 		return http.StatusInternalServerError
-	case apperror.BusinessKind:
+	case apperror.BusinessKind, apperror.DependencyKind:
 		return http.StatusInternalServerError
+	case apperror.ConflictKind:
+		return http.StatusConflict
 	default:
 		return http.StatusInternalServerError
 	}

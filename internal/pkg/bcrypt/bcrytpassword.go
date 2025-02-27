@@ -1,6 +1,10 @@
 package bcrypt
 
-import "golang.org/x/crypto/bcrypt"
+import (
+	"golang.org/x/crypto/bcrypt"
+
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
+)
 
 type Password interface {
 	Hash(password string) (*string, error)
@@ -20,7 +24,10 @@ func NewPassword() Password {
 func (b *password) Hash(password string) (*string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), b.cost)
 	if err != nil {
-		return nil, err
+		return nil, apperror.New(
+			err, "password hashing failed", apperror.DependencyKind,
+			apperror.PackageOrigin, "bcryptpassword", nil, nil,
+		)
 	}
 
 	hashStr := string(hash)

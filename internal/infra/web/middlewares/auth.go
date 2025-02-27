@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
 )
@@ -48,18 +49,26 @@ func (m *authMiddleware) parseToken(tokenStr string) (*jwt.Token, error) {
 	errInvalidToken := errors.New("err_invalid_token")
 
 	if tokenStr == "" {
-		return nil, errInvalidToken
+		return nil, apperror.New(
+			errInvalidToken, "empty token received",
+			apperror.ValidationKind, apperror.MiddlewareOrigin, "auth", nil, nil,
+		)
 	}
 
 	tokenSplit := strings.Split(tokenStr, " ")
 	if len(tokenSplit) != 2 || tokenSplit[0] != "Bearer" {
-		return nil, errInvalidToken
+		return nil, apperror.New(
+			errInvalidToken, "malformed authentication header",
+			apperror.ParseKind, apperror.MiddlewareOrigin, "auth", nil, nil,
+		)
 	}
 
 	token, err := m.jwt.VerifyAccessToken(tokenSplit[1])
 	if err != nil {
-		m.logger.Error("Error while verifying token", err, nil)
-		return nil, errInvalidToken
+		return nil, apperror.New(
+			errInvalidToken, "error while verifying access token",
+			apperror.ValidationKind, apperror.MiddlewareOrigin, "auth", nil, nil,
+		)
 	}
 
 	return token, nil

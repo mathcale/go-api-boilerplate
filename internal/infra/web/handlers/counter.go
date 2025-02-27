@@ -26,7 +26,7 @@ func NewCounterHandler(
 }
 
 func (h *counter) Count(w http.ResponseWriter, r *http.Request) {
-	counter, err := h.counterUseCase.Execute()
+	counter, err := h.counterUseCase.Execute(3)
 	if err != nil {
 		h.response.RespondWithError(w, err, nil)
 		return

@@ -6,11 +6,15 @@ config/*
 cmd/api/main.go
 internal/tests/mocks/*
 internal/tests/fixtures/*
+internal/tests/utils/*
 internal/pkg/logger/*
 internal/pkg/di/*
+internal/pkg/apperror/*
+internal/pkg/apierror/*
 internal/infra/database/connect.go
 internal/infra/database/pagination.go
 internal/infra/database/models/*
+internal/infra/database/repositories/queries.go
 internal/infra/web/server.go
 internal/infra/web/router.go
 internal/infra/web/middlewares.go

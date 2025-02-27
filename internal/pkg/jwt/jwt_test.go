@@ -76,7 +76,7 @@ func (s *JWTAuthTestSuite) TestVerifyAccessToken() {
 		t, err := s.a.VerifyAccessToken("")
 
 		s.Error(err)
-		s.ErrorContains(err, "token is malformed")
+		s.ErrorContains(err, "token parsing failed")
 		s.Nil(t)
 	})
 }
@@ -114,7 +114,7 @@ func (s *JWTAuthTestSuite) TestVerifyRefreshToken() {
 		t, err := s.a.VerifyRefreshToken("")
 
 		s.Error(err)
-		s.ErrorContains(err, "token is malformed")
+		s.ErrorContains(err, "token parsing failed")
 		s.Nil(t)
 	})
 }
