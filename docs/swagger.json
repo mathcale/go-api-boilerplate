@@ -1,0 +1,85 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "A slightly opinionated HTTP API boilerplate with the Go programming language.",
+        "title": "go-api-boilerplate",
+        "contact": {},
+        "license": {
+            "name": "MIT License",
+            "url": "https://github.com/mathcale/go-api-boilerplate/blob/main/LICENSE"
+        },
+        "version": "1.0"
+    },
+    "paths": {
+        "/v1/counter": {
+            "get": {
+                "description": "Increments an in-memory counter up to a limit value",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "counter"
+                ],
+                "summary": "Increments an in-memory counter",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CounterOutput"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorOutput"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "apperror.BusinessCode": {
+            "type": "string",
+            "enum": [
+                "E100",
+                "E101",
+                "E102",
+                "E103",
+                "E104",
+                "E105"
+            ],
+            "x-enum-varnames": [
+                "BUSINESS_E100",
+                "BUSINESS_E101",
+                "BUSINESS_E102",
+                "BUSINESS_E103",
+                "BUSINESS_E104",
+                "BUSINESS_E105"
+            ]
+        },
+        "dto.CounterOutput": {
+            "type": "object",
+            "properties": {
+                "counter": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.ErrorOutput": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "$ref": "#/definitions/apperror.BusinessCode"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "externalDocs": {
+        "description": "OpenAPI v2",
+        "url": "https://swagger.io/specification/v2/"
+    }
+}
