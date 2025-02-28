@@ -100,5 +100,5 @@ make build
 - [X] Add Github Actions CI workflow
 - [X] Add database
 - [X] Add authentication branch
-- [ ] Add OpenAPI specs on web handlers
+- [X] Add OpenAPI specs on web handlers
 - [ ] Improve project structure documentation
