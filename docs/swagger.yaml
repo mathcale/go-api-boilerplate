@@ -1,0 +1,60 @@
+definitions:
+  apperror.BusinessCode:
+    enum:
+    - E100
+    - E101
+    - E102
+    - E103
+    - E104
+    - E105
+    type: string
+    x-enum-varnames:
+    - BUSINESS_E100
+    - BUSINESS_E101
+    - BUSINESS_E102
+    - BUSINESS_E103
+    - BUSINESS_E104
+    - BUSINESS_E105
+  dto.CounterOutput:
+    properties:
+      counter:
+        type: integer
+    type: object
+  dto.ErrorOutput:
+    properties:
+      code:
+        $ref: '#/definitions/apperror.BusinessCode'
+      message:
+        type: string
+    type: object
+externalDocs:
+  description: OpenAPI v2
+  url: https://swagger.io/specification/v2/
+info:
+  contact: {}
+  description: A slightly opinionated HTTP API boilerplate with the Go programming
+    language.
+  license:
+    name: MIT License
+    url: https://github.com/mathcale/go-api-boilerplate/blob/main/LICENSE
+  title: go-api-boilerplate
+  version: "1.0"
+paths:
+  /v1/counter:
+    get:
+      description: Increments an in-memory counter up to a limit value
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CounterOutput'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorOutput'
+      summary: Increments an in-memory counter
+      tags:
+      - counter
+swagger: "2.0"
