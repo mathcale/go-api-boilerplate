@@ -50,7 +50,7 @@ func (r *router) Handlers() []handler {
 	if !r.production {
 		r.handlers = append(
 			r.handlers,
-			r.newHandler("/swagger/", http.MethodGet, httpSwagger.Handler(
+			r.newHandler("/swagger/", http.MethodGet, PUBLIC_ROUTE, httpSwagger.Handler(
 				httpSwagger.URL("/swagger/doc.json"),
 				httpSwagger.DefaultModelsExpandDepth(httpSwagger.HideModel),
 			)),
