@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers/dto"
 	uc "github.com/mathcale/go-api-boilerplate/internal/usecases/counter"
 )
 
@@ -25,6 +26,15 @@ func NewCounterHandler(
 	}
 }
 
+// Count godoc
+//
+//	@Summary		Increments an in-memory counter
+//	@Description	Increments an in-memory counter up to a limit value
+//	@Tags			counter
+//	@Produce		json
+//	@Success		200	{object}	dto.CounterOutput
+//	@Failure		500	{object}	dto.ErrorOutput
+//	@Router			/v1/counter [get]
 func (h *counter) Count(w http.ResponseWriter, r *http.Request) {
 	counter, err := h.counterUseCase.Execute(3)
 	if err != nil {
@@ -32,8 +42,8 @@ func (h *counter) Count(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := map[string]int{
-		"counter": counter,
+	data := dto.CounterOutput{
+		Counter: counter,
 	}
 
 	h.response.Respond(w, http.StatusOK, data, nil)

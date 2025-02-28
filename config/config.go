@@ -3,6 +3,7 @@ package config
 import "github.com/spf13/viper"
 
 type Config struct {
+	Environment                 string `mapstructure:"ENVIRONMENT"`
 	LogLevel                    string `mapstructure:"LOG_LEVEL"`
 	WebServerPort               int    `mapstructure:"WEB_SERVER_PORT"`
 	DatabaseHost                string `mapstructure:"DATABASE_HOST"`

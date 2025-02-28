@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers/dto"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/apierror"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
@@ -83,9 +84,9 @@ func (h *response) RespondWithError(
 	h.setHeaders(w, headers)
 	w.WriteHeader(status)
 
-	json.NewEncoder(w).Encode(map[string]any{
-		"message": apiErr.Message(),
-		"code":    apiErr.BusinessCode(),
+	json.NewEncoder(w).Encode(dto.ErrorOutput{
+		Message: apiErr.Message(),
+		Code:    apiErr.BusinessCode(),
 	})
 }
 

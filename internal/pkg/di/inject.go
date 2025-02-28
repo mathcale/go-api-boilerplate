@@ -85,7 +85,12 @@ func (di *dependencyInjector) Inject() (*Dependencies, error) {
 	counterHandler := handlers.NewCounterHandler(rh, counterUseCase)
 
 	// Web server setup
-	handlers := web.NewRouter(pingHandler, authHandler, counterHandler).Handlers()
+	handlers := web.NewRouter(
+		di.config.Environment == "production",
+		pingHandler,
+		authHandler,
+		counterHandler,
+	).Handlers()
 	middlewares := web.NewMiddlewaresResolver(correlationIDMiddleware, loggingMiddleware).Resolve()
 	webServer := web.NewServer(
 		logger,

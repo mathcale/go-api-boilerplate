@@ -3,6 +3,8 @@ package web
 import (
 	"net/http"
 
+	httpSwagger "github.com/swaggo/http-swagger/v2"
+
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
 )
 
@@ -18,6 +20,7 @@ type handler struct {
 }
 
 type router struct {
+	production     bool
 	handlers       []handler
 	pingHandler    handlers.Ping
 	authHandler    handlers.Auth
@@ -30,11 +33,13 @@ const (
 )
 
 func NewRouter(
+	prod bool,
 	pingHandler handlers.Ping,
 	authHandler handlers.Auth,
 	counterHandler handlers.Counter,
 ) Router {
 	return &router{
+		production:     prod,
 		pingHandler:    pingHandler,
 		authHandler:    authHandler,
 		counterHandler: counterHandler,
@@ -42,6 +47,16 @@ func NewRouter(
 }
 
 func (r *router) Handlers() []handler {
+	if !r.production {
+		r.handlers = append(
+			r.handlers,
+			r.newHandler("/swagger/", http.MethodGet, httpSwagger.Handler(
+				httpSwagger.URL("/swagger/doc.json"),
+				httpSwagger.DefaultModelsExpandDepth(httpSwagger.HideModel),
+			)),
+		)
+	}
+
 	r.setHealthRoutes()
 	r.setAuthRoutes()
 	r.setExampleRoutes()
