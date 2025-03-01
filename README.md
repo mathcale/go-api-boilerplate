@@ -19,6 +19,42 @@ A slightly opinionated HTTP API boilerplate with the Go programming language, fo
 - Pre-configured CI job with Github Actions;
 - JWT authentication (under the [`with-auth`](../../tree/with-auth) branch)
 
+## Project structure
+
+```plaintext
+.
+├── cmd
+│   └── api                    <== Application entrypoint
+├── config                     <== Configurations setup
+├── docs                       <== Auto-generated OpenAPI documents
+├── internal
+│   ├── domain                 <== Domain objects with their own contracts and business logic
+│   ├── infra                  <== Everything related to the infrastructure layer, such as databases, web handlers, queues etc
+│   │   ├── database
+│   │   │   ├── models         <== Objects representing database entities
+│   │   │   └── repositories   <== Database operations and queries
+│   │   ├── gateways           <== Objects that encapsulates access to infra resources, following an interface defined by each use-case
+│   │   └── web                <== Everything related to the HTTP REST API
+│   │       ├── handlers       <== "Controllers"
+│   │       │   └── dto        <== Input and output objects
+│   │       └── middlewares    <== Request middlewares
+│   ├── pkg                    <== Shared code that doesn't contain business logic, but are needed to support other packages
+│   │   ├── apierror           <== Error returned to the API client
+│   │   ├── apperror           <== Internal error object
+│   │   ├── bcrypt             <== BCrypt hashing functions for passwords
+│   │   ├── di                 <== Dependency injection resolver, where everything is glued together
+│   │   ├── jwt                <== Authentication tokens management
+│   │   └── logger             <== Logging utilities
+│   ├── tests                  <== Testing utilities
+│   │   ├── fixtures           <== Pre-built objects for test cases
+│   │   └── mocks              <== Methods mocks for necessary packages
+│   └── usecases               <== Main business rules
+│       ├── auth
+│       └── counter
+├── migrations                 <== Database migrations generated with `migrate`
+├── scripts                    <== Utilitarian shell scripts
+```
+
 ## Requirements
 
 - [Go](https://go.dev/) 1.24 (or newer)
@@ -92,13 +128,3 @@ By running the following command, the application will be compiled and outputted
 ```sh
 make build
 ```
-
-## Next Steps
-
-- [X] Add database connection
-- [X] Add logging middleware
-- [X] Add Github Actions CI workflow
-- [X] Add database
-- [X] Add authentication branch
-- [X] Add OpenAPI specs on web handlers
-- [ ] Improve project structure documentation
