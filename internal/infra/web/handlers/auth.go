@@ -32,6 +32,20 @@ func NewAuthHandler(
 	}
 }
 
+// SignIn godoc
+//
+//	@Summary		Sign in
+//	@Description	Sign in and retrieve JWT token
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		dto.SignInInput	true	"Params"
+//	@Success		200		{object}	dto.SignInOutput
+//	@Failure		400		{object}	dto.ErrorOutput	"Body parsing failed"
+//	@Failure		404		{object}	dto.ErrorOutput	"User not found"
+//	@Failure		422		{object}	dto.ErrorOutput	"Request validation error"
+//	@Failure		500		{object}	dto.ErrorOutput	"Business/internal error"
+//	@Router			/v1/auth/signin [post]
 func (h *auth) SignIn(w http.ResponseWriter, r *http.Request) {
 	var input dto.SignInInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -64,6 +78,20 @@ func (h *auth) SignIn(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// SignUp godoc
+//
+//	@Summary		Sign up
+//	@Description	Creates new user
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body	dto.SignUpInput	true	"Params"
+//	@Success		200
+//	@Failure		400	{object}	dto.ErrorOutput	"Body parsing failed"
+//	@Failure		408	{object}	dto.ErrorOutput	"User already exists"
+//	@Failure		422	{object}	dto.ErrorOutput	"Request validation error"
+//	@Failure		500	{object}	dto.ErrorOutput	"Business/internal error"
+//	@Router			/v1/auth/signup [post]
 func (h *auth) SignUp(w http.ResponseWriter, r *http.Request) {
 	var input dto.SignUpInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {

@@ -11,6 +11,119 @@
         "version": "1.0"
     },
     "paths": {
+        "/v1/auth/signin": {
+            "post": {
+                "description": "Sign in and retrieve JWT token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Sign in",
+                "parameters": [
+                    {
+                        "description": "Params",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SignInInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SignInOutput"
+                        }
+                    },
+                    "400": {
+                        "description": "Body parsing failed",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorOutput"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorOutput"
+                        }
+                    },
+                    "422": {
+                        "description": "Request validation error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorOutput"
+                        }
+                    },
+                    "500": {
+                        "description": "Business/internal error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorOutput"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/signup": {
+            "post": {
+                "description": "Creates new user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Sign up",
+                "parameters": [
+                    {
+                        "description": "Params",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SignUpInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Body parsing failed",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorOutput"
+                        }
+                    },
+                    "408": {
+                        "description": "User already exists",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorOutput"
+                        }
+                    },
+                    "422": {
+                        "description": "Request validation error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorOutput"
+                        }
+                    },
+                    "500": {
+                        "description": "Business/internal error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorOutput"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/counter": {
             "get": {
                 "description": "Increments an in-memory counter up to a limit value",
@@ -74,6 +187,53 @@
                 },
                 "message": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.SignInInput": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.SignInOutput": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.SignUpInput": {
+            "type": "object",
+            "required": [
+                "email",
+                "name",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "minLength": 8
                 }
             }
         }
