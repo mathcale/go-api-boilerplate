@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 
 	"github.com/jmoiron/sqlx"
 
@@ -42,6 +44,10 @@ func (r *user) Get(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
 
 	if err := r.db.GetContext(ctx, &user, queryGetUserByEmail, email); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+
 		return nil, apperror.New(
 			err, "get user by email query failed", apperror.DatabaseKind,
 			apperror.RepositoryOrigin, "user", nil, nil,

@@ -24,6 +24,10 @@ func (gw *signInGateway) GetUser(ctx context.Context, email string) (*domain.Use
 		return nil, err
 	}
 
+	if model == nil {
+		return nil, nil
+	}
+
 	user := domain.NewUser(
 		model.ID,
 		model.Name,
