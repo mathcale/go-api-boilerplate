@@ -128,3 +128,13 @@ By running the following command, the application will be compiled and outputted
 ```sh
 make build
 ```
+
+## Next Steps
+
+- [X] Add database connection
+- [X] Add logging middleware
+- [X] Add Github Actions CI workflow
+- [X] Add database
+- [X] Add authentication branch
+- [X] Add OpenAPI specs on web handlers
+- [X] Improve project structure documentation
