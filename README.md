@@ -134,4 +134,4 @@ make build
 - [X] Add database
 - [X] Add authentication branch
 - [X] Add OpenAPI specs on web handlers
-- [ ] Improve project structure documentation
+- [X] Improve project structure documentation
