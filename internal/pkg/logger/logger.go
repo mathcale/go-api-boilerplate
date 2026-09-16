@@ -23,13 +23,15 @@ type Logger interface {
 	Instance() zerolog.Logger
 }
 
-func NewLogger(level string) Logger {
+// NewLogger builds the structured logger. In production it emits JSON to
+// stdout; outside production it uses the human-friendly console writer.
+func NewLogger(level string, prod bool) Logger {
 	var writer io.Writer = os.Stdout
 	lvl := toZerologLevel(level)
 
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 
-	if lvl == zerolog.DebugLevel || lvl == zerolog.TraceLevel {
+	if !prod {
 		writer = zerolog.ConsoleWriter{
 			Out:        os.Stdout,
 			TimeFormat: time.RFC3339,

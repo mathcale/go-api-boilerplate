@@ -1,0 +1,211 @@
+package jwt
+
+import (
+	"errors"
+	"time"
+
+	jwtlib "github.com/golang-jwt/jwt/v5"
+
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
+)
+
+// ExtraClaims holds the application-specific claims embedded in every token.
+// It is intentionally minimal: only the roles needed for authorization travel
+// in the token, so RBAC checks require no database round-trip. Everything else
+// about the user is fetched from the /v1/auth/me endpoint.
+type ExtraClaims struct {
+	Roles []string `json:"roles,omitempty"`
+}
+
+type IssueTokenParams struct {
+	UserID      string
+	ExtraClaims ExtraClaims
+	TokenID     string
+}
+
+type JWTAuth interface {
+	IssueAccessToken(params IssueTokenParams) (*Token, error)
+	IssueRefreshToken(params IssueTokenParams) (*Token, error)
+	VerifyAccessToken(at string) (*Token, error)
+	VerifyRefreshToken(rt string) (*Token, error)
+}
+
+type jwtAuth struct {
+	logger          logger.Logger
+	accessSecret    []byte
+	accessLifetime  int
+	refreshSecret   []byte
+	refreshLifetime int
+	issuer          string
+	audience        string
+	signingMethod   jwtlib.SigningMethod
+}
+
+type Token struct {
+	Token       *string     `json:"token,omitempty"`
+	Issuer      string      `json:"iss,omitempty"`
+	Subject     string      `json:"sub,omitempty"`
+	ExtraClaims ExtraClaims `json:"extra_claims,omitempty"`
+	Audience    []string    `json:"aud,omitempty"`
+	ExpiresAt   *time.Time  `json:"exp,omitempty"`
+	IssuedAt    *time.Time  `json:"iat,omitempty"`
+	ID          string      `json:"jti,omitempty"`
+}
+
+func NewJWTAuth(
+	l logger.Logger,
+	secret, refreshSecret []byte,
+	lifetime, refreshLifetime int,
+	issuer, audience string,
+) JWTAuth {
+	return &jwtAuth{
+		logger:          l,
+		accessSecret:    secret,
+		accessLifetime:  lifetime,
+		refreshSecret:   refreshSecret,
+		refreshLifetime: refreshLifetime,
+		issuer:          issuer,
+		audience:        audience,
+		signingMethod:   jwtlib.SigningMethodHS512,
+	}
+}
+
+func (j *jwtAuth) IssueAccessToken(params IssueTokenParams) (*Token, error) {
+	return j.issue(params, j.accessSecret, j.accessLifetime)
+}
+
+func (j *jwtAuth) VerifyAccessToken(at string) (*Token, error) {
+	return j.verify(at, j.accessSecret)
+}
+
+func (j *jwtAuth) IssueRefreshToken(params IssueTokenParams) (*Token, error) {
+	return j.issue(params, j.refreshSecret, j.refreshLifetime)
+}
+
+func (j *jwtAuth) VerifyRefreshToken(rt string) (*Token, error) {
+	return j.verify(rt, j.refreshSecret)
+}
+
+func (j *jwtAuth) issue(params IssueTokenParams, secret []byte, lifetime int) (*Token, error) {
+	roles := params.ExtraClaims.Roles
+	if roles == nil {
+		roles = []string{}
+	}
+
+	claims := jwtlib.MapClaims{
+		"sub": params.UserID,
+		"extra_claims": map[string]interface{}{
+			"roles": roles,
+		},
+		"iss": j.issuer,
+		"aud": j.audience,
+		"exp": time.Now().Add(time.Duration(lifetime) * time.Minute).Unix(),
+		"iat": time.Now().Unix(),
+	}
+
+	if params.TokenID != "" {
+		claims["jti"] = params.TokenID
+	}
+
+	token := jwtlib.NewWithClaims(j.signingMethod, claims)
+
+	j.logger.Debug("Token claims added", map[string]interface{}{
+		"sub": params.UserID,
+	})
+
+	tokenStr, err := token.SignedString(secret)
+	if err != nil {
+		return nil, apperror.New(
+			err, "token signing failed", apperror.DependencyKind,
+			apperror.PackageOrigin, "jwt", nil, nil,
+		)
+	}
+
+	return j.toToken(&tokenStr, claims)
+}
+
+func (j *jwtAuth) verify(token string, secret []byte) (*Token, error) {
+	t, err := jwtlib.Parse(token, func(token *jwtlib.Token) (interface{}, error) {
+		return secret, nil
+	}, jwtlib.WithValidMethods([]string{j.signingMethod.Alg()}))
+	if err != nil {
+		return nil, apperror.New(
+			err, "token parsing failed", apperror.ParseKind,
+			apperror.PackageOrigin, "jwt", nil, nil,
+		)
+	}
+
+	claims, ok := t.Claims.(jwtlib.MapClaims)
+	if !ok || !t.Valid {
+		return nil, apperror.New(
+			errors.New("invalid_token"), "invalid jwt token",
+			apperror.ValidationKind, apperror.PackageOrigin, "jwt", nil, nil,
+		)
+	}
+
+	return j.toToken(&token, claims)
+}
+
+func (j *jwtAuth) toToken(token *string, claims jwtlib.MapClaims) (*Token, error) {
+	iat, err := j.parseTime(claims["iat"])
+	if err != nil {
+		return nil, apperror.New(
+			err, "iat claim parse failed", apperror.ParseKind,
+			apperror.PackageOrigin, "jwt", nil, nil,
+		)
+	}
+
+	exp, err := j.parseTime(claims["exp"])
+	if err != nil {
+		return nil, apperror.New(
+			err, "exp claim parse failed", apperror.ParseKind,
+			apperror.PackageOrigin, "jwt", nil, nil,
+		)
+	}
+
+	var parsed ExtraClaims
+	if raw, ok := claims["extra_claims"].(map[string]interface{}); ok {
+		if rawRoles, ok := raw["roles"].([]interface{}); ok {
+			for _, r := range rawRoles {
+				if role, ok := r.(string); ok {
+					parsed.Roles = append(parsed.Roles, role)
+				}
+			}
+		}
+	}
+
+	var jti string
+	if raw, ok := claims["jti"].(string); ok {
+		jti = raw
+	}
+
+	return &Token{
+		Token:       token,
+		Issuer:      claims["iss"].(string),
+		Audience:    []string{claims["aud"].(string)},
+		Subject:     claims["sub"].(string),
+		ExtraClaims: parsed,
+		IssuedAt:    iat,
+		ExpiresAt:   exp,
+		ID:          jti,
+	}, nil
+}
+
+func (j *jwtAuth) parseTime(v any) (*time.Time, error) {
+	var t time.Time
+
+	switch v := v.(type) {
+	case int64:
+		t = time.Unix(v, 0)
+	case float64:
+		t = time.Unix(int64(v), 0)
+	default:
+		return nil, apperror.New(
+			errors.New("invalid_time"), "invalid time on jwt token", apperror.ParseKind,
+			apperror.PackageOrigin, "jwt", nil, nil,
+		)
+	}
+
+	return &t, nil
+}

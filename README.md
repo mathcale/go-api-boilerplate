@@ -5,7 +5,7 @@ A slightly opinionated HTTP API boilerplate with the Go programming language, fo
 
 [![Continuous Integration](https://github.com/mathcale/go-api-boilerplate/actions/workflows/ci.yaml/badge.svg)](https://github.com/mathcale/go-api-boilerplate/actions/workflows/ci.yaml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mathcale/go-api-boilerplate)](https://goreportcard.com/report/github.com/mathcale/go-api-boilerplate)
-![Go Version](https://img.shields.io/badge/go%20version-%3E=1.23-61CFDD.svg)
+![Go Version](https://img.shields.io/badge/go%20version-%3E=1.27-61CFDD.svg)
 
 ## Features
 
@@ -19,11 +19,13 @@ A slightly opinionated HTTP API boilerplate with the Go programming language, fo
 
 ## Requirements
 
-- [Go](https://go.dev/) 1.24 (or newer)
+- [Go](https://go.dev/) 1.27 (or newer)
 - [GNU Make](https://www.gnu.org/software/make/)
 - [Docker](https://www.docker.com/)
 - [air](https://github.com/air-verse/air): live-reloading
 - [migrate](https://github.com/golang-migrate/migrate): database migrations
+- [golangci-lint](https://golangci-lint.run/): linting
+- [swag](https://github.com/swaggo/swag): OpenAPI generation
 
 ## Running locally
 
@@ -51,12 +53,22 @@ make setup
 make run
 ```
 
+Interactive API docs are then available at `http://localhost:8000/swagger/`.
+
 ## Testing
 
-To execute all test suites, just run:
+To execute all tests with a coverage report, run:
 
 ```sh
 make test
+```
+
+## Linting
+
+```sh
+make lint      # report issues
+make lint-fix  # auto-fix where possible
+make fmt       # format imports and code
 ```
 
 ## Building for production
@@ -86,11 +98,3 @@ docker image prune \
 ```sh
 make build
 ```
-
-## Next Steps
-
-- [X] Add database connection
-- [X] Add logging middleware
-- [X] Add Github Actions CI workflow
-- [X] Add database usage example
-- [X] Add authentication

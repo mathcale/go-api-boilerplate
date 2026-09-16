@@ -16,19 +16,40 @@ type middlewareHandler struct {
 }
 
 type middlewareResolver struct {
-	logging middlewares.MiddlewareHandler
+	securityHeaders middlewares.MiddlewareHandler
+	cors            middlewares.MiddlewareHandler
+	correlationID   middlewares.MiddlewareHandler
+	logging         middlewares.MiddlewareHandler
 }
 
 func NewMiddlewaresResolver(
+	securityHeaders middlewares.MiddlewareHandler,
+	cors middlewares.MiddlewareHandler,
+	correlationID middlewares.MiddlewareHandler,
 	logging middlewares.MiddlewareHandler,
 ) MiddlewaresResolver {
 	return &middlewareResolver{
-		logging: logging,
+		securityHeaders: securityHeaders,
+		cors:            cors,
+		correlationID:   correlationID,
+		logging:         logging,
 	}
 }
 
 func (mr *middlewareResolver) Resolve() []middlewareHandler {
 	return []middlewareHandler{
+		{
+			name:        "security_headers",
+			handlerFunc: mr.securityHeaders.Handler,
+		},
+		{
+			name:        "cors",
+			handlerFunc: mr.cors.Handler,
+		},
+		{
+			name:        "correlation_id",
+			handlerFunc: mr.correlationID.Handler,
+		},
 		{
 			name:        "logging",
 			handlerFunc: mr.logging.Handler,

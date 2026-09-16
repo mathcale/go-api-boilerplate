@@ -3,11 +3,14 @@ migrations/*
 build/*
 bin/*
 config/*
+docs/*
 cmd/api/main.go
 internal/tests/mocks/*
 internal/tests/fixtures/*
 internal/pkg/logger/*
 internal/pkg/di/*
+internal/pkg/apperror/*
+internal/pkg/apierror/*
 internal/infra/database/connect.go
 internal/infra/database/pagination.go
 internal/infra/database/models/*

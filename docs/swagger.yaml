@@ -1,0 +1,398 @@
+basePath: /
+definitions:
+  apperror.BusinessCode:
+    enum:
+    - E0000
+    - E0001
+    - E0002
+    - E0003
+    - E0004
+    - E0005
+    - E1000
+    - E1001
+    - E1002
+    - E1004
+    - E1006
+    - E1007
+    - E1008
+    - E1009
+    - E1010
+    type: string
+    x-enum-varnames:
+    - BE0000_UNKNOWN_ERROR
+    - BE0001_INVALID_INPUT
+    - BE0002_INPUT_VALIDATION_FAILED
+    - BE0003_UNAUTHORIZED
+    - BE0004_FORBIDDEN
+    - BE0005_RATE_LIMITED
+    - BE1000_USER_ALREADY_EXISTS
+    - BE1001_USER_NOT_FOUND
+    - BE1002_RECOVERY_CODE_MISMATCH
+    - BE1004_INACTIVE_USER
+    - BE1006_CONFIRMATION_CODE_INVALID
+    - BE1007_CONFIRMATION_CODE_EXPIRED
+    - BE1008_ACCOUNT_ALREADY_CONFIRMED
+    - BE1009_ACCOUNT_NOT_CONFIRMED
+    - BE1010_INVALID_CREDENTIALS
+  dto.ConfirmAccountInput:
+    properties:
+      code:
+        type: string
+      user_id:
+        type: string
+    required:
+    - code
+    - user_id
+    type: object
+  dto.ErrorOutput:
+    properties:
+      cause:
+        type: string
+      code:
+        $ref: '#/definitions/apperror.BusinessCode'
+      message:
+        type: string
+    type: object
+  dto.MeOutput:
+    properties:
+      active:
+        type: boolean
+      avatar_url:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      surname:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.RefreshTokenInput:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  dto.ResendConfirmationCodeInput:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  dto.SetRecoveryCodeInput:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  dto.SignInInput:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  dto.SignUpInput:
+    properties:
+      avatar_url:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+      surname:
+        type: string
+    required:
+    - email
+    - name
+    - password
+    - surname
+    type: object
+  dto.SignUpOutput:
+    properties:
+      active:
+        type: boolean
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      surname:
+        type: string
+    type: object
+  dto.TokenPairOutput:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  dto.UpdatePasswordInput:
+    properties:
+      code:
+        type: string
+      new_password:
+        minLength: 8
+        type: string
+      user_id:
+        type: string
+    required:
+    - code
+    - new_password
+    - user_id
+    type: object
+  dto.ValidateRecoveryCodeInput:
+    properties:
+      code:
+        type: string
+      user_id:
+        type: string
+    required:
+    - code
+    - user_id
+    type: object
+info:
+  contact: {}
+  description: A clean-architecture Go REST API boilerplate with JWT auth.
+  title: Go API Boilerplate
+  version: "1.0"
+paths:
+  /v1/auth/confirm-account:
+    post:
+      consumes:
+      - application/json
+      description: Activates an account using its confirmation code.
+      parameters:
+      - description: Confirmation payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ConfirmAccountInput'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorOutput'
+      summary: Confirm account
+      tags:
+      - auth
+  /v1/auth/me:
+    get:
+      description: Returns the authenticated user's profile.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.MeOutput'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorOutput'
+      security:
+      - BearerAuth: []
+      summary: Current user
+      tags:
+      - auth
+  /v1/auth/password:
+    put:
+      consumes:
+      - application/json
+      description: Sets a new password using a valid recovery code.
+      parameters:
+      - description: Update payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdatePasswordInput'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorOutput'
+      summary: Update password
+      tags:
+      - auth
+  /v1/auth/recovery-code:
+    post:
+      consumes:
+      - application/json
+      description: Emails a password-recovery code if the account exists.
+      parameters:
+      - description: Email payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SetRecoveryCodeInput'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      summary: Request password recovery
+      tags:
+      - auth
+  /v1/auth/recovery-code/validate:
+    post:
+      consumes:
+      - application/json
+      description: Checks a recovery code without consuming it.
+      parameters:
+      - description: Recovery payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ValidateRecoveryCodeInput'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorOutput'
+      summary: Validate recovery code
+      tags:
+      - auth
+  /v1/auth/refresh-token:
+    post:
+      consumes:
+      - application/json
+      description: Issues a new access + refresh token pair from a valid refresh token.
+      parameters:
+      - description: Refresh token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RefreshTokenInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TokenPairOutput'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorOutput'
+      summary: Refresh tokens
+      tags:
+      - auth
+  /v1/auth/resend-confirmation-code:
+    post:
+      consumes:
+      - application/json
+      description: Emails a fresh account-confirmation code.
+      parameters:
+      - description: Email payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ResendConfirmationCodeInput'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      summary: Resend confirmation code
+      tags:
+      - auth
+  /v1/auth/signin:
+    post:
+      consumes:
+      - application/json
+      description: Exchanges credentials for an access + refresh token pair.
+      parameters:
+      - description: Credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SignInInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TokenPairOutput'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorOutput'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorOutput'
+      summary: Sign in
+      tags:
+      - auth
+  /v1/auth/signup:
+    post:
+      consumes:
+      - application/json
+      description: Creates an inactive user and emails an account-confirmation code.
+      parameters:
+      - description: Sign-up payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SignUpInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.SignUpOutput'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorOutput'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/dto.ErrorOutput'
+      summary: Register a new account
+      tags:
+      - auth
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and the access token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

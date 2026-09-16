@@ -1,13 +1,13 @@
 services:
   database:
     container_name: go-api-boilerplate-database
-    image: postgres:17.2-alpine3.20
+    image: postgres:18.6-alpine3.24
     environment:
       POSTGRES_PASSWORD: postgres
     ports:
       - 5432:5432
     volumes:
-      - database:/var/lib/postgresql/data
+      - database:/var/lib/postgresql
 
 volumes:
   database:

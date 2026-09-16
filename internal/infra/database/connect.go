@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/jackc/pgx/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
@@ -49,7 +49,10 @@ func NewDatabase(
 }
 
 func (d *database) Connect() (*sqlx.DB, error) {
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s", d.host, d.user, d.password, d.name, d.port, d.sslMode)
+	dsn := fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%d sslmode=%s",
+		d.host, d.user, d.password, d.name, d.port, d.sslMode,
+	)
 
 	dbx, err := sqlx.Connect("pgx", dsn)
 	if err != nil {
