@@ -3,8 +3,7 @@ package jwt_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
 	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
@@ -22,67 +21,80 @@ func newAuth() jwt.JWTAuth {
 	)
 }
 
-func TestJWTAuth_AccessTokenRoundTrip(t *testing.T) {
-	auth := newAuth()
+type JWTAuthTestSuite struct {
+	suite.Suite
+	auth jwt.JWTAuth
+}
 
-	issued, err := auth.IssueAccessToken(jwt.IssueTokenParams{
-		UserID:      "user-123",
-		ExtraClaims: jwt.ExtraClaims{Roles: []string{"admin", "user"}},
+func (s *JWTAuthTestSuite) SetupTest() {
+	s.auth = newAuth()
+}
+
+func TestJWTAuth(t *testing.T) {
+	suite.Run(t, new(JWTAuthTestSuite))
+}
+
+func (s *JWTAuthTestSuite) TestJWTAuth_AccessTokenRoundTrip() {
+	s.Run("should issue and verify an access token, preserving subject, issuer, and extra claims", func() {
+		issued, err := s.auth.IssueAccessToken(jwt.IssueTokenParams{
+			UserID:      "user-123",
+			ExtraClaims: jwt.ExtraClaims{Roles: []string{"admin", "user"}},
+		})
+
+		s.Require().NoError(err)
+		s.Require().NotNil(issued.Token)
+
+		verified, err := s.auth.VerifyAccessToken(*issued.Token)
+
+		s.Require().NoError(err)
+		s.Equal("user-123", verified.Subject)
+		s.Equal("boilerplate", verified.Issuer)
+		s.Equal([]string{"admin", "user"}, verified.ExtraClaims.Roles)
 	})
-
-	require.NoError(t, err)
-	require.NotNil(t, issued.Token)
-
-	verified, err := auth.VerifyAccessToken(*issued.Token)
-
-	require.NoError(t, err)
-	assert.Equal(t, "user-123", verified.Subject)
-	assert.Equal(t, "boilerplate", verified.Issuer)
-	assert.Equal(t, []string{"admin", "user"}, verified.ExtraClaims.Roles)
 }
 
-func TestJWTAuth_AccessTokenRejectedByRefreshVerifier(t *testing.T) {
-	auth := newAuth()
+func (s *JWTAuthTestSuite) TestJWTAuth_AccessTokenRejectedByRefreshVerifier() {
+	s.Run("should reject an access token when verified as a refresh token", func() {
+		issued, err := s.auth.IssueAccessToken(jwt.IssueTokenParams{UserID: "user-123"})
+		s.Require().NoError(err)
 
-	issued, err := auth.IssueAccessToken(jwt.IssueTokenParams{UserID: "user-123"})
-	require.NoError(t, err)
-
-	// A token signed with the access secret must not validate as a refresh token.
-	_, err = auth.VerifyRefreshToken(*issued.Token)
-	require.Error(t, err)
-}
-
-func TestJWTAuth_RejectsTamperedToken(t *testing.T) {
-	auth := newAuth()
-
-	_, err := auth.VerifyAccessToken("not-a-real-token")
-	require.Error(t, err)
-}
-
-func TestJWTAuth_RefreshTokenCarriesTokenID(t *testing.T) {
-	auth := newAuth()
-
-	issued, err := auth.IssueRefreshToken(jwt.IssueTokenParams{
-		UserID:  "user-123",
-		TokenID: "some-uuid",
+		// A token signed with the access secret must not validate as a refresh token.
+		_, err = s.auth.VerifyRefreshToken(*issued.Token)
+		s.Require().Error(err)
 	})
-	require.NoError(t, err)
-	require.NotNil(t, issued.Token)
-
-	verified, err := auth.VerifyRefreshToken(*issued.Token)
-
-	require.NoError(t, err)
-	assert.Equal(t, "some-uuid", verified.ID)
 }
 
-func TestJWTAuth_AccessTokenHasNoTokenIDByDefault(t *testing.T) {
-	auth := newAuth()
+func (s *JWTAuthTestSuite) TestJWTAuth_RejectsTamperedToken() {
+	s.Run("should reject a malformed or tampered token string", func() {
+		_, err := s.auth.VerifyAccessToken("not-a-real-token")
+		s.Require().Error(err)
+	})
+}
 
-	issued, err := auth.IssueAccessToken(jwt.IssueTokenParams{UserID: "user-123"})
-	require.NoError(t, err)
+func (s *JWTAuthTestSuite) TestJWTAuth_RefreshTokenCarriesTokenID() {
+	s.Run("should issue and verify a refresh token carrying its token ID", func() {
+		issued, err := s.auth.IssueRefreshToken(jwt.IssueTokenParams{
+			UserID:  "user-123",
+			TokenID: "some-uuid",
+		})
+		s.Require().NoError(err)
+		s.Require().NotNil(issued.Token)
 
-	verified, err := auth.VerifyAccessToken(*issued.Token)
+		verified, err := s.auth.VerifyRefreshToken(*issued.Token)
 
-	require.NoError(t, err)
-	assert.Empty(t, verified.ID)
+		s.Require().NoError(err)
+		s.Equal("some-uuid", verified.ID)
+	})
+}
+
+func (s *JWTAuthTestSuite) TestJWTAuth_AccessTokenHasNoTokenIDByDefault() {
+	s.Run("should issue an access token with no token ID by default", func() {
+		issued, err := s.auth.IssueAccessToken(jwt.IssueTokenParams{UserID: "user-123"})
+		s.Require().NoError(err)
+
+		verified, err := s.auth.VerifyAccessToken(*issued.Token)
+
+		s.Require().NoError(err)
+		s.Empty(verified.ID)
+	})
 }
