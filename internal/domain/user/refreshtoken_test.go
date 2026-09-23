@@ -50,20 +50,29 @@ func (s *RefreshTokenDomainTestSuite) TestRotateRefreshToken() {
 	})
 }
 
-func (s *RefreshTokenDomainTestSuite) TestRefreshToken_IsExpired() {
+func (s *RefreshTokenDomainTestSuite) TestIsExpired() {
 	s.Run("should report whether a refresh token is expired", func() {
-		expired := user.RefreshToken{ExpiresAt: time.Now().Add(-time.Minute)}
-		notExpired := user.RefreshToken{ExpiresAt: time.Now().Add(time.Minute)}
+		expired := user.RefreshToken{
+			ExpiresAt: time.Now().Add(-time.Minute),
+		}
+
+		notExpired := user.RefreshToken{
+			ExpiresAt: time.Now().Add(time.Minute),
+		}
 
 		s.True(expired.IsExpired())
 		s.False(notExpired.IsExpired())
 	})
 }
 
-func (s *RefreshTokenDomainTestSuite) TestRefreshToken_IsUsed() {
+func (s *RefreshTokenDomainTestSuite) TestIsUsed() {
 	s.Run("should report whether a refresh token has been used", func() {
 		usedAt := time.Now()
-		used := user.RefreshToken{UsedAt: &usedAt}
+
+		used := user.RefreshToken{
+			UsedAt: &usedAt,
+		}
+
 		notUsed := user.RefreshToken{}
 
 		s.True(used.IsUsed())
@@ -71,10 +80,14 @@ func (s *RefreshTokenDomainTestSuite) TestRefreshToken_IsUsed() {
 	})
 }
 
-func (s *RefreshTokenDomainTestSuite) TestRefreshToken_IsRevoked() {
+func (s *RefreshTokenDomainTestSuite) TestIsRevoked() {
 	s.Run("should report whether a refresh token has been revoked", func() {
 		revokedAt := time.Now()
-		revoked := user.RefreshToken{RevokedAt: &revokedAt}
+
+		revoked := user.RefreshToken{
+			RevokedAt: &revokedAt,
+		}
+
 		notRevoked := user.RefreshToken{}
 
 		s.True(revoked.IsRevoked())

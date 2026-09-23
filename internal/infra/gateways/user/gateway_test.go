@@ -48,10 +48,15 @@ func (s *UserGatewayTestSuite) TestUserExistsIncludingInactive() {
 
 func (s *UserGatewayTestSuite) TestSaveUser() {
 	s.Run("should save a new user along with its confirmation code", func() {
-		s.repo.On("Save", mock.Anything, mock.AnythingOfType("models.User"), mock.AnythingOfType("models.ConfirmationCode")).
+		s.repo.
+			On("Save", mock.Anything, mock.AnythingOfType("models.User"), mock.AnythingOfType("models.ConfirmationCode")).
 			Return(nil)
 
-		u := user.User{ID: uuid.New(), Email: "jane@example.com"}
+		u := user.User{
+			ID:    uuid.New(),
+			Email: "jane@example.com",
+		}
+
 		code := user.NewConfirmationCode(u.ID, user.PurposeAccountConfirmation, user.AccountConfirmationTTL)
 
 		err := s.gateway.SaveUser(context.Background(), u, code)
@@ -61,9 +66,13 @@ func (s *UserGatewayTestSuite) TestSaveUser() {
 	})
 }
 
-func (s *UserGatewayTestSuite) TestGetUserByEmailIncludingInactive_Found() {
+func (s *UserGatewayTestSuite) TestGetUserByEmailIncludingInactive() {
 	s.Run("should return the user when found by email including inactive users", func() {
-		m := &models.User{ID: uuid.New(), Email: "jane@example.com"}
+		m := &models.User{
+			ID:    uuid.New(),
+			Email: "jane@example.com",
+		}
+
 		s.repo.On("GetIncludingInactive", mock.Anything, "jane@example.com").Return(m, nil)
 
 		got, err := s.gateway.GetUserByEmailIncludingInactive(context.Background(), "jane@example.com")
@@ -72,9 +81,7 @@ func (s *UserGatewayTestSuite) TestGetUserByEmailIncludingInactive_Found() {
 		s.Require().NotNil(got)
 		s.Equal(m.ID, got.ID)
 	})
-}
 
-func (s *UserGatewayTestSuite) TestGetUserByEmailIncludingInactive_NotFound() {
 	s.Run("should return nil when no user is found by email", func() {
 		s.repo.On("GetIncludingInactive", mock.Anything, "nobody@example.com").Return(nil, nil)
 
@@ -83,11 +90,11 @@ func (s *UserGatewayTestSuite) TestGetUserByEmailIncludingInactive_NotFound() {
 		s.Require().NoError(err)
 		s.Nil(got)
 	})
-}
 
-func (s *UserGatewayTestSuite) TestGetUserByEmailIncludingInactive_Error() {
 	s.Run("should return an error when the repository fails", func() {
-		s.repo.On("GetIncludingInactive", mock.Anything, "jane@example.com").Return(nil, errors.New("db down"))
+		s.repo.
+			On("GetIncludingInactive", mock.Anything, "jane@example.com").
+			Return(nil, errors.New("db down"))
 
 		got, err := s.gateway.GetUserByEmailIncludingInactive(context.Background(), "jane@example.com")
 
@@ -96,10 +103,14 @@ func (s *UserGatewayTestSuite) TestGetUserByEmailIncludingInactive_Error() {
 	})
 }
 
-func (s *UserGatewayTestSuite) TestGetUserByID_Found() {
+func (s *UserGatewayTestSuite) TestGetUserByID() {
 	s.Run("should return the user when found by id", func() {
 		userID := uuid.New()
-		m := &models.User{ID: userID}
+
+		m := &models.User{
+			ID: userID,
+		}
+
 		s.repo.On("GetByID", mock.Anything, userID).Return(m, nil)
 
 		got, err := s.gateway.GetUserByID(context.Background(), userID)
@@ -108,9 +119,7 @@ func (s *UserGatewayTestSuite) TestGetUserByID_Found() {
 		s.Require().NotNil(got)
 		s.Equal(userID, got.ID)
 	})
-}
 
-func (s *UserGatewayTestSuite) TestGetUserByID_NotFound() {
 	s.Run("should return nil when no user is found by id", func() {
 		userID := uuid.New()
 		s.repo.On("GetByID", mock.Anything, userID).Return(nil, nil)
@@ -120,9 +129,7 @@ func (s *UserGatewayTestSuite) TestGetUserByID_NotFound() {
 		s.Require().NoError(err)
 		s.Nil(got)
 	})
-}
 
-func (s *UserGatewayTestSuite) TestGetUserByID_Error() {
 	s.Run("should return an error when the repository fails", func() {
 		userID := uuid.New()
 		s.repo.On("GetByID", mock.Anything, userID).Return(nil, errors.New("db down"))
@@ -160,7 +167,8 @@ func (s *UserGatewayTestSuite) TestActivateUser() {
 
 func (s *UserGatewayTestSuite) TestSaveConfirmationCode() {
 	s.Run("should save a confirmation code", func() {
-		s.repo.On("SaveConfirmationCode", mock.Anything, mock.AnythingOfType("models.ConfirmationCode")).
+		s.repo.
+			On("SaveConfirmationCode", mock.Anything, mock.AnythingOfType("models.ConfirmationCode")).
 			Return(nil)
 
 		code := user.NewConfirmationCode(uuid.New(), user.PurposePasswordRecovery, user.PasswordRecoveryTTL)
@@ -172,11 +180,18 @@ func (s *UserGatewayTestSuite) TestSaveConfirmationCode() {
 	})
 }
 
-func (s *UserGatewayTestSuite) TestGetValidConfirmationCode_Found() {
+func (s *UserGatewayTestSuite) TestGetValidConfirmationCode() {
 	s.Run("should return the confirmation code when found and valid", func() {
 		userID := uuid.New()
-		m := &models.ConfirmationCode{ID: uuid.New(), UserID: userID, Purpose: "account_confirmation"}
-		s.repo.On("GetConfirmationCode", mock.Anything, userID, "the-code", "account_confirmation").
+
+		m := &models.ConfirmationCode{
+			ID:      uuid.New(),
+			UserID:  userID,
+			Purpose: "account_confirmation",
+		}
+
+		s.repo.
+			On("GetConfirmationCode", mock.Anything, userID, "the-code", "account_confirmation").
 			Return(m, nil)
 
 		got, err := s.gateway.GetValidConfirmationCode(context.Background(), userID, "the-code", user.PurposeAccountConfirmation)
@@ -185,9 +200,7 @@ func (s *UserGatewayTestSuite) TestGetValidConfirmationCode_Found() {
 		s.Require().NotNil(got)
 		s.Equal(m.ID, got.ID)
 	})
-}
 
-func (s *UserGatewayTestSuite) TestGetValidConfirmationCode_NotFound() {
 	s.Run("should return nil when no valid confirmation code is found", func() {
 		userID := uuid.New()
 		s.repo.On("GetConfirmationCode", mock.Anything, userID, "nope", "account_confirmation").
@@ -198,9 +211,7 @@ func (s *UserGatewayTestSuite) TestGetValidConfirmationCode_NotFound() {
 		s.Require().NoError(err)
 		s.Nil(got)
 	})
-}
 
-func (s *UserGatewayTestSuite) TestGetValidConfirmationCode_Error() {
 	s.Run("should return an error when the repository fails", func() {
 		userID := uuid.New()
 		s.repo.On("GetConfirmationCode", mock.Anything, userID, "the-code", "account_confirmation").
@@ -229,7 +240,12 @@ func (s *UserGatewayTestSuite) TestSendConfirmationEmail() {
 	s.Run("should send the account confirmation email", func() {
 		s.emailClient.On("Send", mock.AnythingOfType("email.SendInput")).Return(nil)
 
-		u := user.User{ID: uuid.New(), Name: "Jane", Email: "jane@example.com"}
+		u := user.User{
+			ID:    uuid.New(),
+			Name:  "Jane",
+			Email: "jane@example.com",
+		}
+
 		code := user.NewConfirmationCode(u.ID, user.PurposeAccountConfirmation, user.AccountConfirmationTTL)
 
 		err := s.gateway.SendConfirmationEmail(context.Background(), u, code)
@@ -243,7 +259,12 @@ func (s *UserGatewayTestSuite) TestSendRecoveryEmail() {
 	s.Run("should send the password recovery email", func() {
 		s.emailClient.On("Send", mock.AnythingOfType("email.SendInput")).Return(nil)
 
-		u := user.User{ID: uuid.New(), Name: "Jane", Email: "jane@example.com"}
+		u := user.User{
+			ID:    uuid.New(),
+			Name:  "Jane",
+			Email: "jane@example.com",
+		}
+
 		code := user.NewConfirmationCode(u.ID, user.PurposePasswordRecovery, user.PasswordRecoveryTTL)
 
 		err := s.gateway.SendRecoveryEmail(context.Background(), u, code)
@@ -266,10 +287,14 @@ func (s *UserGatewayTestSuite) TestSaveRefreshToken() {
 	})
 }
 
-func (s *UserGatewayTestSuite) TestGetRefreshToken_Found() {
+func (s *UserGatewayTestSuite) TestGetRefreshToken() {
 	s.Run("should return the refresh token when found", func() {
 		tokenID := uuid.New()
-		m := &models.RefreshToken{ID: tokenID}
+
+		m := &models.RefreshToken{
+			ID: tokenID,
+		}
+
 		s.repo.On("GetRefreshToken", mock.Anything, tokenID).Return(m, nil)
 
 		got, err := s.gateway.GetRefreshToken(context.Background(), tokenID)
@@ -278,9 +303,7 @@ func (s *UserGatewayTestSuite) TestGetRefreshToken_Found() {
 		s.Require().NotNil(got)
 		s.Equal(tokenID, got.ID)
 	})
-}
 
-func (s *UserGatewayTestSuite) TestGetRefreshToken_NotFound() {
 	s.Run("should return nil when no refresh token is found", func() {
 		tokenID := uuid.New()
 		s.repo.On("GetRefreshToken", mock.Anything, tokenID).Return(nil, nil)
@@ -290,9 +313,7 @@ func (s *UserGatewayTestSuite) TestGetRefreshToken_NotFound() {
 		s.Require().NoError(err)
 		s.Nil(got)
 	})
-}
 
-func (s *UserGatewayTestSuite) TestGetRefreshToken_Error() {
 	s.Run("should return an error when the repository fails", func() {
 		tokenID := uuid.New()
 		s.repo.On("GetRefreshToken", mock.Anything, tokenID).Return(nil, errors.New("db down"))

@@ -33,7 +33,7 @@ func (s *ConfirmationCodeTestSuite) TestNewConfirmationCode() {
 	})
 }
 
-func (s *ConfirmationCodeTestSuite) TestConfirmationCode_IsExpired() {
+func (s *ConfirmationCodeTestSuite) TestIsExpired() {
 	s.Run("should report whether a confirmation code is expired", func() {
 		expired := user.ConfirmationCode{
 			ExpiresAt: time.Now().Add(-time.Minute),

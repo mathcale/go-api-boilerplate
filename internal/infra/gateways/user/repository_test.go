@@ -53,9 +53,7 @@ func (s *UserRepositoryTestSuite) TestExistsIncludingInactive() {
 		s.True(*exists)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestExistsIncludingInactive_Error() {
 	s.Run("should return an error when the query fails", func() {
 		s.mock.ExpectQuery(regexp.QuoteMeta(queryUserExistsIncludingInactive)).
 			WithArgs("jane@example.com").
@@ -68,7 +66,7 @@ func (s *UserRepositoryTestSuite) TestExistsIncludingInactive_Error() {
 	})
 }
 
-func (s *UserRepositoryTestSuite) TestGetByID_NotFound() {
+func (s *UserRepositoryTestSuite) TestGetByID() {
 	s.Run("should return nil when no user is found by id", func() {
 		id := uuid.New()
 
@@ -81,9 +79,7 @@ func (s *UserRepositoryTestSuite) TestGetByID_NotFound() {
 		s.Require().NoError(err)
 		s.Nil(u)
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestGetByID_Error() {
 	s.Run("should return an error when the query fails", func() {
 		id := uuid.New()
 
@@ -96,9 +92,7 @@ func (s *UserRepositoryTestSuite) TestGetByID_Error() {
 		s.Require().Error(err)
 		s.Nil(u)
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestGetByID_Found() {
 	s.Run("should return the user when found by id", func() {
 		id := uuid.New()
 
@@ -118,7 +112,7 @@ func (s *UserRepositoryTestSuite) TestGetByID_Found() {
 	})
 }
 
-func (s *UserRepositoryTestSuite) TestGetIncludingInactive_Found() {
+func (s *UserRepositoryTestSuite) TestGetIncludingInactive() {
 	s.Run("should return the user when found by email including inactive users", func() {
 		id := uuid.New()
 
@@ -137,9 +131,7 @@ func (s *UserRepositoryTestSuite) TestGetIncludingInactive_Found() {
 		s.Equal(id, u.ID)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestGetIncludingInactive_NotFound() {
 	s.Run("should return nil when no user is found by email", func() {
 		s.mock.ExpectQuery(regexp.QuoteMeta(queryGetUserByEmailIncludingInactive)).
 			WithArgs("nobody@example.com").
@@ -150,9 +142,7 @@ func (s *UserRepositoryTestSuite) TestGetIncludingInactive_NotFound() {
 		s.Require().NoError(err)
 		s.Nil(u)
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestGetIncludingInactive_Error() {
 	s.Run("should return an error when the query fails", func() {
 		s.mock.ExpectQuery(regexp.QuoteMeta(queryGetUserByEmailIncludingInactive)).
 			WithArgs("jane@example.com").
@@ -165,7 +155,7 @@ func (s *UserRepositoryTestSuite) TestGetIncludingInactive_Error() {
 	})
 }
 
-func (s *UserRepositoryTestSuite) TestSave_CommitsUserAndCode() {
+func (s *UserRepositoryTestSuite) TestSave() {
 	s.Run("should insert the user and confirmation code and commit the transaction", func() {
 		u := models.User{
 			ID:    uuid.New(),
@@ -193,9 +183,7 @@ func (s *UserRepositoryTestSuite) TestSave_CommitsUserAndCode() {
 		s.Require().NoError(err)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestSave_BeginTxFails() {
 	s.Run("should return an error when beginning the transaction fails", func() {
 		u := models.User{ID: uuid.New(), Email: "jane@example.com"}
 		code := models.ConfirmationCode{ID: uuid.New(), UserID: u.ID}
@@ -207,9 +195,7 @@ func (s *UserRepositoryTestSuite) TestSave_BeginTxFails() {
 		s.Require().Error(err)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestSave_InsertUserFailsAndRollsBack() {
 	s.Run("should roll back the transaction when inserting the user fails", func() {
 		u := models.User{ID: uuid.New(), Email: "jane@example.com"}
 		code := models.ConfirmationCode{ID: uuid.New(), UserID: u.ID}
@@ -223,9 +209,7 @@ func (s *UserRepositoryTestSuite) TestSave_InsertUserFailsAndRollsBack() {
 		s.Require().Error(err)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestSave_InsertUserFailsAndRollbackFails() {
 	s.Run("should return an error when both the user insert and the rollback fail", func() {
 		u := models.User{ID: uuid.New(), Email: "jane@example.com"}
 		code := models.ConfirmationCode{ID: uuid.New(), UserID: u.ID}
@@ -239,9 +223,7 @@ func (s *UserRepositoryTestSuite) TestSave_InsertUserFailsAndRollbackFails() {
 		s.Require().Error(err)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestSave_InsertConfirmationCodeFailsAndRollsBack() {
 	s.Run("should roll back the transaction when inserting the confirmation code fails", func() {
 		u := models.User{ID: uuid.New(), Email: "jane@example.com"}
 		code := models.ConfirmationCode{ID: uuid.New(), UserID: u.ID}
@@ -256,9 +238,7 @@ func (s *UserRepositoryTestSuite) TestSave_InsertConfirmationCodeFailsAndRollsBa
 		s.Require().Error(err)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestSave_CommitFails() {
 	s.Run("should return an error when committing the transaction fails", func() {
 		u := models.User{ID: uuid.New(), Email: "jane@example.com"}
 		code := models.ConfirmationCode{ID: uuid.New(), UserID: u.ID}
@@ -287,9 +267,7 @@ func (s *UserRepositoryTestSuite) TestUpdatePassword() {
 		s.Require().NoError(err)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestUpdatePassword_Error() {
 	s.Run("should return an error when updating the password fails", func() {
 		userID := uuid.New()
 
@@ -314,9 +292,7 @@ func (s *UserRepositoryTestSuite) TestActivateUser() {
 		s.Require().NoError(err)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestActivateUser_Error() {
 	s.Run("should return an error when activating the user fails", func() {
 		userID := uuid.New()
 
@@ -345,9 +321,7 @@ func (s *UserRepositoryTestSuite) TestSaveConfirmationCode() {
 		s.Require().NoError(err)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestSaveConfirmationCode_Error() {
 	s.Run("should return an error when saving the confirmation code fails", func() {
 		code := models.ConfirmationCode{ID: uuid.New(), UserID: uuid.New()}
 
@@ -360,7 +334,7 @@ func (s *UserRepositoryTestSuite) TestSaveConfirmationCode_Error() {
 	})
 }
 
-func (s *UserRepositoryTestSuite) TestGetConfirmationCode_Found() {
+func (s *UserRepositoryTestSuite) TestGetConfirmationCode() {
 	s.Run("should return the confirmation code when found", func() {
 		userID := uuid.New()
 		id := uuid.New()
@@ -380,9 +354,7 @@ func (s *UserRepositoryTestSuite) TestGetConfirmationCode_Found() {
 		s.Equal(id, cc.ID)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestGetConfirmationCode_NotFound() {
 	s.Run("should return nil when no confirmation code is found", func() {
 		userID := uuid.New()
 
@@ -395,9 +367,7 @@ func (s *UserRepositoryTestSuite) TestGetConfirmationCode_NotFound() {
 		s.Require().NoError(err)
 		s.Nil(cc)
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestGetConfirmationCode_Error() {
 	s.Run("should return an error when the query fails", func() {
 		userID := uuid.New()
 
@@ -424,9 +394,7 @@ func (s *UserRepositoryTestSuite) TestMarkConfirmationCodeUsed() {
 		s.Require().NoError(err)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestMarkConfirmationCodeUsed_Error() {
 	s.Run("should return an error when marking the confirmation code as used fails", func() {
 		codeID := uuid.New()
 
@@ -457,9 +425,7 @@ func (s *UserRepositoryTestSuite) TestSaveRefreshToken() {
 		s.Require().NoError(err)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestSaveRefreshToken_Error() {
 	s.Run("should return an error when saving the refresh token fails", func() {
 		rt := models.RefreshToken{
 			ID:        uuid.New(),
@@ -477,7 +443,7 @@ func (s *UserRepositoryTestSuite) TestSaveRefreshToken_Error() {
 	})
 }
 
-func (s *UserRepositoryTestSuite) TestGetRefreshToken_Found() {
+func (s *UserRepositoryTestSuite) TestGetRefreshToken() {
 	s.Run("should return the refresh token when found", func() {
 		id := uuid.New()
 		userID := uuid.New()
@@ -501,9 +467,7 @@ func (s *UserRepositoryTestSuite) TestGetRefreshToken_Found() {
 		s.Equal(familyID, rt.FamilyID)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestGetRefreshToken_NotFound() {
 	s.Run("should return nil when no refresh token is found", func() {
 		id := uuid.New()
 
@@ -517,9 +481,7 @@ func (s *UserRepositoryTestSuite) TestGetRefreshToken_NotFound() {
 		s.Nil(rt)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestGetRefreshToken_Error() {
 	s.Run("should return an error when the query fails", func() {
 		id := uuid.New()
 
@@ -546,9 +508,7 @@ func (s *UserRepositoryTestSuite) TestMarkRefreshTokenUsed() {
 		s.Require().NoError(err)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestMarkRefreshTokenUsed_Error() {
 	s.Run("should return an error when marking the refresh token as used fails", func() {
 		id := uuid.New()
 
@@ -573,9 +533,7 @@ func (s *UserRepositoryTestSuite) TestRevokeRefreshTokenFamily() {
 		s.Require().NoError(err)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
-}
 
-func (s *UserRepositoryTestSuite) TestRevokeRefreshTokenFamily_Error() {
 	s.Run("should return an error when revoking the refresh token family fails", func() {
 		familyID := uuid.New()
 

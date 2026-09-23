@@ -16,16 +16,6 @@ func TestUserDomain(t *testing.T) {
 	suite.Run(t, new(UserDomainTestSuite))
 }
 
-func validParams() user.CreateUserParams {
-	return user.CreateUserParams{
-		Name:     "  Jane  ",
-		Surname:  "  Doe  ",
-		Email:    "  Jane@Example.com  ",
-		Password: "hashed",
-		Active:   false,
-	}
-}
-
 func (s *UserDomainTestSuite) TestCreateFromInput_Success() {
 	s.Run("should create a user from valid input, trimming whitespace and lowercasing the email", func() {
 		created, err := user.CreateFromInput(validParams())
@@ -38,9 +28,7 @@ func (s *UserDomainTestSuite) TestCreateFromInput_Success() {
 		s.False(created.Active)
 		s.WithinDuration(created.CreatedAt, created.UpdatedAt, 0)
 	})
-}
 
-func (s *UserDomainTestSuite) TestCreateFromInput_MissingName() {
 	s.Run("should return an error when name is missing", func() {
 		params := validParams()
 		params.Name = "   "
@@ -49,9 +37,7 @@ func (s *UserDomainTestSuite) TestCreateFromInput_MissingName() {
 
 		s.Require().EqualError(err, "name is required")
 	})
-}
 
-func (s *UserDomainTestSuite) TestCreateFromInput_MissingSurname() {
 	s.Run("should return an error when surname is missing", func() {
 		params := validParams()
 		params.Surname = ""
@@ -60,9 +46,7 @@ func (s *UserDomainTestSuite) TestCreateFromInput_MissingSurname() {
 
 		s.Require().EqualError(err, "surname is required")
 	})
-}
 
-func (s *UserDomainTestSuite) TestCreateFromInput_MissingEmail() {
 	s.Run("should return an error when email is missing", func() {
 		params := validParams()
 		params.Email = ""
@@ -71,9 +55,7 @@ func (s *UserDomainTestSuite) TestCreateFromInput_MissingEmail() {
 
 		s.Require().EqualError(err, "email is required")
 	})
-}
 
-func (s *UserDomainTestSuite) TestCreateFromInput_MissingPassword() {
 	s.Run("should return an error when password is missing", func() {
 		params := validParams()
 		params.Password = ""
@@ -82,4 +64,14 @@ func (s *UserDomainTestSuite) TestCreateFromInput_MissingPassword() {
 
 		s.Require().EqualError(err, "password is required")
 	})
+}
+
+func validParams() user.CreateUserParams {
+	return user.CreateUserParams{
+		Name:     "  Jane  ",
+		Surname:  "  Doe  ",
+		Email:    "  Jane@Example.com  ",
+		Password: "hashed",
+		Active:   false,
+	}
 }
