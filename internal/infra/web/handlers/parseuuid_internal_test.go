@@ -6,9 +6,6 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// The exported handlers always validate the "uuid" struct tag before calling
-// parseUUID, so its error branch is unreachable through the public HTTP API.
-// It is exercised directly here as a defensive-code safety net.
 type ParseUUIDTestSuite struct {
 	suite.Suite
 }

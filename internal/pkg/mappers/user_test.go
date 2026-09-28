@@ -85,11 +85,7 @@ func (s *MappersUserTestSuite) TestUserDomainToModel() {
 		s.Equal(u.CreatedAt, got.CreatedAt)
 		s.Equal(u.UpdatedAt, got.UpdatedAt)
 	})
-}
 
-// Nil roles must marshal to a non-nil empty slice, not SQL NULL, to satisfy the
-// roles NOT NULL constraint.
-func (s *MappersUserTestSuite) TestUserDomainToModel_NilRolesBecomeEmptySlice() {
 	s.Run("should map nil roles to an empty slice instead of null", func() {
 		u := user.User{Roles: nil}
 

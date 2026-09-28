@@ -17,7 +17,7 @@ func TestPassword(t *testing.T) {
 	suite.Run(t, new(PasswordTestSuite))
 }
 
-func (s *PasswordTestSuite) TestPassword_HashAndVerify() {
+func (s *PasswordTestSuite) TestPassword() {
 	s.Run("should hash a password and successfully verify it", func() {
 		pw := bcrypt.NewPassword()
 
@@ -28,9 +28,7 @@ func (s *PasswordTestSuite) TestPassword_HashAndVerify() {
 
 		s.Require().NoError(pw.Verify("s3cr3t-password", *hash))
 	})
-}
 
-func (s *PasswordTestSuite) TestPassword_VerifyRejectsWrongPassword() {
 	s.Run("should reject verification with a wrong password", func() {
 		pw := bcrypt.NewPassword()
 
@@ -39,9 +37,7 @@ func (s *PasswordTestSuite) TestPassword_VerifyRejectsWrongPassword() {
 
 		s.Require().Error(pw.Verify("wrong-password", *hash))
 	})
-}
 
-func (s *PasswordTestSuite) TestPassword_HashRejectsOverlongPassword() {
 	s.Run("should reject hashing a password longer than bcrypt's 72 byte limit", func() {
 		pw := bcrypt.NewPassword()
 

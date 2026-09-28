@@ -62,12 +62,35 @@ func (s *AuthHandlerTestSuite) SetupTest() {
 	})
 }
 
+func (s *AuthHandlerTestSuite) cleanMocks() {
+	s.signInMock.ExpectedCalls = nil
+	s.signInMock.Calls = nil
+	s.signUpMock.ExpectedCalls = nil
+	s.signUpMock.Calls = nil
+	s.refreshTokenMock.ExpectedCalls = nil
+	s.refreshTokenMock.Calls = nil
+	s.confirmAccountMock.ExpectedCalls = nil
+	s.confirmAccountMock.Calls = nil
+	s.resendMock.ExpectedCalls = nil
+	s.resendMock.Calls = nil
+	s.meMock.ExpectedCalls = nil
+	s.meMock.Calls = nil
+	s.setRecoveryCodeMock.ExpectedCalls = nil
+	s.setRecoveryCodeMock.Calls = nil
+	s.validateRecoveryCodeMock.ExpectedCalls = nil
+	s.validateRecoveryCodeMock.Calls = nil
+	s.updatePasswordMock.ExpectedCalls = nil
+	s.updatePasswordMock.Calls = nil
+}
+
 func TestAuthHandler(t *testing.T) {
 	suite.Run(t, new(AuthHandlerTestSuite))
 }
 
-func (s *AuthHandlerTestSuite) TestSignIn_Success() {
+func (s *AuthHandlerTestSuite) TestSignIn() {
 	s.Run("should return an access and refresh token pair on successful sign in", func() {
+		defer s.cleanMocks()
+
 		s.signInMock.On("Execute", mock.Anything, "jane@example.com", "secret123").
 			Return(&auth.TokenPair{AccessToken: "at", RefreshToken: "rt"}, nil)
 
@@ -85,11 +108,10 @@ func (s *AuthHandlerTestSuite) TestSignIn_Success() {
 		s.Equal("rt", out.RefreshToken)
 		s.signInMock.AssertExpectations(s.T())
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestSignIn_ValidationError() {
 	s.Run("should return bad request when the sign in payload fails validation", func() {
-		// Missing password fails struct validation before the use case is invoked.
+		defer s.cleanMocks()
+
 		body := `{"email":"jane@example.com"}`
 		req := httptest.NewRequest(http.MethodPost, "/v1/auth/signin", strings.NewReader(body))
 		rec := httptest.NewRecorder()
@@ -99,10 +121,10 @@ func (s *AuthHandlerTestSuite) TestSignIn_ValidationError() {
 		s.Equal(http.StatusBadRequest, rec.Code)
 		s.signInMock.AssertNotCalled(s.T(), "Execute", mock.Anything, mock.Anything, mock.Anything)
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestSignIn_MalformedJSON() {
 	s.Run("should return bad request when the request body is malformed json", func() {
+		defer s.cleanMocks()
+
 		req := httptest.NewRequest(http.MethodPost, "/v1/auth/signin", strings.NewReader("{"))
 		rec := httptest.NewRecorder()
 
@@ -111,10 +133,10 @@ func (s *AuthHandlerTestSuite) TestSignIn_MalformedJSON() {
 		s.Equal(http.StatusBadRequest, rec.Code)
 		s.signInMock.AssertNotCalled(s.T(), "Execute", mock.Anything, mock.Anything, mock.Anything)
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestSignIn_UseCaseError() {
 	s.Run("should return internal server error when the sign in use case fails", func() {
+		defer s.cleanMocks()
+
 		s.signInMock.On("Execute", mock.Anything, "jane@example.com", "secret123").
 			Return(nil, errors.New("invalid credentials"))
 
@@ -129,8 +151,10 @@ func (s *AuthHandlerTestSuite) TestSignIn_UseCaseError() {
 	})
 }
 
-func (s *AuthHandlerTestSuite) TestSignUp_Success() {
+func (s *AuthHandlerTestSuite) TestSignUp() {
 	s.Run("should create a new user and return its id and email on successful sign up", func() {
+		defer s.cleanMocks()
+
 		created := &user.User{ID: uuid.New(), Name: "Jane", Surname: "Doe", Email: "jane@example.com", Active: false}
 		s.signUpMock.On("Execute", mock.Anything, mock.AnythingOfType("auth.SignUpInput")).Return(created, nil)
 
@@ -148,10 +172,10 @@ func (s *AuthHandlerTestSuite) TestSignUp_Success() {
 		s.Equal(created.Email, out.Email)
 		s.signUpMock.AssertExpectations(s.T())
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestSignUp_ValidationError() {
 	s.Run("should return bad request when the sign up payload fails validation", func() {
+		defer s.cleanMocks()
+
 		body := `{"name":"Jane"}`
 		req := httptest.NewRequest(http.MethodPost, "/v1/auth/signup", strings.NewReader(body))
 		rec := httptest.NewRecorder()
@@ -161,10 +185,10 @@ func (s *AuthHandlerTestSuite) TestSignUp_ValidationError() {
 		s.Equal(http.StatusBadRequest, rec.Code)
 		s.signUpMock.AssertNotCalled(s.T(), "Execute", mock.Anything, mock.Anything)
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestSignUp_UseCaseError() {
 	s.Run("should return internal server error when the sign up use case fails", func() {
+		defer s.cleanMocks()
+
 		s.signUpMock.On("Execute", mock.Anything, mock.AnythingOfType("auth.SignUpInput")).
 			Return(nil, errors.New("user already exists"))
 
@@ -179,8 +203,10 @@ func (s *AuthHandlerTestSuite) TestSignUp_UseCaseError() {
 	})
 }
 
-func (s *AuthHandlerTestSuite) TestRefreshToken_Success() {
+func (s *AuthHandlerTestSuite) TestRefreshToken() {
 	s.Run("should return a new token pair on successful refresh", func() {
+		defer s.cleanMocks()
+
 		s.refreshTokenMock.On("Execute", mock.Anything, "old-refresh-token").
 			Return(&auth.TokenPair{AccessToken: "at", RefreshToken: "rt"}, nil)
 
@@ -197,10 +223,10 @@ func (s *AuthHandlerTestSuite) TestRefreshToken_Success() {
 		s.Equal("at", out.AccessToken)
 		s.refreshTokenMock.AssertExpectations(s.T())
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestRefreshToken_ValidationError() {
 	s.Run("should return bad request when the refresh token payload fails validation", func() {
+		defer s.cleanMocks()
+
 		req := httptest.NewRequest(http.MethodPost, "/v1/auth/refresh-token", strings.NewReader(`{}`))
 		rec := httptest.NewRecorder()
 
@@ -209,10 +235,10 @@ func (s *AuthHandlerTestSuite) TestRefreshToken_ValidationError() {
 		s.Equal(http.StatusBadRequest, rec.Code)
 		s.refreshTokenMock.AssertNotCalled(s.T(), "Execute", mock.Anything, mock.Anything)
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestRefreshToken_UseCaseError() {
 	s.Run("should return internal server error when the refresh token use case fails", func() {
+		defer s.cleanMocks()
+
 		s.refreshTokenMock.On("Execute", mock.Anything, "bad-token").Return(nil, errors.New("unauthorized"))
 
 		body := `{"refresh_token":"bad-token"}`
@@ -226,8 +252,10 @@ func (s *AuthHandlerTestSuite) TestRefreshToken_UseCaseError() {
 	})
 }
 
-func (s *AuthHandlerTestSuite) TestConfirmAccount_Success() {
+func (s *AuthHandlerTestSuite) TestConfirmAccount() {
 	s.Run("should return no content on successful account confirmation", func() {
+		defer s.cleanMocks()
+
 		userID := uuid.New()
 		s.confirmAccountMock.On("Execute", mock.Anything, userID, "the-code").Return(nil)
 
@@ -240,10 +268,10 @@ func (s *AuthHandlerTestSuite) TestConfirmAccount_Success() {
 		s.Equal(http.StatusNoContent, rec.Code)
 		s.confirmAccountMock.AssertExpectations(s.T())
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestConfirmAccount_ValidationError() {
 	s.Run("should return bad request when the confirm account payload fails validation", func() {
+		defer s.cleanMocks()
+
 		req := httptest.NewRequest(http.MethodPost, "/v1/auth/confirm-account", strings.NewReader(`{}`))
 		rec := httptest.NewRecorder()
 
@@ -252,10 +280,10 @@ func (s *AuthHandlerTestSuite) TestConfirmAccount_ValidationError() {
 		s.Equal(http.StatusBadRequest, rec.Code)
 		s.confirmAccountMock.AssertNotCalled(s.T(), "Execute", mock.Anything, mock.Anything, mock.Anything)
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestConfirmAccount_InvalidUUID() {
 	s.Run("should return bad request when the user id is not a valid uuid", func() {
+		defer s.cleanMocks()
+
 		body := `{"user_id":"11111111-1111-1111-1111-11111111111","code":"the-code"}`
 		req := httptest.NewRequest(http.MethodPost, "/v1/auth/confirm-account", strings.NewReader(body))
 		rec := httptest.NewRecorder()
@@ -265,10 +293,10 @@ func (s *AuthHandlerTestSuite) TestConfirmAccount_InvalidUUID() {
 		s.Equal(http.StatusBadRequest, rec.Code)
 		s.confirmAccountMock.AssertNotCalled(s.T(), "Execute", mock.Anything, mock.Anything, mock.Anything)
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestConfirmAccount_UseCaseError() {
 	s.Run("should return internal server error when the confirm account use case fails", func() {
+		defer s.cleanMocks()
+
 		userID := uuid.New()
 		s.confirmAccountMock.On("Execute", mock.Anything, userID, "bad-code").Return(errors.New("invalid code"))
 
@@ -283,8 +311,10 @@ func (s *AuthHandlerTestSuite) TestConfirmAccount_UseCaseError() {
 	})
 }
 
-func (s *AuthHandlerTestSuite) TestResendConfirmationCode_Success() {
+func (s *AuthHandlerTestSuite) TestResendConfirmationCode() {
 	s.Run("should return no content on successful confirmation code resend", func() {
+		defer s.cleanMocks()
+
 		s.resendMock.On("Execute", mock.Anything, "jane@example.com").Return(nil)
 
 		body := `{"email":"jane@example.com"}`
@@ -296,10 +326,10 @@ func (s *AuthHandlerTestSuite) TestResendConfirmationCode_Success() {
 		s.Equal(http.StatusNoContent, rec.Code)
 		s.resendMock.AssertExpectations(s.T())
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestResendConfirmationCode_ValidationError() {
 	s.Run("should return bad request when the resend confirmation code payload fails validation", func() {
+		defer s.cleanMocks()
+
 		req := httptest.NewRequest(http.MethodPost, "/v1/auth/resend-confirmation-code", strings.NewReader(`{}`))
 		rec := httptest.NewRecorder()
 
@@ -308,10 +338,10 @@ func (s *AuthHandlerTestSuite) TestResendConfirmationCode_ValidationError() {
 		s.Equal(http.StatusBadRequest, rec.Code)
 		s.resendMock.AssertNotCalled(s.T(), "Execute", mock.Anything, mock.Anything)
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestResendConfirmationCode_UseCaseError() {
 	s.Run("should return internal server error when the resend confirmation code use case fails", func() {
+		defer s.cleanMocks()
+
 		s.resendMock.On("Execute", mock.Anything, "jane@example.com").Return(errors.New("boom"))
 
 		body := `{"email":"jane@example.com"}`
@@ -325,8 +355,10 @@ func (s *AuthHandlerTestSuite) TestResendConfirmationCode_UseCaseError() {
 	})
 }
 
-func (s *AuthHandlerTestSuite) TestMe_Success() {
+func (s *AuthHandlerTestSuite) TestMe() {
 	s.Run("should return the authenticated user's data", func() {
+		defer s.cleanMocks()
+
 		userID := uuid.New()
 		found := &user.User{ID: userID, Name: "Jane", Email: "jane@example.com"}
 		s.meMock.On("Execute", mock.Anything, userID).Return(found, nil)
@@ -344,10 +376,10 @@ func (s *AuthHandlerTestSuite) TestMe_Success() {
 		s.Equal(userID.String(), out.ID)
 		s.meMock.AssertExpectations(s.T())
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestMe_MissingUserInContext() {
 	s.Run("should return unauthorized when there is no user id in the request context", func() {
+		defer s.cleanMocks()
+
 		req := httptest.NewRequest(http.MethodGet, "/v1/auth/me", nil)
 		rec := httptest.NewRecorder()
 
@@ -356,10 +388,10 @@ func (s *AuthHandlerTestSuite) TestMe_MissingUserInContext() {
 		s.Equal(http.StatusUnauthorized, rec.Code)
 		s.meMock.AssertNotCalled(s.T(), "Execute", mock.Anything, mock.Anything)
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestMe_UseCaseError() {
 	s.Run("should return internal server error when the me use case fails", func() {
+		defer s.cleanMocks()
+
 		userID := uuid.New()
 		s.meMock.On("Execute", mock.Anything, userID).Return(nil, errors.New("not found"))
 
@@ -374,8 +406,10 @@ func (s *AuthHandlerTestSuite) TestMe_UseCaseError() {
 	})
 }
 
-func (s *AuthHandlerTestSuite) TestSetRecoveryCode_Success() {
+func (s *AuthHandlerTestSuite) TestSetRecoveryCode() {
 	s.Run("should return no content on successful recovery code creation", func() {
+		defer s.cleanMocks()
+
 		s.setRecoveryCodeMock.On("Execute", mock.Anything, "jane@example.com").Return(nil)
 
 		body := `{"email":"jane@example.com"}`
@@ -387,10 +421,10 @@ func (s *AuthHandlerTestSuite) TestSetRecoveryCode_Success() {
 		s.Equal(http.StatusNoContent, rec.Code)
 		s.setRecoveryCodeMock.AssertExpectations(s.T())
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestSetRecoveryCode_ValidationError() {
 	s.Run("should return bad request when the set recovery code payload fails validation", func() {
+		defer s.cleanMocks()
+
 		req := httptest.NewRequest(http.MethodPost, "/v1/auth/recovery-code", strings.NewReader(`{}`))
 		rec := httptest.NewRecorder()
 
@@ -399,10 +433,10 @@ func (s *AuthHandlerTestSuite) TestSetRecoveryCode_ValidationError() {
 		s.Equal(http.StatusBadRequest, rec.Code)
 		s.setRecoveryCodeMock.AssertNotCalled(s.T(), "Execute", mock.Anything, mock.Anything)
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestSetRecoveryCode_UseCaseError() {
 	s.Run("should return internal server error when the set recovery code use case fails", func() {
+		defer s.cleanMocks()
+
 		s.setRecoveryCodeMock.On("Execute", mock.Anything, "jane@example.com").Return(errors.New("boom"))
 
 		body := `{"email":"jane@example.com"}`
@@ -416,8 +450,10 @@ func (s *AuthHandlerTestSuite) TestSetRecoveryCode_UseCaseError() {
 	})
 }
 
-func (s *AuthHandlerTestSuite) TestValidateRecoveryCode_Success() {
+func (s *AuthHandlerTestSuite) TestValidateRecoveryCode() {
 	s.Run("should return no content on successful recovery code validation", func() {
+		defer s.cleanMocks()
+
 		userID := uuid.New()
 		s.validateRecoveryCodeMock.On("Execute", mock.Anything, userID, "the-code").Return(nil)
 
@@ -430,10 +466,10 @@ func (s *AuthHandlerTestSuite) TestValidateRecoveryCode_Success() {
 		s.Equal(http.StatusNoContent, rec.Code)
 		s.validateRecoveryCodeMock.AssertExpectations(s.T())
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestValidateRecoveryCode_ValidationError() {
 	s.Run("should return bad request when the validate recovery code payload fails validation", func() {
+		defer s.cleanMocks()
+
 		req := httptest.NewRequest(http.MethodPost, "/v1/auth/recovery-code/validate", strings.NewReader(`{}`))
 		rec := httptest.NewRecorder()
 
@@ -442,10 +478,10 @@ func (s *AuthHandlerTestSuite) TestValidateRecoveryCode_ValidationError() {
 		s.Equal(http.StatusBadRequest, rec.Code)
 		s.validateRecoveryCodeMock.AssertNotCalled(s.T(), "Execute", mock.Anything, mock.Anything, mock.Anything)
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestValidateRecoveryCode_InvalidUUID() {
 	s.Run("should return bad request when the user id is not a valid uuid", func() {
+		defer s.cleanMocks()
+
 		body := `{"user_id":"not-a-uuid","code":"the-code"}`
 		req := httptest.NewRequest(http.MethodPost, "/v1/auth/recovery-code/validate", strings.NewReader(body))
 		rec := httptest.NewRecorder()
@@ -455,10 +491,10 @@ func (s *AuthHandlerTestSuite) TestValidateRecoveryCode_InvalidUUID() {
 		s.Equal(http.StatusBadRequest, rec.Code)
 		s.validateRecoveryCodeMock.AssertNotCalled(s.T(), "Execute", mock.Anything, mock.Anything, mock.Anything)
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestValidateRecoveryCode_UseCaseError() {
 	s.Run("should return internal server error when the validate recovery code use case fails", func() {
+		defer s.cleanMocks()
+
 		userID := uuid.New()
 		s.validateRecoveryCodeMock.On("Execute", mock.Anything, userID, "bad-code").Return(errors.New("boom"))
 
@@ -473,8 +509,10 @@ func (s *AuthHandlerTestSuite) TestValidateRecoveryCode_UseCaseError() {
 	})
 }
 
-func (s *AuthHandlerTestSuite) TestUpdatePassword_Success() {
+func (s *AuthHandlerTestSuite) TestUpdatePassword() {
 	s.Run("should return no content on successful password update", func() {
+		defer s.cleanMocks()
+
 		userID := uuid.New()
 		s.updatePasswordMock.On("Execute", mock.Anything, userID, "the-code", "new-password123").Return(nil)
 
@@ -487,10 +525,10 @@ func (s *AuthHandlerTestSuite) TestUpdatePassword_Success() {
 		s.Equal(http.StatusNoContent, rec.Code)
 		s.updatePasswordMock.AssertExpectations(s.T())
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestUpdatePassword_ValidationError() {
 	s.Run("should return bad request when the update password payload fails validation", func() {
+		defer s.cleanMocks()
+
 		req := httptest.NewRequest(http.MethodPut, "/v1/auth/password", strings.NewReader(`{}`))
 		rec := httptest.NewRecorder()
 
@@ -499,10 +537,10 @@ func (s *AuthHandlerTestSuite) TestUpdatePassword_ValidationError() {
 		s.Equal(http.StatusBadRequest, rec.Code)
 		s.updatePasswordMock.AssertNotCalled(s.T(), "Execute", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestUpdatePassword_InvalidUUID() {
 	s.Run("should return bad request when the user id is not a valid uuid", func() {
+		defer s.cleanMocks()
+
 		body := `{"user_id":"not-a-uuid","code":"the-code","new_password":"new-password123"}`
 		req := httptest.NewRequest(http.MethodPut, "/v1/auth/password", strings.NewReader(body))
 		rec := httptest.NewRecorder()
@@ -512,10 +550,10 @@ func (s *AuthHandlerTestSuite) TestUpdatePassword_InvalidUUID() {
 		s.Equal(http.StatusBadRequest, rec.Code)
 		s.updatePasswordMock.AssertNotCalled(s.T(), "Execute", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 	})
-}
 
-func (s *AuthHandlerTestSuite) TestUpdatePassword_UseCaseError() {
 	s.Run("should return internal server error when the update password use case fails", func() {
+		defer s.cleanMocks()
+
 		userID := uuid.New()
 		s.updatePasswordMock.On("Execute", mock.Anything, userID, "the-code", "new-password123").
 			Return(errors.New("boom"))

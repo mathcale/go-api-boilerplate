@@ -18,7 +18,7 @@ func TestWebContext(t *testing.T) {
 	suite.Run(t, new(WebContextTestSuite))
 }
 
-func (s *WebContextTestSuite) TestUserIDContext() {
+func (s *WebContextTestSuite) TestUserIDFromContext() {
 	s.Run("should store and retrieve the user id from context", func() {
 		userID := uuid.New()
 		ctx := webcontext.WithUserID(context.Background(), userID)
@@ -28,9 +28,7 @@ func (s *WebContextTestSuite) TestUserIDContext() {
 		s.True(ok)
 		s.Equal(userID, got)
 	})
-}
 
-func (s *WebContextTestSuite) TestUserIDFromContext_Missing() {
 	s.Run("should return false and a nil uuid when the user id is not in context", func() {
 		got, ok := webcontext.UserIDFromContext(context.Background())
 
@@ -49,9 +47,7 @@ func (s *WebContextTestSuite) TestRolesContext() {
 		s.True(ok)
 		s.Equal(roles, got)
 	})
-}
 
-func (s *WebContextTestSuite) TestRolesFromContext_Missing() {
 	s.Run("should return false and nil when roles are not in context", func() {
 		got, ok := webcontext.RolesFromContext(context.Background())
 
@@ -69,9 +65,7 @@ func (s *WebContextTestSuite) TestCorrelationIDContext() {
 		s.True(ok)
 		s.Equal("correlation-123", got)
 	})
-}
 
-func (s *WebContextTestSuite) TestCorrelationIDFromContext_Missing() {
 	s.Run("should return false and an empty string when the correlation id is not in context", func() {
 		got, ok := webcontext.CorrelationIDFromContext(context.Background())
 
