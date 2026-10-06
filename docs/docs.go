@@ -46,7 +46,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorOutput"
+                            "$ref": "#/definitions/response.ErrorOutput"
                         }
                     }
                 }
@@ -77,7 +77,7 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorOutput"
+                            "$ref": "#/definitions/response.ErrorOutput"
                         }
                     }
                 }
@@ -114,7 +114,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorOutput"
+                            "$ref": "#/definitions/response.ErrorOutput"
                         }
                     }
                 }
@@ -182,7 +182,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorOutput"
+                            "$ref": "#/definitions/response.ErrorOutput"
                         }
                     }
                 }
@@ -222,7 +222,7 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorOutput"
+                            "$ref": "#/definitions/response.ErrorOutput"
                         }
                     }
                 }
@@ -293,13 +293,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorOutput"
+                            "$ref": "#/definitions/response.ErrorOutput"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorOutput"
+                            "$ref": "#/definitions/response.ErrorOutput"
                         }
                     }
                 }
@@ -339,13 +339,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorOutput"
+                            "$ref": "#/definitions/response.ErrorOutput"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorOutput"
+                            "$ref": "#/definitions/response.ErrorOutput"
                         }
                     }
                 }
@@ -370,7 +370,8 @@ const docTemplate = `{
                 "E1007",
                 "E1008",
                 "E1009",
-                "E1010"
+                "E1010",
+                "E1011"
             ],
             "x-enum-varnames": [
                 "BE0000_UNKNOWN_ERROR",
@@ -387,7 +388,8 @@ const docTemplate = `{
                 "BE1007_CONFIRMATION_CODE_EXPIRED",
                 "BE1008_ACCOUNT_ALREADY_CONFIRMED",
                 "BE1009_ACCOUNT_NOT_CONFIRMED",
-                "BE1010_INVALID_CREDENTIALS"
+                "BE1010_INVALID_CREDENTIALS",
+                "BE1011_REFRESH_TOKEN_REUSE_DETECTED"
             ]
         },
         "dto.ConfirmAccountInput": {
@@ -401,20 +403,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.ErrorOutput": {
-            "type": "object",
-            "properties": {
-                "cause": {
-                    "type": "string"
-                },
-                "code": {
-                    "$ref": "#/definitions/apperror.BusinessCode"
-                },
-                "message": {
                     "type": "string"
                 }
             }
@@ -585,6 +573,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.ErrorOutput": {
+            "type": "object",
+            "properties": {
+                "cause": {
+                    "type": "string"
+                },
+                "code": {
+                    "$ref": "#/definitions/apperror.BusinessCode"
+                },
+                "message": {
                     "type": "string"
                 }
             }
