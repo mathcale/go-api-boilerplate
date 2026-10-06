@@ -22,6 +22,7 @@ linters:
     - unconvert    # Remove unnecessary type conversions
     - unparam      # Find unused function parameters
     - testifylint  # Testify linter
+    - depguard     # Enforce module dependency boundaries
 
   disable:
     - err113
@@ -52,6 +53,16 @@ linters:
       disable:
         - suite-dont-use-pkg
 
+    depguard:
+      rules:
+        core-no-modules:
+          list-mode: lax
+          files:
+            - "**/internal/core/**"
+          deny:
+            - pkg: github.com/mathcale/go-api-boilerplate/internal/modules
+              desc: internal/core must not depend on feature modules
+
   exclusions:
     generated: strict
     rules:
@@ -75,7 +86,7 @@ linters:
         linters:
           - lll
 
-      - path: 'internal/infra/gateways/(.+)/repository\.go'
+      - path: 'internal/modules/(.+)/internal/repository/repository\.go'
         linters:
           - lll
           - gosec

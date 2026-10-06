@@ -23,7 +23,11 @@ type refreshTokenUseCase struct {
 	gateway gateway.Gateway
 }
 
-func NewRefreshTokenUseCase(l logger.Logger, j jwt.JWTAuth, gw gateway.Gateway) RefreshTokenUseCase {
+func NewRefreshTokenUseCase(
+	l logger.Logger,
+	j jwt.JWTAuth,
+	gw gateway.Gateway,
+) RefreshTokenUseCase {
 	return &refreshTokenUseCase{
 		logger:  l,
 		jwtAuth: j,

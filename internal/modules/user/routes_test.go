@@ -17,10 +17,12 @@ import (
 )
 
 func TestModule_Routes(t *testing.T) {
-	sqlDB, _, err := sqlmock.New()
+	sqlDB, dbMock, err := sqlmock.New()
 	require.NoError(t, err)
 
-	defer sqlDB.Close()
+	dbMock.ExpectClose()
+
+	t.Cleanup(func() { require.NoError(t, sqlDB.Close()) })
 
 	mod, err := user.New(&core.Container{
 		Config: &config.Config{},

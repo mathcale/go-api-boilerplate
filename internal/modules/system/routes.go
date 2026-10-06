@@ -16,7 +16,8 @@ func (m *Module) Routes() []module.Route {
 			Handler:     m.ping.Handle,
 		},
 		{
-			// FIXME: Demo of role-based access control where only users whose JWT carries the "admin" role may reach this route
+			// FIXME: Demo of role-based access control where only users whose JWT
+			// carries the "admin" role may reach this route
 			Method:        http.MethodGet,
 			Path:          "/v1/admin/ping",
 			Protected:     module.Protected,

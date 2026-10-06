@@ -22,7 +22,10 @@ type (
 	}
 )
 
-func NewValidateRecoveryCodeUseCase(l logger.Logger, gw gateway.Gateway) ValidateRecoveryCodeUseCase {
+func NewValidateRecoveryCodeUseCase(
+	l logger.Logger,
+	gw gateway.Gateway,
+) ValidateRecoveryCodeUseCase {
 	return &validateRecoveryCodeUseCase{
 		logger:  l,
 		gateway: gw,

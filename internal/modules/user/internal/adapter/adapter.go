@@ -34,11 +34,18 @@ func New(
 	}
 }
 
-func (g *userGateway) UserExistsIncludingInactive(ctx context.Context, email string) (*bool, error) {
+func (g *userGateway) UserExistsIncludingInactive(
+	ctx context.Context,
+	email string,
+) (*bool, error) {
 	return g.repo.ExistsIncludingInactive(ctx, email)
 }
 
-func (g *userGateway) SaveUser(ctx context.Context, u domain.User, code domain.ConfirmationCode) error {
+func (g *userGateway) SaveUser(
+	ctx context.Context,
+	u domain.User,
+	code domain.ConfirmationCode,
+) error {
 	return g.repo.Save(
 		ctx,
 		mappers.UserDomainToModel(u),
@@ -91,7 +98,10 @@ func (g *userGateway) ActivateUser(ctx context.Context, userID uuid.UUID) error 
 	return g.repo.ActivateUser(ctx, userID)
 }
 
-func (g *userGateway) SaveConfirmationCode(ctx context.Context, code domain.ConfirmationCode) error {
+func (g *userGateway) SaveConfirmationCode(
+	ctx context.Context,
+	code domain.ConfirmationCode,
+) error {
 	return g.repo.SaveConfirmationCode(ctx, mappers.ConfirmationCodeDomainToModel(code))
 }
 

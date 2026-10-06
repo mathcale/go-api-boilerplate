@@ -31,7 +31,10 @@ type SignUpUseCase struct {
 	mock.Mock
 }
 
-func (m *SignUpUseCase) Execute(ctx context.Context, input usecases.SignUpInput) (*domain.User, error) {
+func (m *SignUpUseCase) Execute(
+	ctx context.Context,
+	input usecases.SignUpInput,
+) (*domain.User, error) {
 	args := m.Called(ctx, input)
 
 	if args.Get(0) == nil {
