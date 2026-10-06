@@ -2,21 +2,15 @@ package di
 
 import (
 	"context"
-	"strings"
+	"net/http"
 
-	"github.com/jmoiron/sqlx"
-
-	"github.com/mathcale/go-api-boilerplate/internal/core/bcrypt"
+	"github.com/mathcale/go-api-boilerplate/internal/core"
 	"github.com/mathcale/go-api-boilerplate/internal/core/config"
-	"github.com/mathcale/go-api-boilerplate/internal/core/database"
-	"github.com/mathcale/go-api-boilerplate/internal/core/email/clients"
-	"github.com/mathcale/go-api-boilerplate/internal/core/jwt"
-	"github.com/mathcale/go-api-boilerplate/internal/core/logger"
-	"github.com/mathcale/go-api-boilerplate/internal/core/middlewares"
-	"github.com/mathcale/go-api-boilerplate/internal/core/response"
+	"github.com/mathcale/go-api-boilerplate/internal/core/httpserver"
+	"github.com/mathcale/go-api-boilerplate/internal/core/module"
 	usergateway "github.com/mathcale/go-api-boilerplate/internal/infra/gateways/user"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
+	"github.com/mathcale/go-api-boilerplate/internal/modules/system"
 	"github.com/mathcale/go-api-boilerplate/internal/usecases/auth"
 )
 
@@ -27,11 +21,15 @@ type (
 
 	Dependencies struct {
 		Context   context.Context
-		WebServer web.Server
+		WebServer httpserver.Server
 	}
 
 	dependencyInjector struct {
 		config *config.Config
+	}
+
+	legacyUserModule struct {
+		handler handlers.AuthHandler
 	}
 )
 
@@ -42,95 +40,35 @@ func NewDependencyInjector(cfg *config.Config) DependencyInjector {
 }
 
 func (di *dependencyInjector) Inject(ctx context.Context) (*Dependencies, error) {
-	isProd := di.config.Environment == config.EnvironmentProduction
-
-	// General
-	log := logger.NewLogger(di.config.LogLevel, isProd)
-	password := bcrypt.NewPassword()
-
-	jwtAuth := jwt.NewJWTAuth(
-		log,
-		[]byte(di.config.AccessTokenSecret),
-		[]byte(di.config.RefreshTokenSecret),
-		di.config.AccessTokenLifetimeMinutes,
-		di.config.RefreshTokenLifetimeMinutes,
-		di.config.TokenIssuer,
-		di.config.TokenAudience,
-	)
-
-	// Database
-	db, err := di.connectToDatabase(log)
+	c, err := core.Build(di.config)
 	if err != nil {
 		return nil, err
 	}
 
-	// Email
-	emailClient := clients.NewFake(
-		log,
-		di.config.MailerSenderName,
-		di.config.MailerSenderEmail,
-	)
-
-	// Repositories & gateways
-	userRepo := usergateway.NewUserRepository(db)
+	userRepo := usergateway.NewUserRepository(c.DB)
 
 	userGateway := usergateway.NewGateway(
 		userRepo,
-		emailClient,
+		c.Email,
 		di.config.AccountConfirmationBaseURL,
 		di.config.PasswordRecoveryBaseURL,
 	)
 
-	// Use-cases
 	authUseCases := handlers.AuthUseCases{
-		SignUp:               auth.NewSignUpUseCase(log, userGateway, password),
-		SignIn:               auth.NewSignInUseCase(log, userGateway, password, jwtAuth),
-		RefreshToken:         auth.NewRefreshTokenUseCase(log, jwtAuth, userGateway),
-		ConfirmAccount:       auth.NewConfirmAccountUseCase(log, userGateway),
-		ResendConfirmation:   auth.NewResendConfirmationCodeUseCase(log, userGateway),
-		Me:                   auth.NewMeUseCase(log, userGateway),
-		SetRecoveryCode:      auth.NewSetRecoveryCodeUseCase(log, userGateway),
-		ValidateRecoveryCode: auth.NewValidateRecoveryCodeUseCase(log, userGateway),
-		UpdatePassword:       auth.NewUpdatePasswordUseCase(log, userGateway, password),
+		SignUp:               auth.NewSignUpUseCase(c.Logger, userGateway, c.Bcrypt),
+		SignIn:               auth.NewSignInUseCase(c.Logger, userGateway, c.Bcrypt, c.JWT),
+		RefreshToken:         auth.NewRefreshTokenUseCase(c.Logger, c.JWT, userGateway),
+		ConfirmAccount:       auth.NewConfirmAccountUseCase(c.Logger, userGateway),
+		ResendConfirmation:   auth.NewResendConfirmationCodeUseCase(c.Logger, userGateway),
+		Me:                   auth.NewMeUseCase(c.Logger, userGateway),
+		SetRecoveryCode:      auth.NewSetRecoveryCodeUseCase(c.Logger, userGateway),
+		ValidateRecoveryCode: auth.NewValidateRecoveryCodeUseCase(c.Logger, userGateway),
+		UpdatePassword:       auth.NewUpdatePasswordUseCase(c.Logger, userGateway, c.Bcrypt),
 	}
 
-	// Handlers
-	rh := response.NewResponse(log, di.config.Environment)
+	legacy := &legacyUserModule{handler: handlers.NewAuthHandler(c.Response, authUseCases)}
 
-	pingHandler := handlers.NewPingHandler(rh)
-	authHandler := handlers.NewAuthHandler(rh, authUseCases)
-
-	// Middlewares
-	securityHeadersMiddleware := middlewares.NewSecurityHeadersMiddleware()
-	corsMiddleware := middlewares.NewCORSMiddleware(di.corsAllowedOrigins())
-	correlationIDMiddleware := middlewares.NewCorrelationIDMiddleware(log)
-	loggingMiddleware := middlewares.NewLoggingMiddleware(log)
-	authMiddleware := middlewares.NewAuthMiddleware(jwtAuth, rh)
-	rateLimitMiddleware := middlewares.NewRateLimitMiddleware(
-		di.config.RateLimitRequestsPerMinute,
-		di.config.RateLimitBurst,
-		rh,
-	)
-
-	globalMiddlewares := web.NewMiddlewaresResolver(
-		securityHeadersMiddleware,
-		corsMiddleware,
-		correlationIDMiddleware,
-		loggingMiddleware,
-	).Resolve()
-
-	// Web server setup
-	routes := web.NewRouter(pingHandler, authHandler).Handlers()
-
-	webServer := web.NewServer(
-		log,
-		di.config.WebServerPort,
-		rh,
-		routes,
-		globalMiddlewares,
-		authMiddleware,
-		rateLimitMiddleware,
-	)
+	webServer := httpserver.New(c, core.CollectRoutes(system.New(c), legacy))
 
 	return &Dependencies{
 		Context:   ctx,
@@ -138,34 +76,44 @@ func (di *dependencyInjector) Inject(ctx context.Context) (*Dependencies, error)
 	}, nil
 }
 
-func (di *dependencyInjector) corsAllowedOrigins() []string {
-	raw := strings.TrimSpace(di.config.CORSAllowedOrigins)
-	if raw == "" {
-		return nil
-	}
-
-	origins := strings.Split(raw, ",")
-	for i := range origins {
-		origins[i] = strings.TrimSpace(origins[i])
-	}
-
-	return origins
+func (m *legacyUserModule) Name() string {
+	return "user"
 }
 
-func (di *dependencyInjector) connectToDatabase(l logger.Logger) (*sqlx.DB, error) {
-	db := database.NewDatabase(
-		l,
-		di.config.DatabaseHost,
-		di.config.DatabaseUser,
-		di.config.DatabasePassword,
-		di.config.DatabaseName,
-		di.config.DatabaseSSLMode,
-		di.config.DatabasePort,
-		di.config.DatabaseMaxOpenConns,
-		di.config.DatabaseMaxIdleConns,
-		di.config.DatabaseConnMaxLifetimeSecs,
-		di.config.DatabaseConnMaxIdleTimeSecs,
-	)
+func (m *legacyUserModule) Routes() []module.Route {
+	public := func(method, path string, h http.HandlerFunc) module.Route {
+		return module.Route{
+			Method:      method,
+			Path:        path,
+			Protected:   module.Public,
+			RateLimited: module.RateLimited,
+			Handler:     h,
+		}
+	}
 
-	return db.Connect()
+	return []module.Route{
+		public(http.MethodPost, "/v1/auth/signup", m.handler.SignUp),
+		public(http.MethodPost, "/v1/auth/signin", m.handler.SignIn),
+		public(http.MethodPost, "/v1/auth/refresh-token", m.handler.RefreshToken),
+		public(http.MethodPost, "/v1/auth/confirm-account", m.handler.ConfirmAccount),
+		public(
+			http.MethodPost,
+			"/v1/auth/resend-confirmation-code",
+			m.handler.ResendConfirmationCode,
+		),
+		public(http.MethodPost, "/v1/auth/recovery-code", m.handler.SetRecoveryCode),
+		public(
+			http.MethodPost,
+			"/v1/auth/recovery-code/validate",
+			m.handler.ValidateRecoveryCode,
+		),
+		public(http.MethodPut, "/v1/auth/password", m.handler.UpdatePassword),
+		{
+			Method:      http.MethodGet,
+			Path:        "/v1/auth/me",
+			Protected:   module.Protected,
+			RateLimited: module.RateLimited,
+			Handler:     m.handler.Me,
+		},
+	}
 }

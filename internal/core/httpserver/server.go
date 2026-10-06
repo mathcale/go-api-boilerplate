@@ -1,15 +1,18 @@
-package web
+package httpserver
 
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/justinas/alice"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 
+	"github.com/mathcale/go-api-boilerplate/internal/core"
 	"github.com/mathcale/go-api-boilerplate/internal/core/logger"
 	"github.com/mathcale/go-api-boilerplate/internal/core/middlewares"
+	"github.com/mathcale/go-api-boilerplate/internal/core/module"
 	"github.com/mathcale/go-api-boilerplate/internal/core/response"
 )
 
@@ -27,44 +30,61 @@ type server struct {
 	logger              logger.Logger
 	router              *http.ServeMux
 	response            response.Response
-	handlers            []handler
+	routes              []module.Route
 	middlewares         []middlewareHandler
 	authMiddleware      middlewares.AuthMiddleware
 	rateLimitMiddleware middlewares.RateLimitMiddleware
 	port                int
 }
 
-func NewServer(
-	l logger.Logger,
-	port int,
-	response response.Response,
-	handlers []handler,
-	globalMiddlewares []middlewareHandler,
-	authMiddleware middlewares.AuthMiddleware,
-	rateLimitMiddleware middlewares.RateLimitMiddleware,
-) Server {
+func New(c *core.Container, routes []module.Route) Server {
+	globalMiddlewares := NewMiddlewaresResolver(
+		middlewares.NewSecurityHeadersMiddleware(),
+		middlewares.NewCORSMiddleware(corsAllowedOrigins(c.Config.CORSAllowedOrigins)),
+		middlewares.NewCorrelationIDMiddleware(c.Logger),
+		middlewares.NewLoggingMiddleware(c.Logger),
+	).Resolve()
+
 	return &server{
-		logger:              l,
-		router:              http.NewServeMux(),
-		response:            response,
-		handlers:            handlers,
-		middlewares:         globalMiddlewares,
-		authMiddleware:      authMiddleware,
-		rateLimitMiddleware: rateLimitMiddleware,
-		port:                port,
+		logger:         c.Logger,
+		router:         http.NewServeMux(),
+		response:       c.Response,
+		routes:         routes,
+		middlewares:    globalMiddlewares,
+		authMiddleware: middlewares.NewAuthMiddleware(c.JWT, c.Response),
+		rateLimitMiddleware: middlewares.NewRateLimitMiddleware(
+			c.Config.RateLimitRequestsPerMinute,
+			c.Config.RateLimitBurst,
+			c.Response,
+		),
+		port: c.Config.WebServerPort,
 	}
 }
 
+func corsAllowedOrigins(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+
+	origins := strings.Split(raw, ",")
+	for i := range origins {
+		origins[i] = strings.TrimSpace(origins[i])
+	}
+
+	return origins
+}
+
 func (s *server) Start() error {
-	for _, h := range s.handlers {
+	for _, r := range s.routes {
 		s.logger.Debug("Registering route", map[string]interface{}{
-			"method":       h.method,
-			"path":         h.path,
-			"protected":    h.protected,
-			"rate_limited": h.rateLimited,
+			"method":       r.Method,
+			"path":         r.Path,
+			"protected":    r.Protected,
+			"rate_limited": r.RateLimited,
 		})
 
-		s.router.Handle(fmt.Sprintf("%s %s", h.method, h.path), s.wrap(h))
+		s.router.Handle(fmt.Sprintf("%s %s", r.Method, r.Path), s.wrap(r))
 	}
 
 	s.router.Handle("GET /swagger/", httpSwagger.WrapHandler)
@@ -95,20 +115,20 @@ func (s *server) Start() error {
 	return srv.ListenAndServe()
 }
 
-func (s *server) wrap(h handler) http.Handler {
-	var wrapped http.Handler = h.handlerFunc
+func (s *server) wrap(r module.Route) http.Handler {
+	var wrapped http.Handler = r.Handler
 
-	if len(h.requiredRoles) > 0 {
+	if len(r.RequiredRoles) > 0 {
 		wrapped = middlewares.
-			NewRequireRoleMiddleware(s.response, h.requiredRoles...).
+			NewRequireRoleMiddleware(s.response, r.RequiredRoles...).
 			Handler(wrapped)
 	}
 
-	if h.protected {
+	if r.Protected {
 		wrapped = s.authMiddleware.Handler(wrapped)
 	}
 
-	if h.rateLimited {
+	if r.RateLimited {
 		wrapped = s.rateLimitMiddleware.Handler(wrapped)
 	}
 

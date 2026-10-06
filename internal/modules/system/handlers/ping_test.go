@@ -9,7 +9,7 @@ import (
 
 	"github.com/mathcale/go-api-boilerplate/internal/core/config"
 	"github.com/mathcale/go-api-boilerplate/internal/core/response"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
+	"github.com/mathcale/go-api-boilerplate/internal/modules/system/handlers"
 	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
 )
 
