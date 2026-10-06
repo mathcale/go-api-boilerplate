@@ -2,47 +2,42 @@
 
 ## Architecture Overview
 
-This is a Go backend following Clean Architecture principles with clear separation of concerns:
+This is a Go backend organised feature-first: a framework layer (`internal/core`) with no business
+knowledge, plus vertical slices (`internal/modules/<name>`) that each follow Clean Architecture
+internally. `cmd/api/main.go` is the composition root.
 
-- **Domain** (`internal/domain/`): Core business entities and models, grouped by bounded context (e.g. `user`, ...)
-- **Domain Gateways** (`internal/domain/<context>/gateway/`): Gateway *interfaces* (ports) owned by the domain/bounded context
-- **Use Cases** (`internal/usecases/`): Application business rules and orchestration; depends on domain entities and domain gateway interfaces
-- **Infrastructure** (`internal/infra/`): External concerns (web, database, email)
-  - `internal/infra/gateways/<context>/`: Gateway *implementations* (adapters), including their repositories and raw SQL queries
-  - `internal/infra/database/`: SQL/DB connection and models
-  - `internal/infra/web/`: HTTP server, routes, handlers and middlewares
-  - `internal/infra/email/`: Email clients and provider integration
-- **Shared Packages** (`internal/pkg/`): Reusable utilities and cross-cutting concerns
+- **Core** (`internal/core/`): Framework and cross-cutting concerns shared by every module (config, logger, errors, JWT, bcrypt, database, email, middlewares, HTTP server, response helpers).
+  - `core.Container` holds the shared collaborators (config, logger, DB, JWT, bcrypt, response, email) and is built once by `core.Build`.
+  - `module.Module` is the contract every feature implements: `Name()` and `Routes() []module.Route`.
+  - `core.CollectRoutes(mods...)` concatenates the routes of all modules; `httpserver.New` serves them.
+- **Modules** (`internal/modules/<name>/`): Self-contained features (`user`, `system`, ...).
+  - `domain/`: Business entities.
+  - `gateway/`: The module's public port (`gateway.Gateway`), consumed by use cases and by other modules.
+  - `usecases/`: Application business rules and orchestration; depends on `domain` and `gateway`.
+  - `handlers/` (+ `handlers/dto/`): HTTP handlers and their request/response DTOs.
+  - `mocks/`: Hand-written mocks of the module's public interfaces.
+  - `internal/`: Module-private code, protected from other modules by the Go compiler: `models/` (DB models), `repository/` (raw SQL), `adapter/` (implements `gateway.Gateway` on top of the repository), `mappers/` (models <-> domain) and `mocks/` (mocks of private types).
+  - `module.go` (`New(c *core.Container, ...)`) wires the module; `routes.go` declares its routes.
 
 Key patterns:
 
-- Domain gateway interfaces live in `internal/domain/<context>/gateway` and are consumed directly by use cases.
-- Gateway implementations live in `internal/infra/gateways/<context>` and include their own repository (`repository.go`), wrapping raw SQL queries and `internal/infra/database/models`.
-- Dependency injection wires repositories + gateway implementations + use cases in `internal/pkg/di/`.
+- The gateway interface lives in `internal/modules/<name>/gateway` and is consumed directly by use cases.
+- The adapter in `internal/modules/<name>/internal/adapter` implements the gateway and wraps its own repository (`repository.go`), raw SQL queries and `internal/models`.
+- Each module wires its own repositories + adapter + use cases + handlers in `module.go`; `cmd/api/main.go` only builds the container, constructs the modules and passes them to `core.CollectRoutes`.
 - Structured error handling with the `apperror` package using business codes; errors always preserve their underlying cause (implement `Unwrap`).
 - Structured logging with zerolog and context-aware log fields.
 
 ## File Structure
 
-All core Go files should be organized inside the `internal` directory, in a way that reflects the project's architecture.
-
-- `domain`: Core business models per bounded context.
-  - `<context>/gateway`: Domain gateway interfaces (ports).
-- `usecases`: Orchestration and business rules. Use cases depend on domain models and domain gateway interfaces.
-- `infra`: External concerns.
-  - `database`: Connection and models.
-  - `gateways`: Gateway implementations (adapters) that implement domain gateway interfaces, along with their repositories.
-  - `web`: HTTP server setup, routes, handlers and middlewares.
-  - `email`: Email clients and provider integration.
-- `pkg`: Cross-cutting shared utilities.
-  - `apierror`: Errors for API responses.
-  - `apperror`: Application errors used by internal layers.
-  - `bcrypt`: Password hashing utilities.
-  - `di`: Dependency injection.
-  - `jwt`: JWT utilities.
-  - `logger`: Logging.
-  - `mappers`: Conversions between infra/database models and domain objects.
-- `tests`: Test utilities, mocks and fixtures.
+```text
+cmd/api/main.go            Composition root
+internal/core/             Framework (config, logger, apperror, apierror, jwt, bcrypt, database,
+                           email, webcontext, middlewares, response, module, httpserver, container.go)
+internal/modules/<name>/   Feature slices (domain, gateway, usecases, handlers, mocks, internal/...)
+internal/tests/mocks/      Shared mocks of core collaborators (logger, jwt, password, email client)
+migrations/                SQL migrations
+docs/                      Generated Swagger output
+```
 
 ## Critical Developer Workflows
 
@@ -94,45 +89,56 @@ make build      # Production build to ./bin/api
 - **Code style**: Follow Go conventions with `gofmt` / `golangci-lint`. Keep lines within 100 columns. Use tabs for indentation.
 - **Use-case Driven Development**: Structure your code around use cases.
 - **Gateways and Repositories**:
-  - Gateway interfaces belong to the domain bounded context in `internal/domain/<context>/gateway`.
-  - Gateway implementations and their repositories belong to infrastructure in `internal/infra/gateways/<context>`.
-- **Dependency Injection**: Wire dependencies in `internal/pkg/di/`.
+  - The gateway interface belongs to the module in `internal/modules/<name>/gateway` (type `Gateway`).
+  - The implementation (`internal/adapter`) and its repository (`internal/repository`) are private to the module.
+- **Dependency Injection**: Wire dependencies by hand in each module's `module.go`, and compose modules in `cmd/api/main.go`.
 - **Security**: Validate inputs at the boundary and always use parameterized SQL.
-- **SQL queries**: Use sqlx safe parameter binding. Keep raw SQL as constants alongside the repository in `repository.go`.
+- **SQL queries**: Use sqlx safe parameter binding. Keep raw SQL as constants alongside the repository in `internal/repository/repository.go`.
 - **Comments**: Do NOT add comments to code, unless it is an HTTP handler (in that case, add OpenAPI/Swagger annotations based on `godoc`) or a non-obvious decision worth recording.
 
 ## Project-Specific Patterns
 
 ### Use Case Pattern
 
-- Use cases depend on domain gateway interfaces.
-- Example: `internal/usecases/auth/signup.go` uses `internal/domain/user/gateway`.
+- Use cases depend on the module's gateway interface.
+- Example: `internal/modules/user/usecases/signup.go` uses `internal/modules/user/gateway`.
 
-### Domain Gateway Pattern
+### Gateway Pattern
 
-- Domain gateway interfaces live in `internal/domain/<context>/gateway`.
-- Example: `internal/domain/user/gateway/interface.go`.
+- The gateway interface lives in `internal/modules/<name>/gateway/gateway.go`.
+- The implementation lives in `internal/modules/<name>/internal/adapter` and wraps the module's repository.
+- Example: `internal/modules/user/internal/adapter/adapter.go`.
 
-### Infra Gateway Pattern
+### Module Wiring
 
-- Infra gateway implementations live in `internal/infra/gateways/<context>`.
-- They implement the domain gateway interfaces and wrap repositories.
-- Example: `internal/infra/gateways/user/gateway.go`.
-
-### Dependency Injection
-
-- DI wires repositories and gateway implementations in `internal/pkg/di/inject.go`.
+- Each module's `New(c *core.Container, ...)` in `module.go` builds its repository, adapter, use cases and handlers.
+- Routes are declared in `routes.go` as `[]module.Route` (use `module.Public/Protected` and `module.RateLimited/NotThrottled`).
+- Modules are composed in `cmd/api/main.go`.
 
 ### Middleware Chain
 
-- Global middlewares are ordered by the resolver in `internal/infra/web/middlewares.go`.
-- Per-route protection (authentication, RBAC, rate limiting) is applied in `internal/infra/web/server.go` based on flags in `internal/infra/web/router.go`.
+- Global middlewares are ordered by the resolver in `internal/core/httpserver/middlewares.go`.
+- Per-route protection (authentication, RBAC, rate limiting) is applied in `internal/core/httpserver/server.go` based on the flags of each `module.Route`.
 
 ### Authentication & RBAC
 
-- Access and refresh tokens are separate, signed with distinct secrets (`internal/pkg/jwt`).
-- The authenticated user's ID and roles are carried through the request via `internal/infra/web/webcontext`.
-- Routes requiring a role set `requiredRoles` in the router; the `RequireRole` middleware enforces them after authentication. See the `GET /v1/admin/ping` demo route.
+- Access and refresh tokens are separate, signed with distinct secrets (`internal/core/jwt`).
+- The authenticated user's ID and roles are carried through the request via `internal/core/webcontext`.
+- Routes requiring a role set `RequiredRoles` on the `module.Route`; the `RequireRole` middleware enforces them after authentication. See the `GET /v1/admin/ping` demo route in `internal/modules/system/routes.go`.
+
+## Adding a module
+
+1. Create `internal/modules/<name>/` with `domain/`, `gateway/`, `usecases/`, `handlers/` (+ `dto/`), `mocks/` and `internal/{models,repository,adapter,mappers,mocks}`.
+2. Add `module.go` with `New(c *core.Container, deps...)` returning a type that implements `module.Module`, and `routes.go` with its `Routes()`.
+3. In `cmd/api/main.go`, call `<name>.New(c)` and add the module to `core.CollectRoutes(...)`.
+4. Name new migrations `NNNNNN_<name>_<desc>`.
+
+### Import rules
+
+- A module imports only `internal/core/*` and the non-`internal` packages (`domain`, `gateway`) of other modules.
+- Cross-module access goes only through another module's `gateway.Gateway` port, passed into `New`.
+- `internal/core` never imports `internal/modules` (enforced by `depguard`).
+- Modules do not share DTOs.
 
 ## Database schema
 
