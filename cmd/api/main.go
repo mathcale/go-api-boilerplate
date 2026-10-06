@@ -1,12 +1,14 @@
 package main
 
 import (
-	"context"
 	"log"
 
 	_ "github.com/mathcale/go-api-boilerplate/docs"
+	"github.com/mathcale/go-api-boilerplate/internal/core"
 	"github.com/mathcale/go-api-boilerplate/internal/core/config"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/di"
+	"github.com/mathcale/go-api-boilerplate/internal/core/httpserver"
+	"github.com/mathcale/go-api-boilerplate/internal/modules/system"
+	"github.com/mathcale/go-api-boilerplate/internal/modules/user"
 )
 
 // @title						Go API Boilerplate
@@ -18,19 +20,24 @@ import (
 // @name						Authorization
 // @description				Type "Bearer" followed by a space and the access token.
 func main() {
-	ctx := context.Background()
-
 	cfg, err := config.Load(".")
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	deps, err := di.NewDependencyInjector(cfg).Inject(ctx)
+	c, err := core.Build(cfg)
 	if err != nil {
-		log.Fatalf("Failed to inject dependencies: %v", err)
+		log.Fatalf("Failed to build container: %v", err)
 	}
 
-	if err := deps.WebServer.Start(); err != nil {
+	userMod, err := user.New(c)
+	if err != nil {
+		log.Fatalf("Failed to build user module: %v", err)
+	}
+
+	server := httpserver.New(c, core.CollectRoutes(system.New(c), userMod))
+
+	if err := server.Start(); err != nil {
 		log.Fatalf("Failed to start web server: %v", err)
 	}
 }

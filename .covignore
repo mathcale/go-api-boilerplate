@@ -8,7 +8,6 @@ cmd/api/main.go
 internal/tests/mocks/*
 internal/tests/fixtures/*
 internal/core/logger/*
-internal/pkg/di/*
 internal/core/container.go
 internal/core/apperror/*
 internal/core/apierror/*
