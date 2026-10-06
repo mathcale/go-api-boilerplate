@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/webcontext"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
+	"github.com/mathcale/go-api-boilerplate/internal/core/logger"
+	"github.com/mathcale/go-api-boilerplate/internal/core/webcontext"
 )
 
 const correlationIDHeader = "X-Correlation-ID"

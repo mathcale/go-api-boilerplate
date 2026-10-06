@@ -6,16 +6,17 @@ import (
 
 	"github.com/jmoiron/sqlx"
 
-	"github.com/mathcale/go-api-boilerplate/config"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/database"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/email/clients"
+	"github.com/mathcale/go-api-boilerplate/internal/core/bcrypt"
+	"github.com/mathcale/go-api-boilerplate/internal/core/config"
+	"github.com/mathcale/go-api-boilerplate/internal/core/database"
+	"github.com/mathcale/go-api-boilerplate/internal/core/email/clients"
+	"github.com/mathcale/go-api-boilerplate/internal/core/jwt"
+	"github.com/mathcale/go-api-boilerplate/internal/core/logger"
+	"github.com/mathcale/go-api-boilerplate/internal/core/middlewares"
+	"github.com/mathcale/go-api-boilerplate/internal/core/response"
 	usergateway "github.com/mathcale/go-api-boilerplate/internal/infra/gateways/user"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/middlewares"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/bcrypt"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
 	"github.com/mathcale/go-api-boilerplate/internal/usecases/auth"
 )
 
@@ -94,7 +95,7 @@ func (di *dependencyInjector) Inject(ctx context.Context) (*Dependencies, error)
 	}
 
 	// Handlers
-	rh := handlers.NewResponse(log, di.config.Environment)
+	rh := response.NewResponse(log, di.config.Environment)
 
 	pingHandler := handlers.NewPingHandler(rh)
 	authHandler := handlers.NewAuthHandler(rh, authUseCases)

@@ -12,11 +12,12 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/config"
+	"github.com/mathcale/go-api-boilerplate/internal/core/config"
+	"github.com/mathcale/go-api-boilerplate/internal/core/response"
+	"github.com/mathcale/go-api-boilerplate/internal/core/webcontext"
 	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers/dto"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/webcontext"
 	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
 	"github.com/mathcale/go-api-boilerplate/internal/usecases/auth"
 )
@@ -48,7 +49,7 @@ func (s *AuthHandlerTestSuite) SetupTest() {
 	s.validateRecoveryCodeMock = new(mocks.ValidateRecoveryCodeUseCase)
 	s.updatePasswordMock = new(mocks.UpdatePasswordUseCase)
 
-	response := handlers.NewResponse(mocks.NoopLogger{}, config.EnvironmentTest)
+	response := response.NewResponse(mocks.NoopLogger{}, config.EnvironmentTest)
 	s.handler = handlers.NewAuthHandler(response, handlers.AuthUseCases{
 		SignIn:               s.signInMock,
 		SignUp:               s.signUpMock,

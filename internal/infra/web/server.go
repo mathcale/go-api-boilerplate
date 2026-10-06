@@ -8,9 +8,9 @@ import (
 	"github.com/justinas/alice"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/middlewares"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
+	"github.com/mathcale/go-api-boilerplate/internal/core/logger"
+	"github.com/mathcale/go-api-boilerplate/internal/core/middlewares"
+	"github.com/mathcale/go-api-boilerplate/internal/core/response"
 )
 
 const (
@@ -26,7 +26,7 @@ type Server interface {
 type server struct {
 	logger              logger.Logger
 	router              *http.ServeMux
-	response            handlers.Response
+	response            response.Response
 	handlers            []handler
 	middlewares         []middlewareHandler
 	authMiddleware      middlewares.AuthMiddleware
@@ -37,7 +37,7 @@ type server struct {
 func NewServer(
 	l logger.Logger,
 	port int,
-	response handlers.Response,
+	response response.Response,
 	handlers []handler,
 	globalMiddlewares []middlewareHandler,
 	authMiddleware middlewares.AuthMiddleware,

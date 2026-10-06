@@ -3,9 +3,9 @@ package middlewares
 import (
 	"net/http"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/webcontext"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
+	"github.com/mathcale/go-api-boilerplate/internal/core/apperror"
+	"github.com/mathcale/go-api-boilerplate/internal/core/response"
+	"github.com/mathcale/go-api-boilerplate/internal/core/webcontext"
 )
 
 // RequireRoleMiddleware guards a route so that only requests whose authenticated
@@ -17,11 +17,11 @@ type RequireRoleMiddleware interface {
 
 type requireRoleMiddleware struct {
 	acceptedRoles []string
-	response      handlers.Response
+	response      response.Response
 }
 
 func NewRequireRoleMiddleware(
-	response handlers.Response,
+	response response.Response,
 	acceptedRoles ...string,
 ) RequireRoleMiddleware {
 	return &requireRoleMiddleware{

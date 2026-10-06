@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"net/http"
+
+	"github.com/mathcale/go-api-boilerplate/internal/core/response"
 )
 
 type PingHandler interface {
@@ -9,10 +11,10 @@ type PingHandler interface {
 }
 
 type helloHandler struct {
-	response Response
+	response response.Response
 }
 
-func NewPingHandler(r Response) PingHandler {
+func NewPingHandler(r response.Response) PingHandler {
 	return &helloHandler{
 		response: r,
 	}

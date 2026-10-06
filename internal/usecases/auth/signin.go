@@ -5,12 +5,12 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/mathcale/go-api-boilerplate/internal/core/apperror"
+	"github.com/mathcale/go-api-boilerplate/internal/core/bcrypt"
+	"github.com/mathcale/go-api-boilerplate/internal/core/jwt"
+	"github.com/mathcale/go-api-boilerplate/internal/core/logger"
 	"github.com/mathcale/go-api-boilerplate/internal/domain/gateway"
 	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/bcrypt"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
 )
 
 type (

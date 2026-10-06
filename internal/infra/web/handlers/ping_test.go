@@ -7,7 +7,8 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/config"
+	"github.com/mathcale/go-api-boilerplate/internal/core/config"
+	"github.com/mathcale/go-api-boilerplate/internal/core/response"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
 	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
 )
@@ -22,7 +23,7 @@ func TestPingHandler(t *testing.T) {
 
 func (s *PingHandlerTestSuite) TestHandle() {
 	s.Run("should return pong with a 200 status code", func() {
-		response := handlers.NewResponse(mocks.NoopLogger{}, config.EnvironmentTest)
+		response := response.NewResponse(mocks.NoopLogger{}, config.EnvironmentTest)
 		h := handlers.NewPingHandler(response)
 
 		req := httptest.NewRequest(http.MethodGet, "/ping", nil)

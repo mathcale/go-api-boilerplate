@@ -3,7 +3,7 @@ package bcrypt
 import (
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
+	"github.com/mathcale/go-api-boilerplate/internal/core/apperror"
 )
 
 type (

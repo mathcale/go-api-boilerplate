@@ -3,7 +3,7 @@ package mocks
 import (
 	"github.com/stretchr/testify/mock"
 
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
+	"github.com/mathcale/go-api-boilerplate/internal/core/jwt"
 )
 
 type JWTAuth struct {

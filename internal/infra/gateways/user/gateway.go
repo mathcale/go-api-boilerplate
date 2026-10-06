@@ -6,9 +6,9 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/mathcale/go-api-boilerplate/internal/core/email"
 	"github.com/mathcale/go-api-boilerplate/internal/domain/gateway"
 	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/email"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/mappers"
 )
 

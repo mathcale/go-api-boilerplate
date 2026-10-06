@@ -7,7 +7,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
+	"github.com/mathcale/go-api-boilerplate/internal/core/logger"
 )
 
 type Database interface {

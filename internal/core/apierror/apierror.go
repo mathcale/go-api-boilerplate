@@ -3,7 +3,7 @@ package apierror
 import (
 	"fmt"
 
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
+	"github.com/mathcale/go-api-boilerplate/internal/core/apperror"
 )
 
 // ApiError is the outward-facing representation of an error: an HTTP status, a

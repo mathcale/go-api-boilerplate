@@ -6,8 +6,8 @@ import (
 
 	jwtlib "github.com/golang-jwt/jwt/v5"
 
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
+	"github.com/mathcale/go-api-boilerplate/internal/core/apperror"
+	"github.com/mathcale/go-api-boilerplate/internal/core/logger"
 )
 
 // ExtraClaims holds the application-specific claims embedded in every token.

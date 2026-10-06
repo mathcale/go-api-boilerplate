@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/webcontext"
+	"github.com/mathcale/go-api-boilerplate/internal/core/webcontext"
 )
 
 type WebContextTestSuite struct {

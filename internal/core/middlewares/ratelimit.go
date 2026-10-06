@@ -7,8 +7,8 @@ import (
 
 	"golang.org/x/time/rate"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
+	"github.com/mathcale/go-api-boilerplate/internal/core/apperror"
+	"github.com/mathcale/go-api-boilerplate/internal/core/response"
 )
 
 type (
@@ -17,7 +17,7 @@ type (
 	}
 
 	rateLimitMiddleware struct {
-		response handlers.Response
+		response response.Response
 		limit    rate.Limit
 		burst    int
 		mu       sync.Mutex
@@ -27,7 +27,7 @@ type (
 
 func NewRateLimitMiddleware(
 	requestsPerMinute, burst int,
-	response handlers.Response,
+	response response.Response,
 ) RateLimitMiddleware {
 	if requestsPerMinute <= 0 {
 		requestsPerMinute = 60

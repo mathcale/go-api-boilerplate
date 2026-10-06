@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 
-	"github.com/mathcale/go-api-boilerplate/config"
 	_ "github.com/mathcale/go-api-boilerplate/docs"
+	"github.com/mathcale/go-api-boilerplate/internal/core/config"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/di"
 )
 

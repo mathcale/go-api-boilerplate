@@ -8,10 +8,10 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/config"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/middlewares"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/webcontext"
+	"github.com/mathcale/go-api-boilerplate/internal/core/config"
+	"github.com/mathcale/go-api-boilerplate/internal/core/middlewares"
+	"github.com/mathcale/go-api-boilerplate/internal/core/response"
+	"github.com/mathcale/go-api-boilerplate/internal/core/webcontext"
 	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
 )
 
@@ -77,7 +77,7 @@ func (s *RequireRoleMiddlewareTestSuite) TestHandler() {
 func (s *RequireRoleMiddlewareTestSuite) newRoleMiddleware(
 	accepted ...string,
 ) middlewares.RequireRoleMiddleware {
-	response := handlers.NewResponse(mocks.NoopLogger{}, config.EnvironmentTest)
+	response := response.NewResponse(mocks.NoopLogger{}, config.EnvironmentTest)
 
 	return middlewares.NewRequireRoleMiddleware(response, accepted...)
 }

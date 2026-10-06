@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
+	"github.com/mathcale/go-api-boilerplate/internal/core/jwt"
 )
 
 // accessSecret must match the secret used by newAuth() in jwt_test.go so these

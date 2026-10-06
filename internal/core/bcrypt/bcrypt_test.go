@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/bcrypt"
+	"github.com/mathcale/go-api-boilerplate/internal/core/bcrypt"
 )
 
 type PasswordTestSuite struct {

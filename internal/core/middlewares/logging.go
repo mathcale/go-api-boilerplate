@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/webcontext"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
+	"github.com/mathcale/go-api-boilerplate/internal/core/logger"
+	"github.com/mathcale/go-api-boilerplate/internal/core/webcontext"
 )
 
 type loggingMiddleware struct {

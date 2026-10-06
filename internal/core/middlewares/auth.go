@@ -6,10 +6,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/webcontext"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
+	"github.com/mathcale/go-api-boilerplate/internal/core/apperror"
+	"github.com/mathcale/go-api-boilerplate/internal/core/jwt"
+	"github.com/mathcale/go-api-boilerplate/internal/core/response"
+	"github.com/mathcale/go-api-boilerplate/internal/core/webcontext"
 )
 
 type AuthMiddleware interface {
@@ -18,10 +18,10 @@ type AuthMiddleware interface {
 
 type authMiddleware struct {
 	jwtAuth  jwt.JWTAuth
-	response handlers.Response
+	response response.Response
 }
 
-func NewAuthMiddleware(jwtAuth jwt.JWTAuth, response handlers.Response) AuthMiddleware {
+func NewAuthMiddleware(jwtAuth jwt.JWTAuth, response response.Response) AuthMiddleware {
 	return &authMiddleware{
 		jwtAuth:  jwtAuth,
 		response: response,

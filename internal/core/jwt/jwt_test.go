@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
+	"github.com/mathcale/go-api-boilerplate/internal/core/jwt"
 	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
 )
 

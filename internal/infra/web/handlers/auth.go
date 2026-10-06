@@ -7,9 +7,10 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 
+	"github.com/mathcale/go-api-boilerplate/internal/core/apperror"
+	"github.com/mathcale/go-api-boilerplate/internal/core/response"
+	"github.com/mathcale/go-api-boilerplate/internal/core/webcontext"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers/dto"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/webcontext"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
 	"github.com/mathcale/go-api-boilerplate/internal/usecases/auth"
 )
 
@@ -39,13 +40,13 @@ type (
 	}
 
 	authHandler struct {
-		response Response
+		response response.Response
 		validate *validator.Validate
 		useCases AuthUseCases
 	}
 )
 
-func NewAuthHandler(response Response, useCases AuthUseCases) AuthHandler {
+func NewAuthHandler(response response.Response, useCases AuthUseCases) AuthHandler {
 	return &authHandler{
 		response: response,
 		validate: validator.New(validator.WithRequiredStructEnabled()),
@@ -60,8 +61,8 @@ func NewAuthHandler(response Response, useCases AuthUseCases) AuthHandler {
 // @Produce		json
 // @Param			body	body		dto.SignUpInput	true	"Sign-up payload"
 // @Success		201		{object}	dto.SignUpOutput
-// @Failure		400		{object}	dto.ErrorOutput
-// @Failure		409		{object}	dto.ErrorOutput
+// @Failure		400		{object}	response.ErrorOutput
+// @Failure		409		{object}	response.ErrorOutput
 // @Router			/v1/auth/signup [post]
 func (h *authHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	var input dto.SignUpInput
@@ -98,8 +99,8 @@ func (h *authHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 // @Produce		json
 // @Param			body	body		dto.SignInInput	true	"Credentials"
 // @Success		200		{object}	dto.TokenPairOutput
-// @Failure		400		{object}	dto.ErrorOutput
-// @Failure		401		{object}	dto.ErrorOutput
+// @Failure		400		{object}	response.ErrorOutput
+// @Failure		401		{object}	response.ErrorOutput
 // @Router			/v1/auth/signin [post]
 func (h *authHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 	var input dto.SignInInput
@@ -127,7 +128,7 @@ func (h *authHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 // @Produce		json
 // @Param			body	body		dto.RefreshTokenInput	true	"Refresh token"
 // @Success		200		{object}	dto.TokenPairOutput
-// @Failure		401		{object}	dto.ErrorOutput
+// @Failure		401		{object}	response.ErrorOutput
 // @Router			/v1/auth/refresh-token [post]
 func (h *authHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	var input dto.RefreshTokenInput
@@ -155,7 +156,7 @@ func (h *authHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 // @Produce		json
 // @Param			body	body	dto.ConfirmAccountInput	true	"Confirmation payload"
 // @Success		204		"No Content"
-// @Failure		400		{object}	dto.ErrorOutput
+// @Failure		400		{object}	response.ErrorOutput
 // @Router			/v1/auth/confirm-account [post]
 func (h *authHandler) ConfirmAccount(w http.ResponseWriter, r *http.Request) {
 	var input dto.ConfirmAccountInput
@@ -207,7 +208,7 @@ func (h *authHandler) ResendConfirmationCode(w http.ResponseWriter, r *http.Requ
 // @Produce		json
 // @Security		BearerAuth
 // @Success		200	{object}	dto.MeOutput
-// @Failure		401	{object}	dto.ErrorOutput
+// @Failure		401	{object}	response.ErrorOutput
 // @Router			/v1/auth/me [get]
 func (h *authHandler) Me(w http.ResponseWriter, r *http.Request) {
 	userID, ok := webcontext.UserIDFromContext(r.Context())
@@ -269,7 +270,7 @@ func (h *authHandler) SetRecoveryCode(w http.ResponseWriter, r *http.Request) {
 // @Produce		json
 // @Param			body	body	dto.ValidateRecoveryCodeInput	true	"Recovery payload"
 // @Success		204		"No Content"
-// @Failure		400		{object}	dto.ErrorOutput
+// @Failure		400		{object}	response.ErrorOutput
 // @Router			/v1/auth/recovery-code/validate [post]
 func (h *authHandler) ValidateRecoveryCode(w http.ResponseWriter, r *http.Request) {
 	var input dto.ValidateRecoveryCodeInput
@@ -299,7 +300,7 @@ func (h *authHandler) ValidateRecoveryCode(w http.ResponseWriter, r *http.Reques
 // @Produce		json
 // @Param			body	body	dto.UpdatePasswordInput	true	"Update payload"
 // @Success		204		"No Content"
-// @Failure		400		{object}	dto.ErrorOutput
+// @Failure		400		{object}	response.ErrorOutput
 // @Router			/v1/auth/password [put]
 func (h *authHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	var input dto.UpdatePasswordInput

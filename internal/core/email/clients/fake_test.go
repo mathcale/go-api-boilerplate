@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/email"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/email/clients"
+	"github.com/mathcale/go-api-boilerplate/internal/core/email"
+	"github.com/mathcale/go-api-boilerplate/internal/core/email/clients"
 	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
 )
 

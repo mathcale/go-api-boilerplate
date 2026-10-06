@@ -1,14 +1,13 @@
-package handlers
+package response
 
 import (
 	"encoding/json"
 	"errors"
 	"net/http"
 
-	"github.com/mathcale/go-api-boilerplate/config"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers/dto"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
+	"github.com/mathcale/go-api-boilerplate/internal/core/apperror"
+	"github.com/mathcale/go-api-boilerplate/internal/core/config"
+	"github.com/mathcale/go-api-boilerplate/internal/core/logger"
 )
 
 type (
@@ -68,7 +67,7 @@ func (h *response) RespondPlainText(
 
 func (h *response) RespondWithError(w http.ResponseWriter, err error, headers map[string]string) {
 	status := http.StatusInternalServerError
-	output := dto.ErrorOutput{Message: "internal server error"}
+	output := ErrorOutput{Message: "internal server error"}
 
 	var appErr apperror.AppError
 	if errors.As(err, &appErr) {
@@ -129,4 +128,10 @@ func setHeaders(w http.ResponseWriter, headers map[string]string) {
 	for key, value := range headers {
 		w.Header().Set(key, value)
 	}
+}
+
+type ErrorOutput struct {
+	Message string                 `json:"message"`
+	Code    *apperror.BusinessCode `json:"code,omitempty"`
+	Cause   string                 `json:"cause,omitempty"`
 }

@@ -1,8 +1,8 @@
 package clients
 
 import (
-	"github.com/mathcale/go-api-boilerplate/internal/infra/email"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
+	"github.com/mathcale/go-api-boilerplate/internal/core/email"
+	"github.com/mathcale/go-api-boilerplate/internal/core/logger"
 )
 
 // fake is the default email client. Instead of delivering messages it logs the
