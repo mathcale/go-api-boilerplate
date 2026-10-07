@@ -1,6 +1,8 @@
 package user
 
 import (
+	"time"
+
 	"github.com/mathcale/go-api-boilerplate/internal/core"
 	"github.com/mathcale/go-api-boilerplate/internal/modules/user/gateway"
 	"github.com/mathcale/go-api-boilerplate/internal/modules/user/handlers"
@@ -23,14 +25,17 @@ func New(c *core.Container) (*Module, error) {
 		c.Config.PasswordRecoveryBaseURL,
 	)
 
+	confirmationTTL := time.Duration(c.Config.AccountConfirmationTTLMinutes) * time.Minute
+	recoveryTTL := time.Duration(c.Config.PasswordRecoveryTTLMinutes) * time.Minute
+
 	uc := handlers.AuthUseCases{
-		SignUp:               usecases.NewSignUpUseCase(c.Logger, gw, c.Bcrypt),
+		SignUp:               usecases.NewSignUpUseCase(c.Logger, gw, c.Bcrypt, confirmationTTL),
 		SignIn:               usecases.NewSignInUseCase(c.Logger, gw, c.Bcrypt, c.JWT),
 		RefreshToken:         usecases.NewRefreshTokenUseCase(c.Logger, c.JWT, gw),
 		ConfirmAccount:       usecases.NewConfirmAccountUseCase(c.Logger, gw),
-		ResendConfirmation:   usecases.NewResendConfirmationCodeUseCase(c.Logger, gw),
+		ResendConfirmation:   usecases.NewResendConfirmationCodeUseCase(c.Logger, gw, confirmationTTL),
 		Me:                   usecases.NewMeUseCase(c.Logger, gw),
-		SetRecoveryCode:      usecases.NewSetRecoveryCodeUseCase(c.Logger, gw),
+		SetRecoveryCode:      usecases.NewSetRecoveryCodeUseCase(c.Logger, gw, recoveryTTL),
 		ValidateRecoveryCode: usecases.NewValidateRecoveryCodeUseCase(c.Logger, gw),
 		UpdatePassword:       usecases.NewUpdatePasswordUseCase(c.Logger, gw, c.Bcrypt),
 	}

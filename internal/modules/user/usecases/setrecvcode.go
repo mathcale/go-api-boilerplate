@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"context"
+	"time"
 
 	"github.com/mathcale/go-api-boilerplate/internal/core/logger"
 	"github.com/mathcale/go-api-boilerplate/internal/modules/user/domain"
@@ -14,15 +15,21 @@ type (
 	}
 
 	setRecoveryCodeUseCase struct {
-		logger  logger.Logger
-		gateway gateway.Gateway
+		logger      logger.Logger
+		gateway     gateway.Gateway
+		recoveryTTL time.Duration
 	}
 )
 
-func NewSetRecoveryCodeUseCase(l logger.Logger, gw gateway.Gateway) SetRecoveryCodeUseCase {
+func NewSetRecoveryCodeUseCase(
+	l logger.Logger,
+	gw gateway.Gateway,
+	recoveryTTL time.Duration,
+) SetRecoveryCodeUseCase {
 	return &setRecoveryCodeUseCase{
-		logger:  l,
-		gateway: gw,
+		logger:      l,
+		gateway:     gw,
+		recoveryTTL: recoveryTTL,
 	}
 }
 
@@ -39,7 +46,7 @@ func (uc *setRecoveryCodeUseCase) Execute(ctx context.Context, email string) err
 	recoveryCode := domain.NewConfirmationCode(
 		target.ID,
 		domain.PurposePasswordRecovery,
-		domain.PasswordRecoveryTTL,
+		uc.recoveryTTL,
 	)
 
 	if err := uc.gateway.SaveConfirmationCode(ctx, recoveryCode); err != nil {

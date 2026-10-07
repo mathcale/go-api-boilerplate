@@ -37,7 +37,7 @@ func (s *ResendConfirmationCodeUseCaseTestSuite) TestSuccess() {
 		s.gw.On("SendConfirmationEmail", mock.Anything, *target, mock.AnythingOfType("domain.ConfirmationCode")).
 			Return(nil)
 
-		uc := usecases.NewResendConfirmationCodeUseCase(mocks.NoopLogger{}, s.gw)
+		uc := usecases.NewResendConfirmationCodeUseCase(mocks.NoopLogger{}, s.gw, testConfirmationTTL)
 
 		err := uc.Execute(context.Background(), "jane@example.com")
 
@@ -50,7 +50,7 @@ func (s *ResendConfirmationCodeUseCaseTestSuite) TestUnknownUser() {
 	s.Run("should silently succeed without sending a code when the email is unknown", func() {
 		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, "nobody@example.com").Return(nil, nil)
 
-		uc := usecases.NewResendConfirmationCodeUseCase(mocks.NoopLogger{}, s.gw)
+		uc := usecases.NewResendConfirmationCodeUseCase(mocks.NoopLogger{}, s.gw, testConfirmationTTL)
 
 		err := uc.Execute(context.Background(), "nobody@example.com")
 
@@ -65,7 +65,7 @@ func (s *ResendConfirmationCodeUseCaseTestSuite) TestAlreadyActive() {
 
 		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, "jane@example.com").Return(target, nil)
 
-		uc := usecases.NewResendConfirmationCodeUseCase(mocks.NoopLogger{}, s.gw)
+		uc := usecases.NewResendConfirmationCodeUseCase(mocks.NoopLogger{}, s.gw, testConfirmationTTL)
 
 		err := uc.Execute(context.Background(), "jane@example.com")
 
@@ -80,7 +80,7 @@ func (s *ResendConfirmationCodeUseCaseTestSuite) TestGatewayError() {
 
 		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, "jane@example.com").Return(nil, gwErr)
 
-		uc := usecases.NewResendConfirmationCodeUseCase(mocks.NoopLogger{}, s.gw)
+		uc := usecases.NewResendConfirmationCodeUseCase(mocks.NoopLogger{}, s.gw, testConfirmationTTL)
 
 		err := uc.Execute(context.Background(), "jane@example.com")
 
@@ -97,7 +97,7 @@ func (s *ResendConfirmationCodeUseCaseTestSuite) TestSaveConfirmationCodeError()
 		s.gw.On("SaveConfirmationCode", mock.Anything, mock.AnythingOfType("domain.ConfirmationCode")).
 			Return(saveErr)
 
-		uc := usecases.NewResendConfirmationCodeUseCase(mocks.NoopLogger{}, s.gw)
+		uc := usecases.NewResendConfirmationCodeUseCase(mocks.NoopLogger{}, s.gw, testConfirmationTTL)
 
 		err := uc.Execute(context.Background(), "jane@example.com")
 
@@ -118,7 +118,7 @@ func (s *ResendConfirmationCodeUseCaseTestSuite) TestEmailFailureIsNonFatal() {
 		s.gw.On("SendConfirmationEmail", mock.Anything, *target, mock.AnythingOfType("domain.ConfirmationCode")).
 			Return(errors.New("smtp down"))
 
-		uc := usecases.NewResendConfirmationCodeUseCase(log, s.gw)
+		uc := usecases.NewResendConfirmationCodeUseCase(log, s.gw, testConfirmationTTL)
 
 		err := uc.Execute(context.Background(), "jane@example.com")
 

@@ -37,7 +37,7 @@ func (s *SetRecoveryCodeUseCaseTestSuite) TestSuccess() {
 		s.gw.On("SendRecoveryEmail", mock.Anything, *target, mock.AnythingOfType("domain.ConfirmationCode")).
 			Return(nil)
 
-		uc := usecases.NewSetRecoveryCodeUseCase(mocks.NoopLogger{}, s.gw)
+		uc := usecases.NewSetRecoveryCodeUseCase(mocks.NoopLogger{}, s.gw, testRecoveryTTL)
 
 		err := uc.Execute(context.Background(), "jane@example.com")
 
@@ -50,7 +50,7 @@ func (s *SetRecoveryCodeUseCaseTestSuite) TestUnknownUser() {
 	s.Run("should silently succeed without sending a code when the email is unknown", func() {
 		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, "nobody@example.com").Return(nil, nil)
 
-		uc := usecases.NewSetRecoveryCodeUseCase(mocks.NoopLogger{}, s.gw)
+		uc := usecases.NewSetRecoveryCodeUseCase(mocks.NoopLogger{}, s.gw, testRecoveryTTL)
 
 		err := uc.Execute(context.Background(), "nobody@example.com")
 
@@ -65,7 +65,7 @@ func (s *SetRecoveryCodeUseCaseTestSuite) TestGatewayError() {
 
 		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, "jane@example.com").Return(nil, gwErr)
 
-		uc := usecases.NewSetRecoveryCodeUseCase(mocks.NoopLogger{}, s.gw)
+		uc := usecases.NewSetRecoveryCodeUseCase(mocks.NoopLogger{}, s.gw, testRecoveryTTL)
 
 		err := uc.Execute(context.Background(), "jane@example.com")
 
@@ -82,7 +82,7 @@ func (s *SetRecoveryCodeUseCaseTestSuite) TestSaveConfirmationCodeError() {
 		s.gw.On("SaveConfirmationCode", mock.Anything, mock.AnythingOfType("domain.ConfirmationCode")).
 			Return(saveErr)
 
-		uc := usecases.NewSetRecoveryCodeUseCase(mocks.NoopLogger{}, s.gw)
+		uc := usecases.NewSetRecoveryCodeUseCase(mocks.NoopLogger{}, s.gw, testRecoveryTTL)
 
 		err := uc.Execute(context.Background(), "jane@example.com")
 
@@ -103,7 +103,7 @@ func (s *SetRecoveryCodeUseCaseTestSuite) TestEmailFailureIsNonFatal() {
 		s.gw.On("SendRecoveryEmail", mock.Anything, *target, mock.AnythingOfType("domain.ConfirmationCode")).
 			Return(errors.New("smtp down"))
 
-		uc := usecases.NewSetRecoveryCodeUseCase(log, s.gw)
+		uc := usecases.NewSetRecoveryCodeUseCase(log, s.gw, testRecoveryTTL)
 
 		err := uc.Execute(context.Background(), "jane@example.com")
 

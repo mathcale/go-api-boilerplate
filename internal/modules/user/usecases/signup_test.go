@@ -39,7 +39,7 @@ func (s *SignUpUseCaseTestSuite) TestSignUpUseCase_Success() {
 		s.gw.On("SaveUser", mock.Anything, mock.AnythingOfType("domain.User"), mock.AnythingOfType("domain.ConfirmationCode")).Return(nil)
 		s.gw.On("SendConfirmationEmail", mock.Anything, mock.AnythingOfType("domain.User"), mock.AnythingOfType("domain.ConfirmationCode")).Return(nil)
 
-		uc := usecases.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
+		uc := usecases.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw, testConfirmationTTL)
 
 		created, err := uc.Execute(context.Background(), usecases.SignUpInput{
 			Name:     "Jane",
@@ -63,7 +63,7 @@ func (s *SignUpUseCaseTestSuite) TestSignUpUseCase_AlreadyExists() {
 		truthy := true
 		s.gw.On("UserExistsIncludingInactive", mock.Anything, "jane@example.com").Return(&truthy, nil)
 
-		uc := usecases.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
+		uc := usecases.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw, testConfirmationTTL)
 
 		created, err := uc.Execute(context.Background(), usecases.SignUpInput{
 			Name:     "Jane",
@@ -94,7 +94,7 @@ func (s *SignUpUseCaseTestSuite) TestSignUpUseCase_HashErrorPropagates() {
 		s.gw.On("UserExistsIncludingInactive", mock.Anything, "jane@example.com").Return(&falsy, nil)
 		s.pw.On("Hash", "secret123").Return(nil, hashErr)
 
-		uc := usecases.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
+		uc := usecases.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw, testConfirmationTTL)
 
 		created, err := uc.Execute(context.Background(), usecases.SignUpInput{
 			Name:     "Jane",
@@ -122,7 +122,7 @@ func (s *SignUpUseCaseTestSuite) TestSignUpUseCase_EmailFailureIsNonFatal() {
 		s.gw.On("SendConfirmationEmail", mock.Anything, mock.Anything, mock.Anything).
 			Return(errors.New("smtp down"))
 
-		uc := usecases.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
+		uc := usecases.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw, testConfirmationTTL)
 
 		created, err := uc.Execute(context.Background(), usecases.SignUpInput{
 			Name:     "Jane",
@@ -143,7 +143,7 @@ func (s *SignUpUseCaseTestSuite) TestSignUpUseCase_UserExistsCheckErrorPropagate
 
 		s.gw.On("UserExistsIncludingInactive", mock.Anything, "jane@example.com").Return(nil, gwErr)
 
-		uc := usecases.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
+		uc := usecases.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw, testConfirmationTTL)
 
 		created, err := uc.Execute(context.Background(), usecases.SignUpInput{
 			Name:     "Jane",
@@ -166,7 +166,7 @@ func (s *SignUpUseCaseTestSuite) TestSignUpUseCase_InvalidDomainInput() {
 		s.gw.On("UserExistsIncludingInactive", mock.Anything, "jane@example.com").Return(&falsy, nil)
 		s.pw.On("Hash", "secret123").Return(&hashed, nil)
 
-		uc := usecases.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
+		uc := usecases.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw, testConfirmationTTL)
 
 		created, err := uc.Execute(context.Background(), usecases.SignUpInput{
 			Name:     "",
@@ -198,7 +198,7 @@ func (s *SignUpUseCaseTestSuite) TestSignUpUseCase_SaveUserErrorPropagates() {
 		s.gw.On("SaveUser", mock.Anything, mock.AnythingOfType("domain.User"), mock.AnythingOfType("domain.ConfirmationCode")).
 			Return(saveErr)
 
-		uc := usecases.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
+		uc := usecases.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw, testConfirmationTTL)
 
 		created, err := uc.Execute(context.Background(), usecases.SignUpInput{
 			Name:     "Jane",

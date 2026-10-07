@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"context"
+	"time"
 
 	"github.com/mathcale/go-api-boilerplate/internal/core/logger"
 	"github.com/mathcale/go-api-boilerplate/internal/modules/user/domain"
@@ -14,18 +15,21 @@ type (
 	}
 
 	resendConfirmationCodeUseCase struct {
-		logger  logger.Logger
-		gateway gateway.Gateway
+		logger          logger.Logger
+		gateway         gateway.Gateway
+		confirmationTTL time.Duration
 	}
 )
 
 func NewResendConfirmationCodeUseCase(
 	l logger.Logger,
 	gw gateway.Gateway,
+	confirmationTTL time.Duration,
 ) ResendConfirmationCodeUseCase {
 	return &resendConfirmationCodeUseCase{
-		logger:  l,
-		gateway: gw,
+		logger:          l,
+		gateway:         gw,
+		confirmationTTL: confirmationTTL,
 	}
 }
 
@@ -42,7 +46,7 @@ func (uc *resendConfirmationCodeUseCase) Execute(ctx context.Context, email stri
 	confirmationCode := domain.NewConfirmationCode(
 		target.ID,
 		domain.PurposeAccountConfirmation,
-		domain.AccountConfirmationTTL,
+		uc.confirmationTTL,
 	)
 
 	if err := uc.gateway.SaveConfirmationCode(ctx, confirmationCode); err != nil {

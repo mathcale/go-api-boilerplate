@@ -69,7 +69,7 @@ func (s *UserGatewayTestSuite) TestSaveUser() {
 			Email: "jane@example.com",
 		}
 
-		code := domain.NewConfirmationCode(u.ID, domain.PurposeAccountConfirmation, domain.AccountConfirmationTTL)
+		code := domain.NewConfirmationCode(u.ID, domain.PurposeAccountConfirmation, 10*time.Minute)
 
 		err := s.gateway.SaveUser(context.Background(), u, code)
 
@@ -201,7 +201,7 @@ func (s *UserGatewayTestSuite) TestSaveConfirmationCode() {
 			On("SaveConfirmationCode", mock.Anything, mock.AnythingOfType("models.ConfirmationCode")).
 			Return(nil)
 
-		code := domain.NewConfirmationCode(uuid.New(), domain.PurposePasswordRecovery, domain.PasswordRecoveryTTL)
+		code := domain.NewConfirmationCode(uuid.New(), domain.PurposePasswordRecovery, 30*time.Minute)
 
 		err := s.gateway.SaveConfirmationCode(context.Background(), code)
 
@@ -286,7 +286,7 @@ func (s *UserGatewayTestSuite) TestSendConfirmationEmail() {
 			Email: "jane@example.com",
 		}
 
-		code := domain.NewConfirmationCode(u.ID, domain.PurposeAccountConfirmation, domain.AccountConfirmationTTL)
+		code := domain.NewConfirmationCode(u.ID, domain.PurposeAccountConfirmation, 10*time.Minute)
 
 		err := s.gateway.SendConfirmationEmail(context.Background(), u, code)
 
@@ -307,7 +307,7 @@ func (s *UserGatewayTestSuite) TestSendRecoveryEmail() {
 			Email: "jane@example.com",
 		}
 
-		code := domain.NewConfirmationCode(u.ID, domain.PurposePasswordRecovery, domain.PasswordRecoveryTTL)
+		code := domain.NewConfirmationCode(u.ID, domain.PurposePasswordRecovery, 30*time.Minute)
 
 		err := s.gateway.SendRecoveryEmail(context.Background(), u, code)
 

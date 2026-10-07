@@ -88,5 +88,21 @@ PASSWORD_RECOVERY_BASE_URL=https://example.com/recover`
 		s.Equal("Test Sender", config.MailerSenderName)
 		s.Equal("test@example.com", config.MailerSenderEmail)
 		s.Equal("https://example.com/recover", config.PasswordRecoveryBaseURL)
+		s.Equal(10, config.AccountConfirmationTTLMinutes)
+		s.Equal(30, config.PasswordRecoveryTTLMinutes)
+	})
+
+	s.Run("should override code TTLs from .env file", func() {
+		envContent := `ACCOUNT_CONFIRMATION_TTL_MINUTES=45
+PASSWORD_RECOVERY_TTL_MINUTES=5`
+
+		envPath := filepath.Join(s.tempDir, ".env")
+		s.Require().NoError(os.WriteFile(envPath, []byte(envContent), 0o600))
+
+		config, err := Load(s.tempDir)
+
+		s.Require().NoError(err)
+		s.Equal(45, config.AccountConfirmationTTLMinutes)
+		s.Equal(5, config.PasswordRecoveryTTLMinutes)
 	})
 }

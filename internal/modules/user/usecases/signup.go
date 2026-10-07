@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"context"
+	"time"
 
 	"github.com/mathcale/go-api-boilerplate/internal/core/apperror"
 	"github.com/mathcale/go-api-boilerplate/internal/core/bcrypt"
@@ -24,17 +25,24 @@ type (
 	}
 
 	signUpUseCase struct {
-		logger   logger.Logger
-		gateway  gateway.Gateway
-		password bcrypt.Password
+		logger          logger.Logger
+		gateway         gateway.Gateway
+		password        bcrypt.Password
+		confirmationTTL time.Duration
 	}
 )
 
-func NewSignUpUseCase(l logger.Logger, gw gateway.Gateway, pw bcrypt.Password) SignUpUseCase {
+func NewSignUpUseCase(
+	l logger.Logger,
+	gw gateway.Gateway,
+	pw bcrypt.Password,
+	confirmationTTL time.Duration,
+) SignUpUseCase {
 	return &signUpUseCase{
-		logger:   l,
-		gateway:  gw,
-		password: pw,
+		logger:          l,
+		gateway:         gw,
+		password:        pw,
+		confirmationTTL: confirmationTTL,
 	}
 }
 
@@ -78,7 +86,7 @@ func (uc *signUpUseCase) Execute(ctx context.Context, input SignUpInput) (*domai
 	confirmationCode := domain.NewConfirmationCode(
 		newUser.ID,
 		domain.PurposeAccountConfirmation,
-		domain.AccountConfirmationTTL,
+		uc.confirmationTTL,
 	)
 
 	if err := uc.gateway.SaveUser(ctx, newUser, confirmationCode); err != nil {

@@ -11,9 +11,6 @@ type Purpose string
 const (
 	PurposeAccountConfirmation Purpose = "account_confirmation"
 	PurposePasswordRecovery    Purpose = "password_recovery"
-
-	AccountConfirmationTTL = 10 * time.Minute
-	PasswordRecoveryTTL    = 30 * time.Minute
 )
 
 type ConfirmationCode struct {
