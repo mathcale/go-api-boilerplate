@@ -12,14 +12,16 @@ import (
 	"github.com/mathcale/go-api-boilerplate/internal/core/webcontext"
 )
 
-type AuthMiddleware interface {
-	Handler(next http.Handler) http.Handler
-}
+type (
+	AuthMiddleware interface {
+		Handler(next http.Handler) http.Handler
+	}
 
-type authMiddleware struct {
-	jwtAuth  jwt.JWTAuth
-	response response.Response
-}
+	authMiddleware struct {
+		jwtAuth  jwt.JWTAuth
+		response response.Response
+	}
+)
 
 func NewAuthMiddleware(jwtAuth jwt.JWTAuth, response response.Response) AuthMiddleware {
 	return &authMiddleware{

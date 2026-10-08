@@ -5,25 +5,21 @@ import (
 	"github.com/mathcale/go-api-boilerplate/internal/core/logger"
 )
 
-// fake is the default email client. Instead of delivering messages it logs the
-// full SendInput, so flows that depend on email (account confirmation, password
-// recovery) work out-of-the-box in development without any external provider.
-// Replace it with a real client (SMTP, Mailjet, SES, ...) in the injector.
-type fake struct {
+type fakeEmailClient struct {
 	logger      logger.Logger
 	senderName  string
 	senderEmail string
 }
 
-func NewFake(l logger.Logger, senderName, senderEmail string) email.Client {
-	return &fake{
+func NewFakeEmailClient(l logger.Logger, senderName, senderEmail string) email.Client {
+	return &fakeEmailClient{
 		logger:      l,
 		senderName:  senderName,
 		senderEmail: senderEmail,
 	}
 }
 
-func (c *fake) Send(input email.SendInput) error {
+func (c *fakeEmailClient) Send(input email.SendInput) error {
 	c.logger.Info("[fake email client] email would be sent", map[string]interface{}{
 		"from_name":          c.senderName,
 		"from_email":         c.senderEmail,

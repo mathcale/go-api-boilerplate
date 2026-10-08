@@ -68,6 +68,7 @@ func corsAllowedOrigins(raw string) []string {
 	}
 
 	origins := strings.Split(raw, ",")
+
 	for i := range origins {
 		origins[i] = strings.TrimSpace(origins[i])
 	}

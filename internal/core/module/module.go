@@ -9,16 +9,18 @@ const (
 	RateLimited  = true
 )
 
-type Route struct {
-	Method        string
-	Path          string
-	Protected     bool
-	RateLimited   bool
-	RequiredRoles []string
-	Handler       http.HandlerFunc
-}
+type (
+	Route struct {
+		Method        string
+		Path          string
+		Protected     bool
+		RateLimited   bool
+		RequiredRoles []string
+		Handler       http.HandlerFunc
+	}
 
-type Module interface {
-	Name() string
-	Routes() []Route
-}
+	Module interface {
+		Name() string
+		Routes() []Route
+	}
+)

@@ -4,8 +4,6 @@ import "net/http"
 
 type securityHeadersMiddleware struct{}
 
-// NewSecurityHeadersMiddleware sets a baseline of conservative security headers
-// on every response. Projects can tighten the CSP as their front-end needs.
 func NewSecurityHeadersMiddleware() MiddlewareHandler {
 	return &securityHeadersMiddleware{}
 }

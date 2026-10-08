@@ -24,7 +24,7 @@ func (s *FakeClientTestSuite) TestFake_Send() {
 		logger := new(mocks.Logger)
 		logger.On("Info", mock.Anything, mock.Anything).Return()
 
-		client := clients.NewFake(logger, "Boilerplate", "no-reply@example.com")
+		client := clients.NewFakeEmailClient(logger, "Boilerplate", "no-reply@example.com")
 
 		err := client.Send(email.SendInput{
 			RecipientName:  "Jane",

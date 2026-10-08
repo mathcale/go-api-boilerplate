@@ -8,14 +8,16 @@ import (
 	"github.com/mathcale/go-api-boilerplate/internal/core/webcontext"
 )
 
-type loggingMiddleware struct {
-	logger logger.Logger
-}
+type (
+	loggingMiddleware struct {
+		logger logger.Logger
+	}
 
-type loggingResponseWriter struct {
-	http.ResponseWriter
-	statusCode int
-}
+	loggingResponseWriter struct {
+		http.ResponseWriter
+		statusCode int
+	}
+)
 
 func NewLoggingMiddleware(l logger.Logger) MiddlewareHandler {
 	return &loggingMiddleware{

@@ -123,7 +123,7 @@ collection:
         meta:
           id: req_d4e5f6a7b8c948d9e0f1a2b3c4d5e6f7
           created: 1789530000004
-          modified: 1789530000004
+          modified: 1791254890305
           isPrivate: false
           description: Activates an account using its confirmation code. In dev, the code
             is logged by the fake email client (or readable from the
@@ -134,8 +134,8 @@ collection:
           mimeType: application/json
           text: |-
             {
-              "user_id": "{{ _.user_id }}",
-              "code": "{{ _.confirmation_code }}"
+              "user_id": "29d75250-6b8e-4a67-bdd4-709fec505f00",
+              "code": "afb0b2b0-895f-49ee-a0ca-835df147c9c6"
             }
         headers:
           - name: Content-Type
@@ -265,7 +265,7 @@ collection:
         meta:
           id: req_c9d0e1f2a3b448c9d0e1f2a3b4c5d6e2
           created: 1789530000009
-          modified: 1789530000009
+          modified: 1791254981562
           isPrivate: false
           description: Returns the authenticated user's profile. Requires an access token
             from Sign In.
@@ -273,7 +273,7 @@ collection:
         method: GET
         authentication:
           type: bearer
-          token: "{{ _.access_token }}"
+          token: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJnby1hcGktYm9pbGVycGxhdGUtY2xpZW50cyIsImV4cCI6MTc5MTI1ODUyOCwiZXh0cmFfY2xhaW1zIjp7InJvbGVzIjpbXX0sImlhdCI6MTc5MTI1NDkyOCwiaXNzIjoiZ28tYXBpLWJvaWxlcnBsYXRlIiwic3ViIjoiMjlkNzUyNTAtNmI4ZS00YTY3LWJkZDQtNzA5ZmVjNTA1ZjAwIn0.NAFfFJa0mpgyHpv0epo_BWAhb7Ngbr2f3xcbB24LQGL6VGqWsUtFmZzwPjlAI0mpImQ3WMmJMxqAd5B-kn0mSg
           prefix: Bearer
         settings:
           renderRequestBody: true

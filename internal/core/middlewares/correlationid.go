@@ -16,7 +16,9 @@ type correlationIDMiddleware struct {
 }
 
 func NewCorrelationIDMiddleware(l logger.Logger) MiddlewareHandler {
-	return &correlationIDMiddleware{logger: l}
+	return &correlationIDMiddleware{
+		logger: l,
+	}
 }
 
 func (m *correlationIDMiddleware) Handler(next http.Handler) http.Handler {
@@ -27,6 +29,7 @@ func (m *correlationIDMiddleware) Handler(next http.Handler) http.Handler {
 		}
 
 		ctx := webcontext.WithCorrelationID(r.Context(), correlationID)
+
 		w.Header().Set(correlationIDHeader, correlationID)
 
 		next.ServeHTTP(w, r.WithContext(ctx))

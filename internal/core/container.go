@@ -63,7 +63,7 @@ func Build(cfg *config.Config) (*Container, error) {
 		JWT:      jwtAuth,
 		Bcrypt:   bcrypt.NewPassword(),
 		Response: response.NewResponse(log, cfg.Environment),
-		Email:    clients.NewFake(log, cfg.MailerSenderName, cfg.MailerSenderEmail),
+		Email:    clients.NewFakeEmailClient(log, cfg.MailerSenderName, cfg.MailerSenderEmail),
 	}, nil
 }
 

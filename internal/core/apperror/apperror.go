@@ -2,26 +2,28 @@ package apperror
 
 import "fmt"
 
-type AppError interface {
-	error
-	OriginalError() error
-	Unwrap() error
-	Kind() Kind
-	Origin() Origin
-	OriginName() string
-	BusinessCode() *BusinessCode
-	ClientCode() *int
-}
+type (
+	AppError interface {
+		error
+		OriginalError() error
+		Unwrap() error
+		Kind() Kind
+		Origin() Origin
+		OriginName() string
+		BusinessCode() *BusinessCode
+		ClientCode() *int
+	}
 
-type appError struct {
-	err          error
-	message      string
-	kind         Kind
-	origin       Origin
-	originName   string
-	businessCode *BusinessCode
-	clientCode   *int
-}
+	appError struct {
+		err          error
+		message      string
+		kind         Kind
+		origin       Origin
+		originName   string
+		businessCode *BusinessCode
+		clientCode   *int
+	}
+)
 
 func New(
 	err error,

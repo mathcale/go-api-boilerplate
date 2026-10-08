@@ -11,6 +11,12 @@ import (
 )
 
 type (
+	ErrorOutput struct {
+		Message string                 `json:"message"`
+		Code    *apperror.BusinessCode `json:"code,omitempty"`
+		Cause   string                 `json:"cause,omitempty"`
+	}
+
 	Response interface {
 		Respond(w http.ResponseWriter, statusCode int, data interface{}, headers map[string]string)
 		RespondPlainText(w http.ResponseWriter, statusCode int, data string, headers map[string]string)
@@ -67,7 +73,10 @@ func (h *response) RespondPlainText(
 
 func (h *response) RespondWithError(w http.ResponseWriter, err error, headers map[string]string) {
 	status := http.StatusInternalServerError
-	output := ErrorOutput{Message: "internal server error"}
+
+	output := ErrorOutput{
+		Message: "internal server error",
+	}
 
 	var appErr apperror.AppError
 	if errors.As(err, &appErr) {
@@ -83,7 +92,9 @@ func (h *response) RespondWithError(w http.ResponseWriter, err error, headers ma
 	}
 
 	if status >= http.StatusInternalServerError {
-		h.logger.Error("request failed", err, map[string]interface{}{"status": status})
+		h.logger.Error("request failed", err, map[string]interface{}{
+			"status": status,
+		})
 	}
 
 	setHeaders(w, headers)
@@ -128,10 +139,4 @@ func setHeaders(w http.ResponseWriter, headers map[string]string) {
 	for key, value := range headers {
 		w.Header().Set(key, value)
 	}
-}
-
-type ErrorOutput struct {
-	Message string                 `json:"message"`
-	Code    *apperror.BusinessCode `json:"code,omitempty"`
-	Cause   string                 `json:"cause,omitempty"`
 }
