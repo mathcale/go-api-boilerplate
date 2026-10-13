@@ -22,8 +22,16 @@ func (s *ConfigTestSuite) SetupTest() {
 	s.tempDir = tempDir
 }
 
+func (s *ConfigTestSuite) SetupSubTest() {
+	s.SetupTest()
+}
+
 func (s *ConfigTestSuite) TearDownTest() {
 	os.RemoveAll(s.tempDir)
+}
+
+func (s *ConfigTestSuite) TearDownSubTest() {
+	s.TearDownTest()
 }
 
 func TestConfig(t *testing.T) {
@@ -59,34 +67,34 @@ PASSWORD_RECOVERY_BASE_URL=https://example.com/recover`
 		err := os.WriteFile(envPath, []byte(envContent), 0644)
 		s.NoError(err)
 
-		config, err := Load(s.tempDir)
+		cfg, err := Load(s.tempDir)
 		if err != nil {
 			s.T().Logf("Load error: %v", err)
 		}
 
 		s.NoError(err)
-		s.NotNil(config)
-		s.Equal("development", config.Environment)
-		s.Equal("debug", config.LogLevel)
-		s.Equal(8080, config.WebServerPort)
-		s.Equal("localhost", config.DatabaseHost)
-		s.Equal(5432, config.DatabasePort)
-		s.Equal("testuser", config.DatabaseUser)
-		s.Equal("testpass", config.DatabasePassword)
-		s.Equal("testdb", config.DatabaseName)
-		s.Equal("disable", config.DatabaseSSLMode)
-		s.Equal(10, config.DatabaseMaxOpenConns)
-		s.Equal(5, config.DatabaseMaxIdleConns)
-		s.Equal(300, config.DatabaseConnMaxLifetimeSecs)
-		s.Equal(60, config.DatabaseConnMaxIdleTimeSecs)
-		s.Equal("test_access_secret", config.AccessTokenSecret)
-		s.Equal(15, config.AccessTokenLifetimeMinutes)
-		s.Equal("test_refresh_secret", config.RefreshTokenSecret)
-		s.Equal(1440, config.RefreshTokenLifetimeMinutes)
-		s.Equal("test_issuer", config.TokenIssuer)
-		s.Equal("test_audience", config.TokenAudience)
-		s.Equal("Test Sender", config.MailerSenderName)
-		s.Equal("test@example.com", config.MailerSenderEmail)
-		s.Equal("https://example.com/recover", config.PasswordRecoveryBaseURL)
+		s.NotNil(cfg)
+		s.Equal("development", cfg.Environment)
+		s.Equal("debug", cfg.LogLevel)
+		s.Equal(8080, cfg.WebServerPort)
+		s.Equal("localhost", cfg.DatabaseHost)
+		s.Equal(5432, cfg.DatabasePort)
+		s.Equal("testuser", cfg.DatabaseUser)
+		s.Equal("testpass", cfg.DatabasePassword)
+		s.Equal("testdb", cfg.DatabaseName)
+		s.Equal("disable", cfg.DatabaseSSLMode)
+		s.Equal(10, cfg.DatabaseMaxOpenConns)
+		s.Equal(5, cfg.DatabaseMaxIdleConns)
+		s.Equal(300, cfg.DatabaseConnMaxLifetimeSecs)
+		s.Equal(60, cfg.DatabaseConnMaxIdleTimeSecs)
+		s.Equal("test_access_secret", cfg.AccessTokenSecret)
+		s.Equal(15, cfg.AccessTokenLifetimeMinutes)
+		s.Equal("test_refresh_secret", cfg.RefreshTokenSecret)
+		s.Equal(1440, cfg.RefreshTokenLifetimeMinutes)
+		s.Equal("test_issuer", cfg.TokenIssuer)
+		s.Equal("test_audience", cfg.TokenAudience)
+		s.Equal("Test Sender", cfg.MailerSenderName)
+		s.Equal("test@example.com", cfg.MailerSenderEmail)
+		s.Equal("https://example.com/recover", cfg.PasswordRecoveryBaseURL)
 	})
 }

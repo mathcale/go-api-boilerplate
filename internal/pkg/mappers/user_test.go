@@ -1,16 +1,13 @@
-package mappers_test
+package mappers
 
 import (
 	"testing"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/database/models"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/mappers"
+	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
 )
 
 type MappersUserTestSuite struct {
@@ -23,23 +20,9 @@ func TestMappersUser(t *testing.T) {
 
 func (s *MappersUserTestSuite) TestUserModelToDomain() {
 	s.Run("should map a user model to its domain representation", func() {
-		avatarURL := "https://example.com/avatar.png"
-		now := time.Now()
+		m := fixtures.DomainPkgUserModel()
 
-		m := models.User{
-			ID:        uuid.New(),
-			Name:      "Jane",
-			Surname:   "Doe",
-			AvatarURL: &avatarURL,
-			Email:     "jane@example.com",
-			Password:  "hashed",
-			Active:    true,
-			Roles:     pq.StringArray{"admin"},
-			CreatedAt: now,
-			UpdatedAt: now,
-		}
-
-		got := mappers.UserModelToDomain(m)
+		got := UserModelToDomain(m)
 
 		s.Equal(m.ID, got.ID)
 		s.Equal(m.Name, got.Name)
@@ -56,23 +39,9 @@ func (s *MappersUserTestSuite) TestUserModelToDomain() {
 
 func (s *MappersUserTestSuite) TestUserDomainToModel() {
 	s.Run("should map a domain user to its persistence model", func() {
-		avatarURL := "https://example.com/avatar.png"
-		now := time.Now()
+		u := fixtures.DomainPkgUser()
 
-		u := user.User{
-			ID:        uuid.New(),
-			Name:      "Jane",
-			Surname:   "Doe",
-			AvatarURL: &avatarURL,
-			Email:     "jane@example.com",
-			Password:  "hashed",
-			Active:    true,
-			Roles:     []string{"admin"},
-			CreatedAt: now,
-			UpdatedAt: now,
-		}
-
-		got := mappers.UserDomainToModel(u)
+		got := UserDomainToModel(u)
 
 		s.Equal(u.ID, got.ID)
 		s.Equal(u.Name, got.Name)
@@ -89,7 +58,7 @@ func (s *MappersUserTestSuite) TestUserDomainToModel() {
 	s.Run("should map nil roles to an empty slice instead of null", func() {
 		u := user.User{Roles: nil}
 
-		got := mappers.UserDomainToModel(u)
+		got := UserDomainToModel(u)
 
 		s.Equal(pq.StringArray{}, got.Roles)
 	})

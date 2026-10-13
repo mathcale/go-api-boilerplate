@@ -1,15 +1,12 @@
-package mappers_test
+package mappers
 
 import (
 	"testing"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/database/models"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/mappers"
+	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
 )
 
 type MappersConfirmationCodeTestSuite struct {
@@ -22,19 +19,9 @@ func TestMappersConfirmationCode(t *testing.T) {
 
 func (s *MappersConfirmationCodeTestSuite) TestConfirmationCodeModelToDomain() {
 	s.Run("should map a confirmation code model to its domain representation", func() {
-		now := time.Now()
+		m := fixtures.DomainPkgConfirmationCodeModel()
 
-		m := models.ConfirmationCode{
-			ID:        uuid.New(),
-			UserID:    uuid.New(),
-			Code:      "the-code",
-			Purpose:   "account_confirmation",
-			ExpiresAt: now,
-			Used:      true,
-			CreatedAt: now,
-		}
-
-		got := mappers.ConfirmationCodeModelToDomain(m)
+		got := ConfirmationCodeModelToDomain(m)
 
 		s.Equal(m.ID, got.ID)
 		s.Equal(m.UserID, got.UserID)
@@ -48,19 +35,9 @@ func (s *MappersConfirmationCodeTestSuite) TestConfirmationCodeModelToDomain() {
 
 func (s *MappersConfirmationCodeTestSuite) TestConfirmationCodeDomainToModel() {
 	s.Run("should map a domain confirmation code to its persistence model", func() {
-		now := time.Now()
+		c := fixtures.DomainPkgConfirmationCode()
 
-		c := user.ConfirmationCode{
-			ID:        uuid.New(),
-			UserID:    uuid.New(),
-			Code:      "the-code",
-			Purpose:   user.PurposePasswordRecovery,
-			ExpiresAt: now,
-			Used:      false,
-			CreatedAt: now,
-		}
-
-		got := mappers.ConfirmationCodeDomainToModel(c)
+		got := ConfirmationCodeDomainToModel(c)
 
 		s.Equal(c.ID, got.ID)
 		s.Equal(c.UserID, got.UserID)

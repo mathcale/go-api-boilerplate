@@ -1,11 +1,7 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
-
-	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
 
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers/dto"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/webcontext"
@@ -40,7 +36,6 @@ type (
 
 	authHandler struct {
 		response Response
-		validate *validator.Validate
 		useCases AuthUseCases
 	}
 )
@@ -48,7 +43,6 @@ type (
 func NewAuthHandler(response Response, useCases AuthUseCases) AuthHandler {
 	return &authHandler{
 		response: response,
-		validate: validator.New(validator.WithRequiredStructEnabled()),
 		useCases: useCases,
 	}
 }
@@ -65,7 +59,7 @@ func NewAuthHandler(response Response, useCases AuthUseCases) AuthHandler {
 // @Router			/v1/auth/signup [post]
 func (h *authHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	var input dto.SignUpInput
-	if err := h.decodeAndValidate(r, &input); err != nil {
+	if err := decodeAndValidate(r, &input, "auth"); err != nil {
 		h.response.RespondWithError(w, err, nil)
 		return
 	}
@@ -103,7 +97,7 @@ func (h *authHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 // @Router			/v1/auth/signin [post]
 func (h *authHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 	var input dto.SignInInput
-	if err := h.decodeAndValidate(r, &input); err != nil {
+	if err := decodeAndValidate(r, &input, "auth"); err != nil {
 		h.response.RespondWithError(w, err, nil)
 		return
 	}
@@ -131,7 +125,7 @@ func (h *authHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 // @Router			/v1/auth/refresh-token [post]
 func (h *authHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	var input dto.RefreshTokenInput
-	if err := h.decodeAndValidate(r, &input); err != nil {
+	if err := decodeAndValidate(r, &input, "auth"); err != nil {
 		h.response.RespondWithError(w, err, nil)
 		return
 	}
@@ -159,7 +153,7 @@ func (h *authHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 // @Router			/v1/auth/confirm-account [post]
 func (h *authHandler) ConfirmAccount(w http.ResponseWriter, r *http.Request) {
 	var input dto.ConfirmAccountInput
-	if err := h.decodeAndValidate(r, &input); err != nil {
+	if err := decodeAndValidate(r, &input, "auth"); err != nil {
 		h.response.RespondWithError(w, err, nil)
 		return
 	}
@@ -188,7 +182,7 @@ func (h *authHandler) ConfirmAccount(w http.ResponseWriter, r *http.Request) {
 // @Router			/v1/auth/resend-confirmation-code [post]
 func (h *authHandler) ResendConfirmationCode(w http.ResponseWriter, r *http.Request) {
 	var input dto.ResendConfirmationCodeInput
-	if err := h.decodeAndValidate(r, &input); err != nil {
+	if err := decodeAndValidate(r, &input, "auth"); err != nil {
 		h.response.RespondWithError(w, err, nil)
 		return
 	}
@@ -249,7 +243,7 @@ func (h *authHandler) Me(w http.ResponseWriter, r *http.Request) {
 // @Router			/v1/auth/recovery-code [post]
 func (h *authHandler) SetRecoveryCode(w http.ResponseWriter, r *http.Request) {
 	var input dto.SetRecoveryCodeInput
-	if err := h.decodeAndValidate(r, &input); err != nil {
+	if err := decodeAndValidate(r, &input, "auth"); err != nil {
 		h.response.RespondWithError(w, err, nil)
 		return
 	}
@@ -273,7 +267,7 @@ func (h *authHandler) SetRecoveryCode(w http.ResponseWriter, r *http.Request) {
 // @Router			/v1/auth/recovery-code/validate [post]
 func (h *authHandler) ValidateRecoveryCode(w http.ResponseWriter, r *http.Request) {
 	var input dto.ValidateRecoveryCodeInput
-	if err := h.decodeAndValidate(r, &input); err != nil {
+	if err := decodeAndValidate(r, &input, "auth"); err != nil {
 		h.response.RespondWithError(w, err, nil)
 		return
 	}
@@ -303,7 +297,7 @@ func (h *authHandler) ValidateRecoveryCode(w http.ResponseWriter, r *http.Reques
 // @Router			/v1/auth/password [put]
 func (h *authHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	var input dto.UpdatePasswordInput
-	if err := h.decodeAndValidate(r, &input); err != nil {
+	if err := decodeAndValidate(r, &input, "auth"); err != nil {
 		h.response.RespondWithError(w, err, nil)
 		return
 	}
@@ -322,40 +316,4 @@ func (h *authHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.response.Respond(w, http.StatusNoContent, nil, nil)
-}
-
-func (h *authHandler) decodeAndValidate(r *http.Request, dst interface{}) error {
-	if err := json.NewDecoder(r.Body).Decode(dst); err != nil {
-		code := apperror.BE0001_INVALID_INPUT
-
-		return apperror.New(
-			err, "invalid request body", apperror.ParseKind,
-			apperror.WebHandlerOrigin, "auth", &code, nil,
-		)
-	}
-
-	if err := h.validate.Struct(dst); err != nil {
-		code := apperror.BE0002_INPUT_VALIDATION_FAILED
-
-		return apperror.New(
-			err, "request validation failed", apperror.ValidationKind,
-			apperror.WebHandlerOrigin, "auth", &code, nil,
-		)
-	}
-
-	return nil
-}
-
-func parseUUID(raw, origin string) (uuid.UUID, error) {
-	id, err := uuid.Parse(raw)
-	if err != nil {
-		code := apperror.BE0001_INVALID_INPUT
-
-		return uuid.Nil, apperror.New(
-			err, "invalid uuid", apperror.ValidationKind,
-			apperror.WebHandlerOrigin, origin, &code, nil,
-		)
-	}
-
-	return id, nil
 }

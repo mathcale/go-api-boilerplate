@@ -1,4 +1,4 @@
-package clients_test
+package clients
 
 import (
 	"testing"
@@ -6,8 +6,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/email"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/email/clients"
+	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
 	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
 )
 
@@ -24,17 +23,9 @@ func (s *FakeClientTestSuite) TestFake_Send() {
 		logger := new(mocks.Logger)
 		logger.On("Info", mock.Anything, mock.Anything).Return()
 
-		client := clients.NewFake(logger, "Boilerplate", "no-reply@example.com")
+		client := NewFake(logger, "Boilerplate", "no-reply@example.com")
 
-		err := client.Send(email.SendInput{
-			RecipientName:  "Jane",
-			RecipientEmail: "jane@example.com",
-			Subject:        "Hello",
-			TemplateID:     "welcome",
-			TemplateVariables: map[string]interface{}{
-				"first_name": "Jane",
-			},
-		})
+		err := client.Send(fixtures.InfraEmailSendInput())
 
 		s.Require().NoError(err)
 		logger.AssertExpectations(s.T())

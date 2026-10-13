@@ -1,12 +1,10 @@
-package bcrypt_test
+package bcrypt
 
 import (
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
-
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/bcrypt"
 )
 
 type PasswordTestSuite struct {
@@ -17,35 +15,43 @@ func TestPassword(t *testing.T) {
 	suite.Run(t, new(PasswordTestSuite))
 }
 
-func (s *PasswordTestSuite) TestPassword() {
-	s.Run("should hash a password and successfully verify it", func() {
-		pw := bcrypt.NewPassword()
+func (s *PasswordTestSuite) TestHash() {
+	s.Run("should hash a password into a different value", func() {
+		pw := NewPassword()
 
 		hash, err := pw.Hash("s3cr3t-password")
+
 		s.Require().NoError(err)
 		s.Require().NotNil(hash)
 		s.NotEqual("s3cr3t-password", *hash)
+	})
+
+	s.Run("should reject hashing a password longer than bcrypt's 72 byte limit", func() {
+		pw := NewPassword()
+
+		hash, err := pw.Hash(strings.Repeat("a", 73))
+
+		s.Require().Error(err)
+		s.Nil(hash)
+	})
+}
+
+func (s *PasswordTestSuite) TestVerify() {
+	s.Run("should verify a password against its hash", func() {
+		pw := NewPassword()
+
+		hash, err := pw.Hash("s3cr3t-password")
+		s.Require().NoError(err)
 
 		s.Require().NoError(pw.Verify("s3cr3t-password", *hash))
 	})
 
 	s.Run("should reject verification with a wrong password", func() {
-		pw := bcrypt.NewPassword()
+		pw := NewPassword()
 
 		hash, err := pw.Hash("s3cr3t-password")
 		s.Require().NoError(err)
 
 		s.Require().Error(pw.Verify("wrong-password", *hash))
-	})
-
-	s.Run("should reject hashing a password longer than bcrypt's 72 byte limit", func() {
-		pw := bcrypt.NewPassword()
-
-		tooLong := strings.Repeat("a", 73)
-
-		hash, err := pw.Hash(tooLong)
-
-		s.Require().Error(err)
-		s.Nil(hash)
 	})
 }

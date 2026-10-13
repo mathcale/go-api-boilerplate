@@ -16,6 +16,10 @@ func (s *ToTokenInternalTestSuite) SetupTest() {
 	s.auth = &jwtAuth{}
 }
 
+func (s *ToTokenInternalTestSuite) SetupSubTest() {
+	s.SetupTest()
+}
+
 func TestToTokenInternal(t *testing.T) {
 	suite.Run(t, new(ToTokenInternalTestSuite))
 }
@@ -24,7 +28,7 @@ func TestToTokenInternal(t *testing.T) {
 // verify() path because jwtlib.Parse's default validator already rejects
 // malformed "exp" claims before toToken ever runs. It is exercised directly
 // here as a defensive-code safety net.
-func (s *ToTokenInternalTestSuite) TestToToken_InvalidExpClaim() {
+func (s *ToTokenInternalTestSuite) TestToToken() {
 	s.Run("should return an error when the exp claim cannot be parsed", func() {
 		claims := jwtlib.MapClaims{
 			"sub": "user-123",

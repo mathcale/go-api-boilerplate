@@ -1,15 +1,11 @@
-package mappers_test
+package mappers
 
 import (
 	"testing"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/database/models"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/mappers"
+	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
 )
 
 type MappersRefreshTokenTestSuite struct {
@@ -22,21 +18,9 @@ func TestMappersRefreshToken(t *testing.T) {
 
 func (s *MappersRefreshTokenTestSuite) TestRefreshTokenModelToDomain() {
 	s.Run("should map a refresh token model to its domain representation", func() {
-		now := time.Now()
-		usedAt := now
-		revokedAt := now
+		m := fixtures.DomainPkgRefreshTokenModel()
 
-		m := models.RefreshToken{
-			ID:        uuid.New(),
-			UserID:    uuid.New(),
-			FamilyID:  uuid.New(),
-			ExpiresAt: now,
-			UsedAt:    &usedAt,
-			RevokedAt: &revokedAt,
-			CreatedAt: now,
-		}
-
-		got := mappers.RefreshTokenModelToDomain(m)
+		got := RefreshTokenModelToDomain(m)
 
 		s.Equal(m.ID, got.ID)
 		s.Equal(m.UserID, got.UserID)
@@ -50,19 +34,9 @@ func (s *MappersRefreshTokenTestSuite) TestRefreshTokenModelToDomain() {
 
 func (s *MappersRefreshTokenTestSuite) TestRefreshTokenDomainToModel() {
 	s.Run("should map a domain refresh token to its persistence model", func() {
-		now := time.Now()
+		rt := fixtures.DomainPkgRefreshToken()
 
-		rt := user.RefreshToken{
-			ID:        uuid.New(),
-			UserID:    uuid.New(),
-			FamilyID:  uuid.New(),
-			ExpiresAt: now,
-			UsedAt:    nil,
-			RevokedAt: nil,
-			CreatedAt: now,
-		}
-
-		got := mappers.RefreshTokenDomainToModel(rt)
+		got := RefreshTokenDomainToModel(rt)
 
 		s.Equal(rt.ID, got.ID)
 		s.Equal(rt.UserID, got.UserID)

@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
+	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
 )
 
 type UserDomainTestSuite struct {
@@ -16,9 +17,9 @@ func TestUserDomain(t *testing.T) {
 	suite.Run(t, new(UserDomainTestSuite))
 }
 
-func (s *UserDomainTestSuite) TestCreateFromInput_Success() {
-	s.Run("should create a user from valid input, trimming whitespace and lowercasing the email", func() {
-		created, err := user.CreateFromInput(validParams())
+func (s *UserDomainTestSuite) TestCreateFromInput() {
+	s.Run("should create a user trimming whitespace and lowercasing the email", func() {
+		created, err := user.CreateFromInput(fixtures.DomainPkgCreateUserParams())
 
 		s.Require().NoError(err)
 		s.NotEmpty(created.ID)
@@ -30,7 +31,7 @@ func (s *UserDomainTestSuite) TestCreateFromInput_Success() {
 	})
 
 	s.Run("should return an error when name is missing", func() {
-		params := validParams()
+		params := fixtures.DomainPkgCreateUserParams()
 		params.Name = "   "
 
 		_, err := user.CreateFromInput(params)
@@ -39,7 +40,7 @@ func (s *UserDomainTestSuite) TestCreateFromInput_Success() {
 	})
 
 	s.Run("should return an error when surname is missing", func() {
-		params := validParams()
+		params := fixtures.DomainPkgCreateUserParams()
 		params.Surname = ""
 
 		_, err := user.CreateFromInput(params)
@@ -48,7 +49,7 @@ func (s *UserDomainTestSuite) TestCreateFromInput_Success() {
 	})
 
 	s.Run("should return an error when email is missing", func() {
-		params := validParams()
+		params := fixtures.DomainPkgCreateUserParams()
 		params.Email = ""
 
 		_, err := user.CreateFromInput(params)
@@ -57,21 +58,11 @@ func (s *UserDomainTestSuite) TestCreateFromInput_Success() {
 	})
 
 	s.Run("should return an error when password is missing", func() {
-		params := validParams()
+		params := fixtures.DomainPkgCreateUserParams()
 		params.Password = ""
 
 		_, err := user.CreateFromInput(params)
 
 		s.Require().EqualError(err, "password is required")
 	})
-}
-
-func validParams() user.CreateUserParams {
-	return user.CreateUserParams{
-		Name:     "  Jane  ",
-		Surname:  "  Doe  ",
-		Email:    "  Jane@Example.com  ",
-		Password: "hashed",
-		Active:   false,
-	}
 }

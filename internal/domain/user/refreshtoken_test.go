@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
+	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
 )
 
 type RefreshTokenDomainTestSuite struct {
@@ -37,7 +38,7 @@ func (s *RefreshTokenDomainTestSuite) TestNewRefreshTokenFamily() {
 
 func (s *RefreshTokenDomainTestSuite) TestRotateRefreshToken() {
 	s.Run("should rotate a refresh token while keeping the same family and user", func() {
-		previous := user.NewRefreshTokenFamily(uuid.New(), uuid.New(), time.Now().Add(time.Hour))
+		previous := fixtures.DomainPkgFamilyRefreshToken()
 		newID := uuid.New()
 		newExpiresAt := time.Now().Add(2 * time.Hour)
 
@@ -51,46 +52,43 @@ func (s *RefreshTokenDomainTestSuite) TestRotateRefreshToken() {
 }
 
 func (s *RefreshTokenDomainTestSuite) TestIsExpired() {
-	s.Run("should report whether a refresh token is expired", func() {
-		expired := user.RefreshToken{
-			ExpiresAt: time.Now().Add(-time.Minute),
-		}
+	s.Run("should report a past refresh token as expired", func() {
+		rt := fixtures.DomainPkgExpiredRefreshToken()
 
-		notExpired := user.RefreshToken{
-			ExpiresAt: time.Now().Add(time.Minute),
-		}
+		s.True(rt.IsExpired())
+	})
 
-		s.True(expired.IsExpired())
-		s.False(notExpired.IsExpired())
+	s.Run("should report a future refresh token as not expired", func() {
+		rt := fixtures.DomainPkgActiveRefreshToken()
+
+		s.False(rt.IsExpired())
 	})
 }
 
 func (s *RefreshTokenDomainTestSuite) TestIsUsed() {
-	s.Run("should report whether a refresh token has been used", func() {
-		usedAt := time.Now()
+	s.Run("should report a refresh token with a used timestamp as used", func() {
+		rt := fixtures.DomainPkgUsedRefreshToken()
 
-		used := user.RefreshToken{
-			UsedAt: &usedAt,
-		}
+		s.True(rt.IsUsed())
+	})
 
-		notUsed := user.RefreshToken{}
+	s.Run("should report a refresh token without a used timestamp as not used", func() {
+		rt := user.RefreshToken{}
 
-		s.True(used.IsUsed())
-		s.False(notUsed.IsUsed())
+		s.False(rt.IsUsed())
 	})
 }
 
 func (s *RefreshTokenDomainTestSuite) TestIsRevoked() {
-	s.Run("should report whether a refresh token has been revoked", func() {
-		revokedAt := time.Now()
+	s.Run("should report a refresh token with a revoked timestamp as revoked", func() {
+		rt := fixtures.DomainPkgRevokedRefreshToken()
 
-		revoked := user.RefreshToken{
-			RevokedAt: &revokedAt,
-		}
+		s.True(rt.IsRevoked())
+	})
 
-		notRevoked := user.RefreshToken{}
+	s.Run("should report a refresh token without a revoked timestamp as not revoked", func() {
+		rt := user.RefreshToken{}
 
-		s.True(revoked.IsRevoked())
-		s.False(notRevoked.IsRevoked())
+		s.False(rt.IsRevoked())
 	})
 }

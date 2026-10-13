@@ -1,7 +1,8 @@
-package middlewares_test
+package middlewares
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,8 +11,9 @@ import (
 
 	"github.com/mathcale/go-api-boilerplate/config"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/middlewares"
+	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers/dto"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/webcontext"
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
 	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
 )
 
@@ -54,7 +56,7 @@ func (s *RequireRoleMiddlewareTestSuite) TestHandler() {
 		mw.Handler(next).ServeHTTP(rec, s.requestWithRoles([]string{"user"}))
 
 		s.False(called)
-		s.Equal(http.StatusForbidden, rec.Code)
+		s.assertForbidden(rec)
 	})
 
 	s.Run("should forbid the request when there are no roles in the context", func() {
@@ -70,16 +72,16 @@ func (s *RequireRoleMiddlewareTestSuite) TestHandler() {
 
 		mw.Handler(next).ServeHTTP(rec, req)
 
-		s.Require().Equal(http.StatusForbidden, rec.Code)
+		s.assertForbidden(rec)
 	})
 }
 
 func (s *RequireRoleMiddlewareTestSuite) newRoleMiddleware(
 	accepted ...string,
-) middlewares.RequireRoleMiddleware {
+) RequireRoleMiddleware {
 	response := handlers.NewResponse(mocks.NoopLogger{}, config.EnvironmentTest)
 
-	return middlewares.NewRequireRoleMiddleware(response, accepted...)
+	return NewRequireRoleMiddleware(response, accepted...)
 }
 
 func (s *RequireRoleMiddlewareTestSuite) requestWithRoles(roles []string) *http.Request {
@@ -87,4 +89,13 @@ func (s *RequireRoleMiddlewareTestSuite) requestWithRoles(roles []string) *http.
 	ctx := webcontext.WithRoles(req.Context(), roles)
 
 	return req.WithContext(ctx)
+}
+
+func (s *RequireRoleMiddlewareTestSuite) assertForbidden(rec *httptest.ResponseRecorder) {
+	s.Equal(http.StatusForbidden, rec.Code)
+
+	var out dto.ErrorOutput
+	s.Require().NoError(json.NewDecoder(rec.Body).Decode(&out))
+	s.Require().NotNil(out.Code)
+	s.Equal(apperror.BE0004_FORBIDDEN, *out.Code)
 }

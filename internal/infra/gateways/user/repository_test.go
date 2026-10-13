@@ -6,14 +6,13 @@ import (
 	"errors"
 	"regexp"
 	"testing"
-	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/database/models"
+	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
 )
 
 type UserRepositoryTestSuite struct {
@@ -43,10 +42,10 @@ func TestUserRepository(t *testing.T) {
 func (s *UserRepositoryTestSuite) TestExistsIncludingInactive() {
 	s.Run("should return true when a user exists including inactive users", func() {
 		s.mock.ExpectQuery(regexp.QuoteMeta(queryUserExistsIncludingInactive)).
-			WithArgs("jane@example.com").
+			WithArgs(fixtures.InfraUserEmail).
 			WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 
-		exists, err := s.repo.ExistsIncludingInactive(context.Background(), "jane@example.com")
+		exists, err := s.repo.ExistsIncludingInactive(context.Background(), fixtures.InfraUserEmail)
 
 		s.Require().NoError(err)
 		s.Require().NotNil(exists)
@@ -56,10 +55,10 @@ func (s *UserRepositoryTestSuite) TestExistsIncludingInactive() {
 
 	s.Run("should return an error when the query fails", func() {
 		s.mock.ExpectQuery(regexp.QuoteMeta(queryUserExistsIncludingInactive)).
-			WithArgs("jane@example.com").
+			WithArgs(fixtures.InfraUserEmail).
 			WillReturnError(sqlmock.ErrCancelled)
 
-		exists, err := s.repo.ExistsIncludingInactive(context.Background(), "jane@example.com")
+		exists, err := s.repo.ExistsIncludingInactive(context.Background(), fixtures.InfraUserEmail)
 
 		s.Require().Error(err)
 		s.Nil(exists)
@@ -67,6 +66,21 @@ func (s *UserRepositoryTestSuite) TestExistsIncludingInactive() {
 }
 
 func (s *UserRepositoryTestSuite) TestGetByID() {
+	s.Run("should return the user when found by id", func() {
+		id := uuid.New()
+
+		s.mock.ExpectQuery(regexp.QuoteMeta(queryGetUserByID)).
+			WithArgs(id).
+			WillReturnRows(fixtures.InfraUserRows(id))
+
+		u, err := s.repo.GetByID(context.Background(), id)
+
+		s.Require().NoError(err)
+		s.Require().NotNil(u)
+		s.Equal(id, u.ID)
+		s.NoError(s.mock.ExpectationsWereMet())
+	})
+
 	s.Run("should return nil when no user is found by id", func() {
 		id := uuid.New()
 
@@ -92,39 +106,17 @@ func (s *UserRepositoryTestSuite) TestGetByID() {
 		s.Require().Error(err)
 		s.Nil(u)
 	})
-
-	s.Run("should return the user when found by id", func() {
-		id := uuid.New()
-
-		rows := sqlmock.NewRows(
-			[]string{"id", "name", "surname", "avatar_url", "email", "password", "active", "roles", "created_at", "updated_at"},
-		).AddRow(id, "Jane", "Doe", nil, "jane@example.com", "hashed", true, "{}", time.Now(), time.Now())
-
-		s.mock.ExpectQuery(regexp.QuoteMeta(queryGetUserByID)).
-			WithArgs(id).
-			WillReturnRows(rows)
-
-		u, err := s.repo.GetByID(context.Background(), id)
-
-		s.Require().NoError(err)
-		s.Require().NotNil(u)
-		s.Equal(id, u.ID)
-	})
 }
 
 func (s *UserRepositoryTestSuite) TestGetIncludingInactive() {
 	s.Run("should return the user when found by email including inactive users", func() {
 		id := uuid.New()
 
-		rows := sqlmock.NewRows(
-			[]string{"id", "name", "surname", "avatar_url", "email", "password", "active", "roles", "created_at", "updated_at"},
-		).AddRow(id, "Jane", "Doe", nil, "jane@example.com", "hashed", true, "{}", time.Now(), time.Now())
-
 		s.mock.ExpectQuery(regexp.QuoteMeta(queryGetUserByEmailIncludingInactive)).
-			WithArgs("jane@example.com").
-			WillReturnRows(rows)
+			WithArgs(fixtures.InfraUserEmail).
+			WillReturnRows(fixtures.InfraUserRows(id))
 
-		u, err := s.repo.GetIncludingInactive(context.Background(), "jane@example.com")
+		u, err := s.repo.GetIncludingInactive(context.Background(), fixtures.InfraUserEmail)
 
 		s.Require().NoError(err)
 		s.Require().NotNil(u)
@@ -134,10 +126,10 @@ func (s *UserRepositoryTestSuite) TestGetIncludingInactive() {
 
 	s.Run("should return nil when no user is found by email", func() {
 		s.mock.ExpectQuery(regexp.QuoteMeta(queryGetUserByEmailIncludingInactive)).
-			WithArgs("nobody@example.com").
+			WithArgs(fixtures.InfraUnknownEmail).
 			WillReturnError(sql.ErrNoRows)
 
-		u, err := s.repo.GetIncludingInactive(context.Background(), "nobody@example.com")
+		u, err := s.repo.GetIncludingInactive(context.Background(), fixtures.InfraUnknownEmail)
 
 		s.Require().NoError(err)
 		s.Nil(u)
@@ -145,10 +137,10 @@ func (s *UserRepositoryTestSuite) TestGetIncludingInactive() {
 
 	s.Run("should return an error when the query fails", func() {
 		s.mock.ExpectQuery(regexp.QuoteMeta(queryGetUserByEmailIncludingInactive)).
-			WithArgs("jane@example.com").
+			WithArgs(fixtures.InfraUserEmail).
 			WillReturnError(sqlmock.ErrCancelled)
 
-		u, err := s.repo.GetIncludingInactive(context.Background(), "jane@example.com")
+		u, err := s.repo.GetIncludingInactive(context.Background(), fixtures.InfraUserEmail)
 
 		s.Require().Error(err)
 		s.Nil(u)
@@ -157,16 +149,8 @@ func (s *UserRepositoryTestSuite) TestGetIncludingInactive() {
 
 func (s *UserRepositoryTestSuite) TestSave() {
 	s.Run("should insert the user and confirmation code and commit the transaction", func() {
-		u := models.User{
-			ID:    uuid.New(),
-			Email: "jane@example.com",
-		}
-
-		code := models.ConfirmationCode{
-			ID:      uuid.New(),
-			UserID:  u.ID,
-			Purpose: "account_confirmation",
-		}
+		u := fixtures.InfraModelUser()
+		code := fixtures.InfraModelConfirmationCode(u.ID)
 
 		s.mock.ExpectBegin()
 
@@ -185,8 +169,8 @@ func (s *UserRepositoryTestSuite) TestSave() {
 	})
 
 	s.Run("should return an error when beginning the transaction fails", func() {
-		u := models.User{ID: uuid.New(), Email: "jane@example.com"}
-		code := models.ConfirmationCode{ID: uuid.New(), UserID: u.ID}
+		u := fixtures.InfraModelUser()
+		code := fixtures.InfraModelConfirmationCode(u.ID)
 
 		s.mock.ExpectBegin().WillReturnError(sqlmock.ErrCancelled)
 
@@ -197,8 +181,8 @@ func (s *UserRepositoryTestSuite) TestSave() {
 	})
 
 	s.Run("should roll back the transaction when inserting the user fails", func() {
-		u := models.User{ID: uuid.New(), Email: "jane@example.com"}
-		code := models.ConfirmationCode{ID: uuid.New(), UserID: u.ID}
+		u := fixtures.InfraModelUser()
+		code := fixtures.InfraModelConfirmationCode(u.ID)
 
 		s.mock.ExpectBegin()
 		s.mock.ExpectExec(regexp.QuoteMeta(queryInsertUser)).WillReturnError(sqlmock.ErrCancelled)
@@ -211,8 +195,8 @@ func (s *UserRepositoryTestSuite) TestSave() {
 	})
 
 	s.Run("should return an error when both the user insert and the rollback fail", func() {
-		u := models.User{ID: uuid.New(), Email: "jane@example.com"}
-		code := models.ConfirmationCode{ID: uuid.New(), UserID: u.ID}
+		u := fixtures.InfraModelUser()
+		code := fixtures.InfraModelConfirmationCode(u.ID)
 
 		s.mock.ExpectBegin()
 		s.mock.ExpectExec(regexp.QuoteMeta(queryInsertUser)).WillReturnError(sqlmock.ErrCancelled)
@@ -225,12 +209,14 @@ func (s *UserRepositoryTestSuite) TestSave() {
 	})
 
 	s.Run("should roll back the transaction when inserting the confirmation code fails", func() {
-		u := models.User{ID: uuid.New(), Email: "jane@example.com"}
-		code := models.ConfirmationCode{ID: uuid.New(), UserID: u.ID}
+		u := fixtures.InfraModelUser()
+		code := fixtures.InfraModelConfirmationCode(u.ID)
 
 		s.mock.ExpectBegin()
-		s.mock.ExpectExec(regexp.QuoteMeta(queryInsertUser)).WillReturnResult(sqlmock.NewResult(1, 1))
-		s.mock.ExpectExec(regexp.QuoteMeta(queryInsertConfirmationCode)).WillReturnError(sqlmock.ErrCancelled)
+		s.mock.ExpectExec(regexp.QuoteMeta(queryInsertUser)).
+			WillReturnResult(sqlmock.NewResult(1, 1))
+		s.mock.ExpectExec(regexp.QuoteMeta(queryInsertConfirmationCode)).
+			WillReturnError(sqlmock.ErrCancelled)
 		s.mock.ExpectRollback()
 
 		err := s.repo.Save(context.Background(), u, code)
@@ -240,12 +226,14 @@ func (s *UserRepositoryTestSuite) TestSave() {
 	})
 
 	s.Run("should return an error when committing the transaction fails", func() {
-		u := models.User{ID: uuid.New(), Email: "jane@example.com"}
-		code := models.ConfirmationCode{ID: uuid.New(), UserID: u.ID}
+		u := fixtures.InfraModelUser()
+		code := fixtures.InfraModelConfirmationCode(u.ID)
 
 		s.mock.ExpectBegin()
-		s.mock.ExpectExec(regexp.QuoteMeta(queryInsertUser)).WillReturnResult(sqlmock.NewResult(1, 1))
-		s.mock.ExpectExec(regexp.QuoteMeta(queryInsertConfirmationCode)).WillReturnResult(sqlmock.NewResult(1, 1))
+		s.mock.ExpectExec(regexp.QuoteMeta(queryInsertUser)).
+			WillReturnResult(sqlmock.NewResult(1, 1))
+		s.mock.ExpectExec(regexp.QuoteMeta(queryInsertConfirmationCode)).
+			WillReturnResult(sqlmock.NewResult(1, 1))
 		s.mock.ExpectCommit().WillReturnError(sqlmock.ErrCancelled)
 
 		err := s.repo.Save(context.Background(), u, code)
@@ -307,11 +295,7 @@ func (s *UserRepositoryTestSuite) TestActivateUser() {
 
 func (s *UserRepositoryTestSuite) TestSaveConfirmationCode() {
 	s.Run("should save a confirmation code", func() {
-		code := models.ConfirmationCode{
-			ID:      uuid.New(),
-			UserID:  uuid.New(),
-			Purpose: "account_confirmation",
-		}
+		code := fixtures.InfraModelConfirmationCode(uuid.New())
 
 		s.mock.ExpectExec(regexp.QuoteMeta(queryInsertConfirmationCode)).
 			WillReturnResult(sqlmock.NewResult(1, 1))
@@ -323,7 +307,7 @@ func (s *UserRepositoryTestSuite) TestSaveConfirmationCode() {
 	})
 
 	s.Run("should return an error when saving the confirmation code fails", func() {
-		code := models.ConfirmationCode{ID: uuid.New(), UserID: uuid.New()}
+		code := fixtures.InfraModelConfirmationCode(uuid.New())
 
 		s.mock.ExpectExec(regexp.QuoteMeta(queryInsertConfirmationCode)).
 			WillReturnError(sqlmock.ErrCancelled)
@@ -339,15 +323,16 @@ func (s *UserRepositoryTestSuite) TestGetConfirmationCode() {
 		userID := uuid.New()
 		id := uuid.New()
 
-		rows := sqlmock.NewRows(
-			[]string{"id", "user_id", "code", "purpose", "expires_at", "used", "created_at"},
-		).AddRow(id, userID, "the-code", "account_confirmation", time.Now(), false, time.Now())
-
 		s.mock.ExpectQuery(regexp.QuoteMeta(queryGetConfirmationCode)).
 			WithArgs(userID, "the-code", "account_confirmation").
-			WillReturnRows(rows)
+			WillReturnRows(fixtures.InfraConfirmationCodeRows(id, userID, "the-code"))
 
-		cc, err := s.repo.GetConfirmationCode(context.Background(), userID, "the-code", "account_confirmation")
+		cc, err := s.repo.GetConfirmationCode(
+			context.Background(),
+			userID,
+			"the-code",
+			"account_confirmation",
+		)
 
 		s.Require().NoError(err)
 		s.Require().NotNil(cc)
@@ -362,7 +347,12 @@ func (s *UserRepositoryTestSuite) TestGetConfirmationCode() {
 			WithArgs(userID, "nope", "account_confirmation").
 			WillReturnError(sql.ErrNoRows)
 
-		cc, err := s.repo.GetConfirmationCode(context.Background(), userID, "nope", "account_confirmation")
+		cc, err := s.repo.GetConfirmationCode(
+			context.Background(),
+			userID,
+			"nope",
+			"account_confirmation",
+		)
 
 		s.Require().NoError(err)
 		s.Nil(cc)
@@ -375,7 +365,12 @@ func (s *UserRepositoryTestSuite) TestGetConfirmationCode() {
 			WithArgs(userID, "the-code", "account_confirmation").
 			WillReturnError(sqlmock.ErrCancelled)
 
-		cc, err := s.repo.GetConfirmationCode(context.Background(), userID, "the-code", "account_confirmation")
+		cc, err := s.repo.GetConfirmationCode(
+			context.Background(),
+			userID,
+			"the-code",
+			"account_confirmation",
+		)
 
 		s.Require().Error(err)
 		s.Nil(cc)
@@ -409,12 +404,7 @@ func (s *UserRepositoryTestSuite) TestMarkConfirmationCodeUsed() {
 
 func (s *UserRepositoryTestSuite) TestSaveRefreshToken() {
 	s.Run("should save a new refresh token", func() {
-		rt := models.RefreshToken{
-			ID:        uuid.New(),
-			UserID:    uuid.New(),
-			FamilyID:  uuid.New(),
-			ExpiresAt: time.Now().Add(24 * time.Hour),
-		}
+		rt := fixtures.InfraModelRefreshToken()
 
 		s.mock.ExpectExec(regexp.QuoteMeta(queryInsertRefreshToken)).
 			WithArgs(rt.ID, rt.UserID, rt.FamilyID, rt.ExpiresAt).
@@ -427,12 +417,7 @@ func (s *UserRepositoryTestSuite) TestSaveRefreshToken() {
 	})
 
 	s.Run("should return an error when saving the refresh token fails", func() {
-		rt := models.RefreshToken{
-			ID:        uuid.New(),
-			UserID:    uuid.New(),
-			FamilyID:  uuid.New(),
-			ExpiresAt: time.Now().Add(24 * time.Hour),
-		}
+		rt := fixtures.InfraModelRefreshToken()
 
 		s.mock.ExpectExec(regexp.QuoteMeta(queryInsertRefreshToken)).
 			WillReturnError(sqlmock.ErrCancelled)
@@ -446,18 +431,11 @@ func (s *UserRepositoryTestSuite) TestSaveRefreshToken() {
 func (s *UserRepositoryTestSuite) TestGetRefreshToken() {
 	s.Run("should return the refresh token when found", func() {
 		id := uuid.New()
-		userID := uuid.New()
 		familyID := uuid.New()
-		expiresAt := time.Now().Add(24 * time.Hour)
-		createdAt := time.Now()
-
-		rows := sqlmock.NewRows(
-			[]string{"id", "user_id", "family_id", "expires_at", "used_at", "revoked_at", "created_at"},
-		).AddRow(id, userID, familyID, expiresAt, nil, nil, createdAt)
 
 		s.mock.ExpectQuery(regexp.QuoteMeta(queryGetRefreshToken)).
 			WithArgs(id).
-			WillReturnRows(rows)
+			WillReturnRows(fixtures.InfraRefreshTokenRows(id, uuid.New(), familyID))
 
 		rt, err := s.repo.GetRefreshToken(context.Background(), id)
 

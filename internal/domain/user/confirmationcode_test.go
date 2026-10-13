@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
+	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
 )
 
 type ConfirmationCodeTestSuite struct {
@@ -22,7 +23,9 @@ func (s *ConfirmationCodeTestSuite) TestNewConfirmationCode() {
 	s.Run("should create a new confirmation code with the given purpose and expiry", func() {
 		userID := uuid.New()
 
-		code := user.NewConfirmationCode(userID, user.PurposeAccountConfirmation, user.AccountConfirmationTTL)
+		code := user.NewConfirmationCode(
+			userID, user.PurposeAccountConfirmation, user.AccountConfirmationTTL,
+		)
 
 		s.NotEmpty(code.ID)
 		s.Equal(userID, code.UserID)
@@ -34,16 +37,15 @@ func (s *ConfirmationCodeTestSuite) TestNewConfirmationCode() {
 }
 
 func (s *ConfirmationCodeTestSuite) TestIsExpired() {
-	s.Run("should report whether a confirmation code is expired", func() {
-		expired := user.ConfirmationCode{
-			ExpiresAt: time.Now().Add(-time.Minute),
-		}
+	s.Run("should report a past confirmation code as expired", func() {
+		code := fixtures.DomainPkgExpiredConfirmationCode()
 
-		notExpired := user.ConfirmationCode{
-			ExpiresAt: time.Now().Add(time.Minute),
-		}
+		s.True(code.IsExpired())
+	})
 
-		s.True(expired.IsExpired())
-		s.False(notExpired.IsExpired())
+	s.Run("should report a future confirmation code as not expired", func() {
+		code := fixtures.DomainPkgActiveConfirmationCode()
+
+		s.False(code.IsExpired())
 	})
 }

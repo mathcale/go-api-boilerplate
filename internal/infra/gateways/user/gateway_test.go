@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
@@ -12,7 +11,7 @@ import (
 
 	"github.com/mathcale/go-api-boilerplate/internal/domain/gateway"
 	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/database/models"
+	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
 	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
 )
 
@@ -26,7 +25,13 @@ type UserGatewayTestSuite struct {
 func (s *UserGatewayTestSuite) SetupTest() {
 	s.repo = new(mocks.UserRepository)
 	s.emailClient = new(mocks.EmailClient)
-	s.gateway = NewGateway(s.repo, s.emailClient, "http://confirm", "http://recover")
+
+	s.gateway = NewGateway(
+		s.repo,
+		s.emailClient,
+		"http://confirm",
+		"http://recover",
+	)
 }
 
 func (s *UserGatewayTestSuite) cleanMocks() {
@@ -45,9 +50,14 @@ func (s *UserGatewayTestSuite) TestUserExistsIncludingInactive() {
 		defer s.cleanMocks()
 
 		truthy := true
-		s.repo.On("ExistsIncludingInactive", mock.Anything, "jane@example.com").Return(&truthy, nil)
+		s.repo.
+			On("ExistsIncludingInactive", mock.Anything, fixtures.InfraUserEmail).
+			Return(&truthy, nil)
 
-		exists, err := s.gateway.UserExistsIncludingInactive(context.Background(), "jane@example.com")
+		exists, err := s.gateway.UserExistsIncludingInactive(
+			context.Background(),
+			fixtures.InfraUserEmail,
+		)
 
 		s.Require().NoError(err)
 		s.True(*exists)
@@ -60,15 +70,16 @@ func (s *UserGatewayTestSuite) TestSaveUser() {
 		defer s.cleanMocks()
 
 		s.repo.
-			On("Save", mock.Anything, mock.AnythingOfType("models.User"), mock.AnythingOfType("models.ConfirmationCode")).
+			On(
+				"Save",
+				mock.Anything,
+				mock.AnythingOfType("models.User"),
+				mock.AnythingOfType("models.ConfirmationCode"),
+			).
 			Return(nil)
 
-		u := user.User{
-			ID:    uuid.New(),
-			Email: "jane@example.com",
-		}
-
-		code := user.NewConfirmationCode(u.ID, user.PurposeAccountConfirmation, user.AccountConfirmationTTL)
+		u := fixtures.InfraDomainUser()
+		code := fixtures.InfraDomainConfirmationCode(u.ID)
 
 		err := s.gateway.SaveUser(context.Background(), u, code)
 
@@ -81,14 +92,14 @@ func (s *UserGatewayTestSuite) TestGetUserByEmailIncludingInactive() {
 	s.Run("should return the user when found by email including inactive users", func() {
 		defer s.cleanMocks()
 
-		m := &models.User{
-			ID:    uuid.New(),
-			Email: "jane@example.com",
-		}
+		m := fixtures.InfraModelUser()
 
-		s.repo.On("GetIncludingInactive", mock.Anything, "jane@example.com").Return(m, nil)
+		s.repo.On("GetIncludingInactive", mock.Anything, fixtures.InfraUserEmail).Return(&m, nil)
 
-		got, err := s.gateway.GetUserByEmailIncludingInactive(context.Background(), "jane@example.com")
+		got, err := s.gateway.GetUserByEmailIncludingInactive(
+			context.Background(),
+			fixtures.InfraUserEmail,
+		)
 
 		s.Require().NoError(err)
 		s.Require().NotNil(got)
@@ -98,9 +109,14 @@ func (s *UserGatewayTestSuite) TestGetUserByEmailIncludingInactive() {
 	s.Run("should return nil when no user is found by email", func() {
 		defer s.cleanMocks()
 
-		s.repo.On("GetIncludingInactive", mock.Anything, "nobody@example.com").Return(nil, nil)
+		s.repo.
+			On("GetIncludingInactive", mock.Anything, fixtures.InfraUnknownEmail).
+			Return(nil, nil)
 
-		got, err := s.gateway.GetUserByEmailIncludingInactive(context.Background(), "nobody@example.com")
+		got, err := s.gateway.GetUserByEmailIncludingInactive(
+			context.Background(),
+			fixtures.InfraUnknownEmail,
+		)
 
 		s.Require().NoError(err)
 		s.Nil(got)
@@ -110,10 +126,13 @@ func (s *UserGatewayTestSuite) TestGetUserByEmailIncludingInactive() {
 		defer s.cleanMocks()
 
 		s.repo.
-			On("GetIncludingInactive", mock.Anything, "jane@example.com").
+			On("GetIncludingInactive", mock.Anything, fixtures.InfraUserEmail).
 			Return(nil, errors.New("db down"))
 
-		got, err := s.gateway.GetUserByEmailIncludingInactive(context.Background(), "jane@example.com")
+		got, err := s.gateway.GetUserByEmailIncludingInactive(
+			context.Background(),
+			fixtures.InfraUserEmail,
+		)
 
 		s.Require().Error(err)
 		s.Nil(got)
@@ -124,13 +143,10 @@ func (s *UserGatewayTestSuite) TestGetUserByID() {
 	s.Run("should return the user when found by id", func() {
 		defer s.cleanMocks()
 
-		userID := uuid.New()
+		m := fixtures.InfraModelUser()
+		userID := m.ID
 
-		m := &models.User{
-			ID: userID,
-		}
-
-		s.repo.On("GetByID", mock.Anything, userID).Return(m, nil)
+		s.repo.On("GetByID", mock.Anything, userID).Return(&m, nil)
 
 		got, err := s.gateway.GetUserByID(context.Background(), userID)
 
@@ -197,10 +213,14 @@ func (s *UserGatewayTestSuite) TestSaveConfirmationCode() {
 		defer s.cleanMocks()
 
 		s.repo.
-			On("SaveConfirmationCode", mock.Anything, mock.AnythingOfType("models.ConfirmationCode")).
+			On(
+				"SaveConfirmationCode",
+				mock.Anything,
+				mock.AnythingOfType("models.ConfirmationCode"),
+			).
 			Return(nil)
 
-		code := user.NewConfirmationCode(uuid.New(), user.PurposePasswordRecovery, user.PasswordRecoveryTTL)
+		code := fixtures.InfraDomainRecoveryCode(uuid.New())
 
 		err := s.gateway.SaveConfirmationCode(context.Background(), code)
 
@@ -214,18 +234,18 @@ func (s *UserGatewayTestSuite) TestGetValidConfirmationCode() {
 		defer s.cleanMocks()
 
 		userID := uuid.New()
-
-		m := &models.ConfirmationCode{
-			ID:      uuid.New(),
-			UserID:  userID,
-			Purpose: "account_confirmation",
-		}
+		m := fixtures.InfraModelConfirmationCode(userID)
 
 		s.repo.
 			On("GetConfirmationCode", mock.Anything, userID, "the-code", "account_confirmation").
-			Return(m, nil)
+			Return(&m, nil)
 
-		got, err := s.gateway.GetValidConfirmationCode(context.Background(), userID, "the-code", user.PurposeAccountConfirmation)
+		got, err := s.gateway.GetValidConfirmationCode(
+			context.Background(),
+			userID,
+			"the-code",
+			user.PurposeAccountConfirmation,
+		)
 
 		s.Require().NoError(err)
 		s.Require().NotNil(got)
@@ -236,10 +256,16 @@ func (s *UserGatewayTestSuite) TestGetValidConfirmationCode() {
 		defer s.cleanMocks()
 
 		userID := uuid.New()
-		s.repo.On("GetConfirmationCode", mock.Anything, userID, "nope", "account_confirmation").
+		s.repo.
+			On("GetConfirmationCode", mock.Anything, userID, "nope", "account_confirmation").
 			Return(nil, nil)
 
-		got, err := s.gateway.GetValidConfirmationCode(context.Background(), userID, "nope", user.PurposeAccountConfirmation)
+		got, err := s.gateway.GetValidConfirmationCode(
+			context.Background(),
+			userID,
+			"nope",
+			user.PurposeAccountConfirmation,
+		)
 
 		s.Require().NoError(err)
 		s.Nil(got)
@@ -249,10 +275,16 @@ func (s *UserGatewayTestSuite) TestGetValidConfirmationCode() {
 		defer s.cleanMocks()
 
 		userID := uuid.New()
-		s.repo.On("GetConfirmationCode", mock.Anything, userID, "the-code", "account_confirmation").
+		s.repo.
+			On("GetConfirmationCode", mock.Anything, userID, "the-code", "account_confirmation").
 			Return(nil, errors.New("db down"))
 
-		got, err := s.gateway.GetValidConfirmationCode(context.Background(), userID, "the-code", user.PurposeAccountConfirmation)
+		got, err := s.gateway.GetValidConfirmationCode(
+			context.Background(),
+			userID,
+			"the-code",
+			user.PurposeAccountConfirmation,
+		)
 
 		s.Require().Error(err)
 		s.Nil(got)
@@ -279,13 +311,8 @@ func (s *UserGatewayTestSuite) TestSendConfirmationEmail() {
 
 		s.emailClient.On("Send", mock.AnythingOfType("email.SendInput")).Return(nil)
 
-		u := user.User{
-			ID:    uuid.New(),
-			Name:  "Jane",
-			Email: "jane@example.com",
-		}
-
-		code := user.NewConfirmationCode(u.ID, user.PurposeAccountConfirmation, user.AccountConfirmationTTL)
+		u := fixtures.InfraDomainUser()
+		code := fixtures.InfraDomainConfirmationCode(u.ID)
 
 		err := s.gateway.SendConfirmationEmail(context.Background(), u, code)
 
@@ -300,13 +327,8 @@ func (s *UserGatewayTestSuite) TestSendRecoveryEmail() {
 
 		s.emailClient.On("Send", mock.AnythingOfType("email.SendInput")).Return(nil)
 
-		u := user.User{
-			ID:    uuid.New(),
-			Name:  "Jane",
-			Email: "jane@example.com",
-		}
-
-		code := user.NewConfirmationCode(u.ID, user.PurposePasswordRecovery, user.PasswordRecoveryTTL)
+		u := fixtures.InfraDomainUser()
+		code := fixtures.InfraDomainRecoveryCode(u.ID)
 
 		err := s.gateway.SendRecoveryEmail(context.Background(), u, code)
 
@@ -319,9 +341,11 @@ func (s *UserGatewayTestSuite) TestSaveRefreshToken() {
 	s.Run("should save a new refresh token", func() {
 		defer s.cleanMocks()
 
-		s.repo.On("SaveRefreshToken", mock.Anything, mock.AnythingOfType("models.RefreshToken")).Return(nil)
+		s.repo.
+			On("SaveRefreshToken", mock.Anything, mock.AnythingOfType("models.RefreshToken")).
+			Return(nil)
 
-		rt := user.NewRefreshTokenFamily(uuid.New(), uuid.New(), time.Now().Add(time.Hour))
+		rt := fixtures.InfraDomainRefreshToken()
 
 		err := s.gateway.SaveRefreshToken(context.Background(), rt)
 
@@ -334,13 +358,10 @@ func (s *UserGatewayTestSuite) TestGetRefreshToken() {
 	s.Run("should return the refresh token when found", func() {
 		defer s.cleanMocks()
 
-		tokenID := uuid.New()
+		m := fixtures.InfraModelRefreshToken()
+		tokenID := m.ID
 
-		m := &models.RefreshToken{
-			ID: tokenID,
-		}
-
-		s.repo.On("GetRefreshToken", mock.Anything, tokenID).Return(m, nil)
+		s.repo.On("GetRefreshToken", mock.Anything, tokenID).Return(&m, nil)
 
 		got, err := s.gateway.GetRefreshToken(context.Background(), tokenID)
 

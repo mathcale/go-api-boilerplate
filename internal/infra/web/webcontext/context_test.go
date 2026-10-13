@@ -1,4 +1,4 @@
-package webcontext_test
+package webcontext
 
 import (
 	"context"
@@ -6,8 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
-
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/webcontext"
 )
 
 type WebContextTestSuite struct {
@@ -21,16 +19,16 @@ func TestWebContext(t *testing.T) {
 func (s *WebContextTestSuite) TestUserIDFromContext() {
 	s.Run("should store and retrieve the user id from context", func() {
 		userID := uuid.New()
-		ctx := webcontext.WithUserID(context.Background(), userID)
+		ctx := WithUserID(context.Background(), userID)
 
-		got, ok := webcontext.UserIDFromContext(ctx)
+		got, ok := UserIDFromContext(ctx)
 
 		s.True(ok)
 		s.Equal(userID, got)
 	})
 
 	s.Run("should return false and a nil uuid when the user id is not in context", func() {
-		got, ok := webcontext.UserIDFromContext(context.Background())
+		got, ok := UserIDFromContext(context.Background())
 
 		s.False(ok)
 		s.Equal(uuid.Nil, got)
@@ -40,16 +38,16 @@ func (s *WebContextTestSuite) TestUserIDFromContext() {
 func (s *WebContextTestSuite) TestRolesContext() {
 	s.Run("should store and retrieve roles from context", func() {
 		roles := []string{"admin", "user"}
-		ctx := webcontext.WithRoles(context.Background(), roles)
+		ctx := WithRoles(context.Background(), roles)
 
-		got, ok := webcontext.RolesFromContext(ctx)
+		got, ok := RolesFromContext(ctx)
 
 		s.True(ok)
 		s.Equal(roles, got)
 	})
 
 	s.Run("should return false and nil when roles are not in context", func() {
-		got, ok := webcontext.RolesFromContext(context.Background())
+		got, ok := RolesFromContext(context.Background())
 
 		s.False(ok)
 		s.Nil(got)
@@ -58,16 +56,16 @@ func (s *WebContextTestSuite) TestRolesContext() {
 
 func (s *WebContextTestSuite) TestCorrelationIDContext() {
 	s.Run("should store and retrieve the correlation id from context", func() {
-		ctx := webcontext.WithCorrelationID(context.Background(), "correlation-123")
+		ctx := WithCorrelationID(context.Background(), "correlation-123")
 
-		got, ok := webcontext.CorrelationIDFromContext(ctx)
+		got, ok := CorrelationIDFromContext(ctx)
 
 		s.True(ok)
 		s.Equal("correlation-123", got)
 	})
 
-	s.Run("should return false and an empty string when the correlation id is not in context", func() {
-		got, ok := webcontext.CorrelationIDFromContext(context.Background())
+	s.Run("should return false and empty when the correlation id is not in context", func() {
+		got, ok := CorrelationIDFromContext(context.Background())
 
 		s.False(ok)
 		s.Empty(got)
