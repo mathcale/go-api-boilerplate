@@ -56,12 +56,25 @@ func (m *UserRepository) GetAuthState(
 	return args.Get(0).(*models.UserAuthState), args.Error(1)
 }
 
-func (m *UserRepository) UpdatePassword(ctx context.Context, userID uuid.UUID, hashedPassword string) error {
-	return m.Called(ctx, userID, hashedPassword).Error(0)
+func (m *UserRepository) UpdatePasswordWithCode(
+	ctx context.Context,
+	userID uuid.UUID,
+	codeID uuid.UUID,
+	hashedPassword string,
+) (bool, error) {
+	args := m.Called(ctx, userID, codeID, hashedPassword)
+
+	return args.Bool(0), args.Error(1)
 }
 
-func (m *UserRepository) ActivateUser(ctx context.Context, userID uuid.UUID) error {
-	return m.Called(ctx, userID).Error(0)
+func (m *UserRepository) ActivateUserWithCode(
+	ctx context.Context,
+	userID uuid.UUID,
+	codeID uuid.UUID,
+) (bool, error) {
+	args := m.Called(ctx, userID, codeID)
+
+	return args.Bool(0), args.Error(1)
 }
 
 func (m *UserRepository) SaveConfirmationCode(ctx context.Context, code models.ConfirmationCode) error {
@@ -82,10 +95,6 @@ func (m *UserRepository) GetConfirmationCode(
 	return args.Get(0).(*models.ConfirmationCode), args.Error(1)
 }
 
-func (m *UserRepository) MarkConfirmationCodeUsed(ctx context.Context, codeID uuid.UUID) error {
-	return m.Called(ctx, codeID).Error(0)
-}
-
 func (m *UserRepository) SaveRefreshToken(ctx context.Context, token models.RefreshToken) error {
 	return m.Called(ctx, token).Error(0)
 }
@@ -99,8 +108,13 @@ func (m *UserRepository) GetRefreshToken(ctx context.Context, tokenID uuid.UUID)
 	return args.Get(0).(*models.RefreshToken), args.Error(1)
 }
 
-func (m *UserRepository) MarkRefreshTokenUsed(ctx context.Context, tokenID uuid.UUID) error {
-	return m.Called(ctx, tokenID).Error(0)
+func (m *UserRepository) MarkRefreshTokenUsed(
+	ctx context.Context,
+	tokenID uuid.UUID,
+) (bool, error) {
+	args := m.Called(ctx, tokenID)
+
+	return args.Bool(0), args.Error(1)
 }
 
 func (m *UserRepository) RevokeRefreshTokenFamily(ctx context.Context, familyID uuid.UUID) error {

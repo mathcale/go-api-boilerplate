@@ -48,7 +48,7 @@ func (s *ConfirmAccountUseCaseTestSuite) assertBusinessError(
 }
 
 func (s *ConfirmAccountUseCaseTestSuite) TestExecute() {
-	s.Run("should activate the user and mark the confirmation code as used", func() {
+	s.Run("should consume the confirmation code and activate the user", func() {
 		userID := uuid.New()
 		codeID := uuid.New()
 
@@ -58,8 +58,7 @@ func (s *ConfirmAccountUseCaseTestSuite) TestExecute() {
 			"GetValidConfirmationCode", mock.Anything, userID, "the-code",
 			user.PurposeAccountConfirmation,
 		).Return(fixtures.AuthAValidConfirmationCode(codeID), nil)
-		s.gw.On("ActivateUser", mock.Anything, userID).Return(nil)
-		s.gw.On("MarkConfirmationCodeUsed", mock.Anything, codeID).Return(nil)
+		s.gw.On("ActivateUserWithCode", mock.Anything, userID, codeID).Return(true, nil)
 
 		err := s.uc.Execute(context.Background(), userID, "the-code")
 
@@ -75,7 +74,7 @@ func (s *ConfirmAccountUseCaseTestSuite) TestExecute() {
 
 		s.Require().Error(err)
 		s.assertBusinessError(err, apperror.NotFoundKind, apperror.BE1001_USER_NOT_FOUND)
-		s.gw.AssertNotCalled(s.T(), "ActivateUser", mock.Anything, mock.Anything)
+		s.gw.AssertNotCalled(s.T(), "ActivateUserWithCode", mock.Anything, mock.Anything, mock.Anything)
 	})
 
 	s.Run("should return an error when the account is already confirmed", func() {
@@ -89,7 +88,7 @@ func (s *ConfirmAccountUseCaseTestSuite) TestExecute() {
 		s.assertBusinessError(
 			err, apperror.ConflictKind, apperror.BE1008_ACCOUNT_ALREADY_CONFIRMED,
 		)
-		s.gw.AssertNotCalled(s.T(), "ActivateUser", mock.Anything, mock.Anything)
+		s.gw.AssertNotCalled(s.T(), "ActivateUserWithCode", mock.Anything, mock.Anything, mock.Anything)
 	})
 
 	s.Run("should return an error when the confirmation code is invalid", func() {
@@ -107,7 +106,7 @@ func (s *ConfirmAccountUseCaseTestSuite) TestExecute() {
 		s.assertBusinessError(
 			err, apperror.ValidationKind, apperror.BE1006_CONFIRMATION_CODE_INVALID,
 		)
-		s.gw.AssertNotCalled(s.T(), "ActivateUser", mock.Anything, mock.Anything)
+		s.gw.AssertNotCalled(s.T(), "ActivateUserWithCode", mock.Anything, mock.Anything, mock.Anything)
 	})
 
 	s.Run("should return an error when the confirmation code has expired", func() {
@@ -125,7 +124,7 @@ func (s *ConfirmAccountUseCaseTestSuite) TestExecute() {
 		s.assertBusinessError(
 			err, apperror.ValidationKind, apperror.BE1007_CONFIRMATION_CODE_EXPIRED,
 		)
-		s.gw.AssertNotCalled(s.T(), "ActivateUser", mock.Anything, mock.Anything)
+		s.gw.AssertNotCalled(s.T(), "ActivateUserWithCode", mock.Anything, mock.Anything, mock.Anything)
 	})
 
 	s.Run("should propagate the error when fetching the user fails", func() {
@@ -153,31 +152,12 @@ func (s *ConfirmAccountUseCaseTestSuite) TestExecute() {
 		err := s.uc.Execute(context.Background(), userID, "the-code")
 
 		s.Require().ErrorIs(err, gwErr)
-		s.gw.AssertNotCalled(s.T(), "ActivateUser", mock.Anything, mock.Anything)
+		s.gw.AssertNotCalled(s.T(), "ActivateUserWithCode", mock.Anything, mock.Anything, mock.Anything)
 	})
 
-	s.Run("should propagate the error when activating fails and not mark the code", func() {
-		userID := uuid.New()
-		activateErr := errors.New("db down")
-
-		s.gw.On("GetUserByID", mock.Anything, userID).
-			Return(fixtures.AuthAUser(userID, false), nil)
-		s.gw.On(
-			"GetValidConfirmationCode", mock.Anything, userID, "the-code",
-			user.PurposeAccountConfirmation,
-		).Return(fixtures.AuthAValidConfirmationCode(uuid.New()), nil)
-		s.gw.On("ActivateUser", mock.Anything, userID).Return(activateErr)
-
-		err := s.uc.Execute(context.Background(), userID, "the-code")
-
-		s.Require().ErrorIs(err, activateErr)
-		s.gw.AssertNotCalled(s.T(), "MarkConfirmationCodeUsed", mock.Anything, mock.Anything)
-	})
-
-	s.Run("should propagate the error when marking the code as used fails", func() {
+	s.Run("should return an invalid code error when the code was consumed concurrently", func() {
 		userID := uuid.New()
 		codeID := uuid.New()
-		markErr := errors.New("db down")
 
 		s.gw.On("GetUserByID", mock.Anything, userID).
 			Return(fixtures.AuthAUser(userID, false), nil)
@@ -185,11 +165,33 @@ func (s *ConfirmAccountUseCaseTestSuite) TestExecute() {
 			"GetValidConfirmationCode", mock.Anything, userID, "the-code",
 			user.PurposeAccountConfirmation,
 		).Return(fixtures.AuthAValidConfirmationCode(codeID), nil)
-		s.gw.On("ActivateUser", mock.Anything, userID).Return(nil)
-		s.gw.On("MarkConfirmationCodeUsed", mock.Anything, codeID).Return(markErr)
+		s.gw.On("ActivateUserWithCode", mock.Anything, userID, codeID).Return(false, nil)
 
 		err := s.uc.Execute(context.Background(), userID, "the-code")
 
-		s.Require().ErrorIs(err, markErr)
+		s.Require().Error(err)
+		s.assertBusinessError(
+			err, apperror.ValidationKind, apperror.BE1006_CONFIRMATION_CODE_INVALID,
+		)
+		s.gw.AssertExpectations(s.T())
+	})
+
+	s.Run("should propagate the error when consuming the code and activating fails", func() {
+		userID := uuid.New()
+		codeID := uuid.New()
+		activateErr := errors.New("db down")
+
+		s.gw.On("GetUserByID", mock.Anything, userID).
+			Return(fixtures.AuthAUser(userID, false), nil)
+		s.gw.On(
+			"GetValidConfirmationCode", mock.Anything, userID, "the-code",
+			user.PurposeAccountConfirmation,
+		).Return(fixtures.AuthAValidConfirmationCode(codeID), nil)
+		s.gw.On("ActivateUserWithCode", mock.Anything, userID, codeID).
+			Return(false, activateErr)
+
+		err := s.uc.Execute(context.Background(), userID, "the-code")
+
+		s.Require().ErrorIs(err, activateErr)
 	})
 }

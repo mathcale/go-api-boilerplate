@@ -44,10 +44,6 @@ func (uc *refreshTokenUseCase) Execute(
 		return nil, uc.handleReuse(ctx, *stored)
 	}
 
-	if markErr := uc.gateway.MarkRefreshTokenUsed(ctx, stored.ID); markErr != nil {
-		return nil, markErr
-	}
-
 	owner, err := uc.resolveOwner(ctx, *stored)
 	if err != nil {
 		return nil, err
@@ -55,6 +51,15 @@ func (uc *refreshTokenUseCase) Execute(
 
 	if tokenVersion != owner.TokenVersion {
 		return nil, uc.handleStaleVersion(ctx, *stored)
+	}
+
+	claimed, err := uc.gateway.MarkRefreshTokenUsed(ctx, stored.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !claimed {
+		return nil, uc.handleReuse(ctx, *stored)
 	}
 
 	return uc.rotate(ctx, *owner, *stored)

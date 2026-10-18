@@ -100,14 +100,20 @@ func (s *AuthMiddlewareTestSuite) TestHandler() {
 		s.assertRejected(s.serve(s.failingNext()))
 	})
 
-	s.Run("should respond unauthorized when the gateway fails", func() {
+	s.Run("should respond internal server error when the gateway fails", func() {
 		userID := uuid.New()
 		s.jwtAuth.On("VerifyAccessToken", "valid-token").
 			Return(fixtures.WebVerifiedAccessToken(userID, 2), nil)
 		s.users.On("GetUserAuthState", mock.Anything, userID).
 			Return(nil, errors.New("db down"))
 
-		s.assertRejected(s.serve(s.failingNext()))
+		rec := s.serve(s.failingNext())
+
+		s.Equal(http.StatusInternalServerError, rec.Code)
+
+		var out dto.ErrorOutput
+		s.Require().NoError(json.NewDecoder(rec.Body).Decode(&out))
+		s.Nil(out.Code)
 	})
 
 	s.Run("should respond unauthorized without a user lookup when the token is invalid", func() {

@@ -23,10 +23,11 @@ const (
 	queryActivateUser                    = `UPDATE users SET active = TRUE, updated_at = $1 WHERE id = $2`
 	queryInsertConfirmationCode          = `INSERT INTO account_confirmation_codes (id, user_id, code, purpose, expires_at) VALUES ($1, $2, $3, $4, $5)`
 	queryGetConfirmationCode             = `SELECT * FROM account_confirmation_codes WHERE user_id = $1 AND code = $2 AND purpose = $3 AND used IS FALSE`
-	queryMarkConfirmationCodeUsed        = `UPDATE account_confirmation_codes SET used = TRUE WHERE id = $1`
+	queryConsumeConfirmationCode         = `UPDATE account_confirmation_codes SET used = TRUE WHERE id = $1 AND used IS FALSE AND expires_at > $2`
+	queryInvalidateConfirmationCodes     = `UPDATE account_confirmation_codes SET used = TRUE WHERE user_id = $1 AND purpose = $2 AND used IS FALSE`
 	queryInsertRefreshToken              = `INSERT INTO refresh_tokens (id, user_id, family_id, expires_at) VALUES ($1, $2, $3, $4)`
 	queryGetRefreshToken                 = `SELECT * FROM refresh_tokens WHERE id = $1`
-	queryMarkRefreshTokenUsed            = `UPDATE refresh_tokens SET used_at = $1 WHERE id = $2`
+	queryMarkRefreshTokenUsed            = `UPDATE refresh_tokens SET used_at = $1 WHERE id = $2 AND used_at IS NULL AND revoked_at IS NULL`
 	queryRevokeRefreshTokenFamily        = `UPDATE refresh_tokens SET revoked_at = $1 WHERE family_id = $2 AND revoked_at IS NULL`
 	queryRevokeUserRefreshTokens         = `UPDATE refresh_tokens SET revoked_at = $1 WHERE user_id = $2 AND revoked_at IS NULL`
 )
@@ -38,8 +39,13 @@ type (
 		GetByID(ctx context.Context, userID uuid.UUID) (*models.User, error)
 		GetAuthState(ctx context.Context, userID uuid.UUID) (*models.UserAuthState, error)
 		Save(ctx context.Context, user models.User, code models.ConfirmationCode) error
-		UpdatePassword(ctx context.Context, userID uuid.UUID, hashedPassword string) error
-		ActivateUser(ctx context.Context, userID uuid.UUID) error
+		UpdatePasswordWithCode(
+			ctx context.Context,
+			userID uuid.UUID,
+			codeID uuid.UUID,
+			hashedPassword string,
+		) (bool, error)
+		ActivateUserWithCode(ctx context.Context, userID uuid.UUID, codeID uuid.UUID) (bool, error)
 		SaveConfirmationCode(ctx context.Context, code models.ConfirmationCode) error
 		GetConfirmationCode(
 			ctx context.Context,
@@ -47,10 +53,9 @@ type (
 			code string,
 			purpose string,
 		) (*models.ConfirmationCode, error)
-		MarkConfirmationCodeUsed(ctx context.Context, codeID uuid.UUID) error
 		SaveRefreshToken(ctx context.Context, token models.RefreshToken) error
 		GetRefreshToken(ctx context.Context, tokenID uuid.UUID) (*models.RefreshToken, error)
-		MarkRefreshTokenUsed(ctx context.Context, tokenID uuid.UUID) error
+		MarkRefreshTokenUsed(ctx context.Context, tokenID uuid.UUID) (bool, error)
 		RevokeRefreshTokenFamily(ctx context.Context, familyID uuid.UUID) error
 		RevokeUserRefreshTokens(ctx context.Context, userID uuid.UUID) error
 	}
@@ -179,40 +184,45 @@ func (r *repository) Save(ctx context.Context, u models.User, code models.Confir
 	return nil
 }
 
-func (r *repository) UpdatePassword(
+func (r *repository) UpdatePasswordWithCode(
 	ctx context.Context,
 	userID uuid.UUID,
+	codeID uuid.UUID,
 	hashedPassword string,
-) error {
-	if _, err := r.db.ExecContext(
-		ctx,
-		queryUpdateUserPassword,
-		hashedPassword,
-		time.Now(),
-		userID,
-	); err != nil {
-		return apperror.New(
-			err, "update user password query failed", apperror.DatabaseKind,
-			apperror.RepositoryOrigin, "user", nil, nil,
-		)
-	}
+) (bool, error) {
+	now := time.Now()
 
-	return nil
+	return r.consumeCodeAndExec(
+		ctx, codeID, now, "update user password",
+		queryUpdateUserPassword, hashedPassword, now, userID,
+	)
 }
 
-func (r *repository) ActivateUser(ctx context.Context, userID uuid.UUID) error {
-	if _, err := r.db.ExecContext(ctx, queryActivateUser, time.Now(), userID); err != nil {
-		return apperror.New(
-			err, "activate user query failed", apperror.DatabaseKind,
-			apperror.RepositoryOrigin, "user", nil, nil,
-		)
-	}
+func (r *repository) ActivateUserWithCode(
+	ctx context.Context,
+	userID uuid.UUID,
+	codeID uuid.UUID,
+) (bool, error) {
+	now := time.Now()
 
-	return nil
+	return r.consumeCodeAndExec(
+		ctx, codeID, now, "activate user", queryActivateUser, now, userID,
+	)
 }
 
 func (r *repository) SaveConfirmationCode(ctx context.Context, code models.ConfirmationCode) error {
-	if _, err := r.db.ExecContext(
+	tx, err := r.begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	if _, err := tx.ExecContext(
+		ctx, queryInvalidateConfirmationCodes, code.UserID, code.Purpose,
+	); err != nil {
+		return r.rollback(tx, err, "invalidate confirmation codes query failed")
+	}
+
+	if _, err := tx.ExecContext(
 		ctx,
 		queryInsertConfirmationCode,
 		code.ID,
@@ -221,13 +231,10 @@ func (r *repository) SaveConfirmationCode(ctx context.Context, code models.Confi
 		code.Purpose,
 		code.ExpiresAt,
 	); err != nil {
-		return apperror.New(
-			err, "insert confirmation code query failed", apperror.DatabaseKind,
-			apperror.RepositoryOrigin, "user", nil, nil,
-		)
+		return r.rollback(tx, err, "insert confirmation code query failed")
 	}
 
-	return nil
+	return r.commit(tx)
 }
 
 func (r *repository) GetConfirmationCode(
@@ -257,17 +264,6 @@ func (r *repository) GetConfirmationCode(
 	}
 
 	return &cc, nil
-}
-
-func (r *repository) MarkConfirmationCodeUsed(ctx context.Context, codeID uuid.UUID) error {
-	if _, err := r.db.ExecContext(ctx, queryMarkConfirmationCodeUsed, codeID); err != nil {
-		return apperror.New(
-			err, "mark confirmation code used query failed", apperror.DatabaseKind,
-			apperror.RepositoryOrigin, "user", nil, nil,
-		)
-	}
-
-	return nil
 }
 
 func (r *repository) SaveRefreshToken(ctx context.Context, t models.RefreshToken) error {
@@ -303,15 +299,24 @@ func (r *repository) GetRefreshToken(
 	return &t, nil
 }
 
-func (r *repository) MarkRefreshTokenUsed(ctx context.Context, tokenID uuid.UUID) error {
-	if _, err := r.db.ExecContext(ctx, queryMarkRefreshTokenUsed, time.Now(), tokenID); err != nil {
-		return apperror.New(
+func (r *repository) MarkRefreshTokenUsed(ctx context.Context, tokenID uuid.UUID) (bool, error) {
+	res, err := r.db.ExecContext(ctx, queryMarkRefreshTokenUsed, time.Now(), tokenID)
+	if err != nil {
+		return false, apperror.New(
 			err, "mark refresh token used query failed", apperror.DatabaseKind,
 			apperror.RepositoryOrigin, "user", nil, nil,
 		)
 	}
 
-	return nil
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return false, apperror.New(
+			err, "mark refresh token used rows affected failed", apperror.DatabaseKind,
+			apperror.RepositoryOrigin, "user", nil, nil,
+		)
+	}
+
+	return affected > 0, nil
 }
 
 func (r *repository) RevokeRefreshTokenFamily(ctx context.Context, familyID uuid.UUID) error {
@@ -352,4 +357,72 @@ func (r *repository) rollback(tx *sqlx.Tx, cause error, msg string) error {
 		cause, msg, apperror.DatabaseKind,
 		apperror.RepositoryOrigin, "user", nil, nil,
 	)
+}
+
+func (r *repository) consumeCodeAndExec(
+	ctx context.Context,
+	codeID uuid.UUID,
+	now time.Time,
+	action string,
+	query string,
+	args ...any,
+) (bool, error) {
+	tx, err := r.begin(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	res, err := tx.ExecContext(ctx, queryConsumeConfirmationCode, codeID, now)
+	if err != nil {
+		return false, r.rollback(tx, err, "consume confirmation code query failed")
+	}
+
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return false, r.rollback(tx, err, "consume confirmation code rows affected failed")
+	}
+
+	if affected == 0 {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			return false, apperror.New(
+				rbErr, "rollback after lost code race failed", apperror.DatabaseKind,
+				apperror.RepositoryOrigin, "user", nil, nil,
+			)
+		}
+
+		return false, nil
+	}
+
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return false, r.rollback(tx, err, action+" query failed")
+	}
+
+	if err := r.commit(tx); err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (r *repository) begin(ctx context.Context) (*sqlx.Tx, error) {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, apperror.New(
+			err, "begin transaction failed", apperror.DatabaseKind,
+			apperror.RepositoryOrigin, "user", nil, nil,
+		)
+	}
+
+	return tx, nil
+}
+
+func (r *repository) commit(tx *sqlx.Tx) error {
+	if err := tx.Commit(); err != nil {
+		return apperror.New(
+			err, "commit transaction failed", apperror.DatabaseKind,
+			apperror.RepositoryOrigin, "user", nil, nil,
+		)
+	}
+
+	return nil
 }

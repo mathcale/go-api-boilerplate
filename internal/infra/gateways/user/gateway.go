@@ -97,16 +97,21 @@ func (g *userGateway) GetUserAuthState(
 	return &state, nil
 }
 
-func (g *userGateway) UpdatePassword(
+func (g *userGateway) UpdatePasswordWithCode(
 	ctx context.Context,
 	userID uuid.UUID,
+	codeID uuid.UUID,
 	hashedPassword string,
-) error {
-	return g.repo.UpdatePassword(ctx, userID, hashedPassword)
+) (bool, error) {
+	return g.repo.UpdatePasswordWithCode(ctx, userID, codeID, hashedPassword)
 }
 
-func (g *userGateway) ActivateUser(ctx context.Context, userID uuid.UUID) error {
-	return g.repo.ActivateUser(ctx, userID)
+func (g *userGateway) ActivateUserWithCode(
+	ctx context.Context,
+	userID uuid.UUID,
+	codeID uuid.UUID,
+) (bool, error) {
+	return g.repo.ActivateUserWithCode(ctx, userID, codeID)
 }
 
 func (g *userGateway) SaveConfirmationCode(ctx context.Context, code user.ConfirmationCode) error {
@@ -131,10 +136,6 @@ func (g *userGateway) GetValidConfirmationCode(
 	c := mappers.ConfirmationCodeModelToDomain(*m)
 
 	return &c, nil
-}
-
-func (g *userGateway) MarkConfirmationCodeUsed(ctx context.Context, codeID uuid.UUID) error {
-	return g.repo.MarkConfirmationCodeUsed(ctx, codeID)
 }
 
 func (g *userGateway) SendConfirmationEmail(
@@ -197,7 +198,10 @@ func (g *userGateway) GetRefreshToken(
 	return &t, nil
 }
 
-func (g *userGateway) MarkRefreshTokenUsed(ctx context.Context, tokenID uuid.UUID) error {
+func (g *userGateway) MarkRefreshTokenUsed(
+	ctx context.Context,
+	tokenID uuid.UUID,
+) (bool, error) {
 	return g.repo.MarkRefreshTokenUsed(ctx, tokenID)
 }
 

@@ -288,65 +288,206 @@ func (s *UserRepositoryTestSuite) TestSave() {
 	})
 }
 
-func (s *UserRepositoryTestSuite) TestUpdatePassword() {
-	s.Run("should update the user's password", func() {
+func (s *UserRepositoryTestSuite) TestUpdatePasswordWithCode() {
+	s.Run("should consume the code and update the password in one transaction", func() {
 		userID := uuid.New()
+		codeID := uuid.New()
 
 		s.Contains(queryUpdateUserPassword, "token_version = token_version + 1")
 
+		s.mock.ExpectBegin()
+		s.mock.ExpectExec(regexp.QuoteMeta(queryConsumeConfirmationCode)).
+			WithArgs(codeID, sqlmock.AnyArg()).
+			WillReturnResult(sqlmock.NewResult(0, 1))
 		s.mock.ExpectExec(regexp.QuoteMeta(queryUpdateUserPassword)).
 			WithArgs("new-hash", sqlmock.AnyArg(), userID).
 			WillReturnResult(sqlmock.NewResult(1, 1))
+		s.mock.ExpectCommit()
 
-		err := s.repo.UpdatePassword(context.Background(), userID, "new-hash")
+		updated, err := s.repo.UpdatePasswordWithCode(
+			context.Background(), userID, codeID, "new-hash",
+		)
 
 		s.Require().NoError(err)
+		s.True(updated)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
 
-	s.Run("should return an error when updating the password fails", func() {
+	s.Run("should roll back without updating when the code was already consumed", func() {
 		userID := uuid.New()
+		codeID := uuid.New()
 
-		s.mock.ExpectExec(regexp.QuoteMeta(queryUpdateUserPassword)).
-			WillReturnError(sqlmock.ErrCancelled)
+		s.mock.ExpectBegin()
+		s.mock.ExpectExec(regexp.QuoteMeta(queryConsumeConfirmationCode)).
+			WithArgs(codeID, sqlmock.AnyArg()).
+			WillReturnResult(sqlmock.NewResult(0, 0))
+		s.mock.ExpectRollback()
 
-		err := s.repo.UpdatePassword(context.Background(), userID, "new-hash")
+		updated, err := s.repo.UpdatePasswordWithCode(
+			context.Background(), userID, codeID, "new-hash",
+		)
+
+		s.Require().NoError(err)
+		s.False(updated)
+		s.NoError(s.mock.ExpectationsWereMet())
+	})
+
+	s.Run("should return an error when beginning the transaction fails", func() {
+		s.mock.ExpectBegin().WillReturnError(sqlmock.ErrCancelled)
+
+		updated, err := s.repo.UpdatePasswordWithCode(
+			context.Background(), uuid.New(), uuid.New(), "new-hash",
+		)
 
 		s.Require().Error(err)
+		s.False(updated)
+	})
+
+	s.Run("should roll back when consuming the code fails", func() {
+		s.mock.ExpectBegin()
+		s.mock.ExpectExec(regexp.QuoteMeta(queryConsumeConfirmationCode)).
+			WillReturnError(sqlmock.ErrCancelled)
+		s.mock.ExpectRollback()
+
+		updated, err := s.repo.UpdatePasswordWithCode(
+			context.Background(), uuid.New(), uuid.New(), "new-hash",
+		)
+
+		s.Require().Error(err)
+		s.False(updated)
+		s.NoError(s.mock.ExpectationsWereMet())
+	})
+
+	s.Run("should roll back when updating the password fails", func() {
+		s.mock.ExpectBegin()
+		s.mock.ExpectExec(regexp.QuoteMeta(queryConsumeConfirmationCode)).
+			WillReturnResult(sqlmock.NewResult(0, 1))
+		s.mock.ExpectExec(regexp.QuoteMeta(queryUpdateUserPassword)).
+			WillReturnError(sqlmock.ErrCancelled)
+		s.mock.ExpectRollback()
+
+		updated, err := s.repo.UpdatePasswordWithCode(
+			context.Background(), uuid.New(), uuid.New(), "new-hash",
+		)
+
+		s.Require().Error(err)
+		s.False(updated)
+		s.NoError(s.mock.ExpectationsWereMet())
+	})
+
+	s.Run("should return an error when the commit fails", func() {
+		s.mock.ExpectBegin()
+		s.mock.ExpectExec(regexp.QuoteMeta(queryConsumeConfirmationCode)).
+			WillReturnResult(sqlmock.NewResult(0, 1))
+		s.mock.ExpectExec(regexp.QuoteMeta(queryUpdateUserPassword)).
+			WillReturnResult(sqlmock.NewResult(1, 1))
+		s.mock.ExpectCommit().WillReturnError(sqlmock.ErrCancelled)
+
+		updated, err := s.repo.UpdatePasswordWithCode(
+			context.Background(), uuid.New(), uuid.New(), "new-hash",
+		)
+
+		s.Require().Error(err)
+		s.False(updated)
 	})
 }
 
-func (s *UserRepositoryTestSuite) TestActivateUser() {
-	s.Run("should activate the user", func() {
+func (s *UserRepositoryTestSuite) TestActivateUserWithCode() {
+	s.Run("should consume the code and activate the user in one transaction", func() {
 		userID := uuid.New()
+		codeID := uuid.New()
 
+		s.mock.ExpectBegin()
+		s.mock.ExpectExec(regexp.QuoteMeta(queryConsumeConfirmationCode)).
+			WithArgs(codeID, sqlmock.AnyArg()).
+			WillReturnResult(sqlmock.NewResult(0, 1))
 		s.mock.ExpectExec(regexp.QuoteMeta(queryActivateUser)).
+			WithArgs(sqlmock.AnyArg(), userID).
 			WillReturnResult(sqlmock.NewResult(1, 1))
+		s.mock.ExpectCommit()
 
-		err := s.repo.ActivateUser(context.Background(), userID)
+		activated, err := s.repo.ActivateUserWithCode(context.Background(), userID, codeID)
 
 		s.Require().NoError(err)
+		s.True(activated)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
 
-	s.Run("should return an error when activating the user fails", func() {
+	s.Run("should roll back without activating when the code was already consumed", func() {
 		userID := uuid.New()
+		codeID := uuid.New()
 
-		s.mock.ExpectExec(regexp.QuoteMeta(queryActivateUser)).
-			WillReturnError(sqlmock.ErrCancelled)
+		s.mock.ExpectBegin()
+		s.mock.ExpectExec(regexp.QuoteMeta(queryConsumeConfirmationCode)).
+			WithArgs(codeID, sqlmock.AnyArg()).
+			WillReturnResult(sqlmock.NewResult(0, 0))
+		s.mock.ExpectRollback()
 
-		err := s.repo.ActivateUser(context.Background(), userID)
+		activated, err := s.repo.ActivateUserWithCode(context.Background(), userID, codeID)
+
+		s.Require().NoError(err)
+		s.False(activated)
+		s.NoError(s.mock.ExpectationsWereMet())
+	})
+
+	s.Run("should return an error when beginning the transaction fails", func() {
+		s.mock.ExpectBegin().WillReturnError(sqlmock.ErrCancelled)
+
+		activated, err := s.repo.ActivateUserWithCode(
+			context.Background(), uuid.New(), uuid.New(),
+		)
 
 		s.Require().Error(err)
+		s.False(activated)
+	})
+
+	s.Run("should roll back when activating the user fails", func() {
+		s.mock.ExpectBegin()
+		s.mock.ExpectExec(regexp.QuoteMeta(queryConsumeConfirmationCode)).
+			WillReturnResult(sqlmock.NewResult(0, 1))
+		s.mock.ExpectExec(regexp.QuoteMeta(queryActivateUser)).
+			WillReturnError(sqlmock.ErrCancelled)
+		s.mock.ExpectRollback()
+
+		activated, err := s.repo.ActivateUserWithCode(
+			context.Background(), uuid.New(), uuid.New(),
+		)
+
+		s.Require().Error(err)
+		s.False(activated)
+		s.NoError(s.mock.ExpectationsWereMet())
+	})
+
+	s.Run("should roll back when consuming the code fails", func() {
+		s.mock.ExpectBegin()
+		s.mock.ExpectExec(regexp.QuoteMeta(queryConsumeConfirmationCode)).
+			WillReturnError(sqlmock.ErrCancelled)
+		s.mock.ExpectRollback()
+
+		activated, err := s.repo.ActivateUserWithCode(
+			context.Background(), uuid.New(), uuid.New(),
+		)
+
+		s.Require().Error(err)
+		s.False(activated)
+		s.NoError(s.mock.ExpectationsWereMet())
 	})
 }
 
 func (s *UserRepositoryTestSuite) TestSaveConfirmationCode() {
-	s.Run("should save a confirmation code", func() {
+	s.Run("should invalidate previous codes and insert the new one in a transaction", func() {
 		code := fixtures.InfraModelConfirmationCode(uuid.New())
 
+		s.Contains(queryInvalidateConfirmationCodes, "used IS FALSE")
+
+		s.mock.ExpectBegin()
+		s.mock.ExpectExec(regexp.QuoteMeta(queryInvalidateConfirmationCodes)).
+			WithArgs(code.UserID, code.Purpose).
+			WillReturnResult(sqlmock.NewResult(0, 2))
 		s.mock.ExpectExec(regexp.QuoteMeta(queryInsertConfirmationCode)).
+			WithArgs(code.ID, code.UserID, code.Code, code.Purpose, code.ExpiresAt).
 			WillReturnResult(sqlmock.NewResult(1, 1))
+		s.mock.ExpectCommit()
 
 		err := s.repo.SaveConfirmationCode(context.Background(), code)
 
@@ -354,11 +495,55 @@ func (s *UserRepositoryTestSuite) TestSaveConfirmationCode() {
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
 
-	s.Run("should return an error when saving the confirmation code fails", func() {
+	s.Run("should return an error when beginning the transaction fails", func() {
 		code := fixtures.InfraModelConfirmationCode(uuid.New())
 
+		s.mock.ExpectBegin().WillReturnError(sqlmock.ErrCancelled)
+
+		err := s.repo.SaveConfirmationCode(context.Background(), code)
+
+		s.Require().Error(err)
+	})
+
+	s.Run("should roll back when invalidating previous codes fails", func() {
+		code := fixtures.InfraModelConfirmationCode(uuid.New())
+
+		s.mock.ExpectBegin()
+		s.mock.ExpectExec(regexp.QuoteMeta(queryInvalidateConfirmationCodes)).
+			WillReturnError(sqlmock.ErrCancelled)
+		s.mock.ExpectRollback()
+
+		err := s.repo.SaveConfirmationCode(context.Background(), code)
+
+		s.Require().Error(err)
+		s.NoError(s.mock.ExpectationsWereMet())
+	})
+
+	s.Run("should roll back when inserting the confirmation code fails", func() {
+		code := fixtures.InfraModelConfirmationCode(uuid.New())
+
+		s.mock.ExpectBegin()
+		s.mock.ExpectExec(regexp.QuoteMeta(queryInvalidateConfirmationCodes)).
+			WillReturnResult(sqlmock.NewResult(0, 1))
 		s.mock.ExpectExec(regexp.QuoteMeta(queryInsertConfirmationCode)).
 			WillReturnError(sqlmock.ErrCancelled)
+		s.mock.ExpectRollback()
+
+		err := s.repo.SaveConfirmationCode(context.Background(), code)
+
+		s.Require().Error(err)
+		s.NoError(s.mock.ExpectationsWereMet())
+	})
+
+	s.Run("should return an error when the commit fails", func() {
+		code := fixtures.InfraModelConfirmationCode(uuid.New())
+
+		s.mock.ExpectBegin()
+		s.mock.ExpectExec(regexp.QuoteMeta(queryInvalidateConfirmationCodes)).
+			WillReturnResult(sqlmock.NewResult(0, 1))
+		s.mock.ExpectExec(regexp.QuoteMeta(queryInsertConfirmationCode)).
+			WillReturnResult(sqlmock.NewResult(1, 1))
+		s.mock.ExpectCommit().WillReturnError(sqlmock.ErrCancelled)
 
 		err := s.repo.SaveConfirmationCode(context.Background(), code)
 
@@ -422,31 +607,6 @@ func (s *UserRepositoryTestSuite) TestGetConfirmationCode() {
 
 		s.Require().Error(err)
 		s.Nil(cc)
-	})
-}
-
-func (s *UserRepositoryTestSuite) TestMarkConfirmationCodeUsed() {
-	s.Run("should mark the confirmation code as used", func() {
-		codeID := uuid.New()
-
-		s.mock.ExpectExec(regexp.QuoteMeta(queryMarkConfirmationCodeUsed)).
-			WillReturnResult(sqlmock.NewResult(1, 1))
-
-		err := s.repo.MarkConfirmationCodeUsed(context.Background(), codeID)
-
-		s.Require().NoError(err)
-		s.NoError(s.mock.ExpectationsWereMet())
-	})
-
-	s.Run("should return an error when marking the confirmation code as used fails", func() {
-		codeID := uuid.New()
-
-		s.mock.ExpectExec(regexp.QuoteMeta(queryMarkConfirmationCodeUsed)).
-			WillReturnError(sqlmock.ErrCancelled)
-
-		err := s.repo.MarkConfirmationCodeUsed(context.Background(), codeID)
-
-		s.Require().Error(err)
 	})
 }
 
@@ -523,15 +683,33 @@ func (s *UserRepositoryTestSuite) TestGetRefreshToken() {
 }
 
 func (s *UserRepositoryTestSuite) TestMarkRefreshTokenUsed() {
-	s.Run("should mark the refresh token as used", func() {
+	s.Run("should report the token as claimed when a row is affected", func() {
+		id := uuid.New()
+
+		s.Contains(queryMarkRefreshTokenUsed, "used_at IS NULL AND revoked_at IS NULL")
+
+		s.mock.ExpectExec(regexp.QuoteMeta(queryMarkRefreshTokenUsed)).
+			WithArgs(sqlmock.AnyArg(), id).
+			WillReturnResult(sqlmock.NewResult(0, 1))
+
+		claimed, err := s.repo.MarkRefreshTokenUsed(context.Background(), id)
+
+		s.Require().NoError(err)
+		s.True(claimed)
+		s.NoError(s.mock.ExpectationsWereMet())
+	})
+
+	s.Run("should report the token as not claimed when no row is affected", func() {
 		id := uuid.New()
 
 		s.mock.ExpectExec(regexp.QuoteMeta(queryMarkRefreshTokenUsed)).
-			WillReturnResult(sqlmock.NewResult(1, 1))
+			WithArgs(sqlmock.AnyArg(), id).
+			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		err := s.repo.MarkRefreshTokenUsed(context.Background(), id)
+		claimed, err := s.repo.MarkRefreshTokenUsed(context.Background(), id)
 
 		s.Require().NoError(err)
+		s.False(claimed)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
 
@@ -541,9 +719,22 @@ func (s *UserRepositoryTestSuite) TestMarkRefreshTokenUsed() {
 		s.mock.ExpectExec(regexp.QuoteMeta(queryMarkRefreshTokenUsed)).
 			WillReturnError(sqlmock.ErrCancelled)
 
-		err := s.repo.MarkRefreshTokenUsed(context.Background(), id)
+		claimed, err := s.repo.MarkRefreshTokenUsed(context.Background(), id)
 
 		s.Require().Error(err)
+		s.False(claimed)
+	})
+
+	s.Run("should return an error when rows affected cannot be read", func() {
+		id := uuid.New()
+
+		s.mock.ExpectExec(regexp.QuoteMeta(queryMarkRefreshTokenUsed)).
+			WillReturnResult(sqlmock.NewErrorResult(sqlmock.ErrCancelled))
+
+		claimed, err := s.repo.MarkRefreshTokenUsed(context.Background(), id)
+
+		s.Require().Error(err)
+		s.False(claimed)
 	})
 }
 

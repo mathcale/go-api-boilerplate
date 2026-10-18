@@ -70,16 +70,25 @@ func (m *UserGateway) GetUserAuthState(
 	return args.Get(0).(*user.AuthState), args.Error(1)
 }
 
-func (m *UserGateway) UpdatePassword(
+func (m *UserGateway) UpdatePasswordWithCode(
 	ctx context.Context,
 	userID uuid.UUID,
+	codeID uuid.UUID,
 	hashedPassword string,
-) error {
-	return m.Called(ctx, userID, hashedPassword).Error(0)
+) (bool, error) {
+	args := m.Called(ctx, userID, codeID, hashedPassword)
+
+	return args.Bool(0), args.Error(1)
 }
 
-func (m *UserGateway) ActivateUser(ctx context.Context, userID uuid.UUID) error {
-	return m.Called(ctx, userID).Error(0)
+func (m *UserGateway) ActivateUserWithCode(
+	ctx context.Context,
+	userID uuid.UUID,
+	codeID uuid.UUID,
+) (bool, error) {
+	args := m.Called(ctx, userID, codeID)
+
+	return args.Bool(0), args.Error(1)
 }
 
 func (m *UserGateway) SaveConfirmationCode(
@@ -102,10 +111,6 @@ func (m *UserGateway) GetValidConfirmationCode(
 	}
 
 	return args.Get(0).(*user.ConfirmationCode), args.Error(1)
-}
-
-func (m *UserGateway) MarkConfirmationCodeUsed(ctx context.Context, codeID uuid.UUID) error {
-	return m.Called(ctx, codeID).Error(0)
 }
 
 func (m *UserGateway) SendConfirmationEmail(
@@ -141,8 +146,13 @@ func (m *UserGateway) GetRefreshToken(
 	return args.Get(0).(*user.RefreshToken), args.Error(1)
 }
 
-func (m *UserGateway) MarkRefreshTokenUsed(ctx context.Context, tokenID uuid.UUID) error {
-	return m.Called(ctx, tokenID).Error(0)
+func (m *UserGateway) MarkRefreshTokenUsed(
+	ctx context.Context,
+	tokenID uuid.UUID,
+) (bool, error) {
+	args := m.Called(ctx, tokenID)
+
+	return args.Bool(0), args.Error(1)
 }
 
 func (m *UserGateway) RevokeRefreshTokenFamily(ctx context.Context, familyID uuid.UUID) error {

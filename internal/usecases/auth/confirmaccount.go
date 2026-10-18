@@ -81,9 +81,19 @@ func (uc *confirmAccountUseCase) Execute(ctx context.Context, userID uuid.UUID, 
 		)
 	}
 
-	if err := uc.gateway.ActivateUser(ctx, userID); err != nil {
+	activated, err := uc.gateway.ActivateUserWithCode(ctx, userID, confirmationCode.ID)
+	if err != nil {
 		return err
 	}
 
-	return uc.gateway.MarkConfirmationCodeUsed(ctx, confirmationCode.ID)
+	if !activated {
+		invalid := apperror.BE1006_CONFIRMATION_CODE_INVALID
+
+		return apperror.New(
+			nil, "confirmation code is invalid", apperror.ValidationKind,
+			apperror.UseCaseOrigin, "confirm_account", &invalid, nil,
+		)
+	}
+
+	return nil
 }

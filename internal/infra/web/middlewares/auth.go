@@ -66,12 +66,19 @@ func (m *authMiddleware) Handler(next http.Handler) http.Handler {
 		}
 
 		state, err := m.users.GetUserAuthState(r.Context(), userID)
-		if err != nil || state == nil || !state.Active ||
-			state.TokenVersion != verified.TokenVersion {
+		if err != nil {
+			m.response.RespondWithError(w, apperror.New(
+				err, "failed to load user auth state", apperror.DatabaseKind,
+				apperror.MiddlewareOrigin, "auth", nil, nil,
+			), nil)
+			return
+		}
+
+		if state == nil || !state.Active || state.TokenVersion != verified.TokenVersion {
 			unauthorized := apperror.BE0003_UNAUTHORIZED
 
 			m.response.RespondWithError(w, apperror.New(
-				err, "access token no longer valid", apperror.UnauthorizedKind,
+				nil, "access token no longer valid", apperror.UnauthorizedKind,
 				apperror.MiddlewareOrigin, "auth", &unauthorized, nil,
 			), nil)
 			return

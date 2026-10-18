@@ -74,13 +74,19 @@ func (uc *updatePasswordUseCase) Execute(
 		return err
 	}
 
-	if err := uc.gateway.UpdatePassword(ctx, userID, *hashed); err != nil {
+	updated, err := uc.gateway.UpdatePasswordWithCode(ctx, userID, recoveryCode.ID, *hashed)
+	if err != nil {
 		return err
 	}
 
-	if err := uc.gateway.RevokeUserRefreshTokens(ctx, userID); err != nil {
-		return err
+	if !updated {
+		mismatch := apperror.BE1002_RECOVERY_CODE_MISMATCH
+
+		return apperror.New(
+			nil, "recovery code is invalid", apperror.ValidationKind,
+			apperror.UseCaseOrigin, "update_password", &mismatch, nil,
+		)
 	}
 
-	return uc.gateway.MarkConfirmationCodeUsed(ctx, recoveryCode.ID)
+	return uc.gateway.RevokeUserRefreshTokens(ctx, userID)
 }

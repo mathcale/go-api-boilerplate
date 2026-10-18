@@ -221,31 +221,91 @@ func (s *UserGatewayTestSuite) TestGetUserAuthState() {
 	})
 }
 
-func (s *UserGatewayTestSuite) TestUpdatePassword() {
-	s.Run("should update the user's password", func() {
+func (s *UserGatewayTestSuite) TestUpdatePasswordWithCode() {
+	s.Run("should update the password consuming the code", func() {
 		defer s.cleanMocks()
 
-		userID := uuid.New()
-		s.repo.On("UpdatePassword", mock.Anything, userID, "new-hash").Return(nil)
+		userID, codeID := uuid.New(), uuid.New()
+		s.repo.On("UpdatePasswordWithCode", mock.Anything, userID, codeID, "new-hash").
+			Return(true, nil)
 
-		err := s.gateway.UpdatePassword(context.Background(), userID, "new-hash")
+		updated, err := s.gateway.UpdatePasswordWithCode(
+			context.Background(), userID, codeID, "new-hash",
+		)
 
 		s.Require().NoError(err)
+		s.True(updated)
 		s.repo.AssertExpectations(s.T())
+	})
+
+	s.Run("should report not updated when the code was already consumed", func() {
+		defer s.cleanMocks()
+
+		userID, codeID := uuid.New(), uuid.New()
+		s.repo.On("UpdatePasswordWithCode", mock.Anything, userID, codeID, "new-hash").
+			Return(false, nil)
+
+		updated, err := s.gateway.UpdatePasswordWithCode(
+			context.Background(), userID, codeID, "new-hash",
+		)
+
+		s.Require().NoError(err)
+		s.False(updated)
+	})
+
+	s.Run("should return the repository error", func() {
+		defer s.cleanMocks()
+
+		userID, codeID := uuid.New(), uuid.New()
+		s.repo.On("UpdatePasswordWithCode", mock.Anything, userID, codeID, "new-hash").
+			Return(false, errors.New("db down"))
+
+		updated, err := s.gateway.UpdatePasswordWithCode(
+			context.Background(), userID, codeID, "new-hash",
+		)
+
+		s.Require().Error(err)
+		s.False(updated)
 	})
 }
 
-func (s *UserGatewayTestSuite) TestActivateUser() {
-	s.Run("should activate the user", func() {
+func (s *UserGatewayTestSuite) TestActivateUserWithCode() {
+	s.Run("should activate the user consuming the code", func() {
 		defer s.cleanMocks()
 
-		userID := uuid.New()
-		s.repo.On("ActivateUser", mock.Anything, userID).Return(nil)
+		userID, codeID := uuid.New(), uuid.New()
+		s.repo.On("ActivateUserWithCode", mock.Anything, userID, codeID).Return(true, nil)
 
-		err := s.gateway.ActivateUser(context.Background(), userID)
+		activated, err := s.gateway.ActivateUserWithCode(context.Background(), userID, codeID)
 
 		s.Require().NoError(err)
+		s.True(activated)
 		s.repo.AssertExpectations(s.T())
+	})
+
+	s.Run("should report not activated when the code was already consumed", func() {
+		defer s.cleanMocks()
+
+		userID, codeID := uuid.New(), uuid.New()
+		s.repo.On("ActivateUserWithCode", mock.Anything, userID, codeID).Return(false, nil)
+
+		activated, err := s.gateway.ActivateUserWithCode(context.Background(), userID, codeID)
+
+		s.Require().NoError(err)
+		s.False(activated)
+	})
+
+	s.Run("should return the repository error", func() {
+		defer s.cleanMocks()
+
+		userID, codeID := uuid.New(), uuid.New()
+		s.repo.On("ActivateUserWithCode", mock.Anything, userID, codeID).
+			Return(false, errors.New("db down"))
+
+		activated, err := s.gateway.ActivateUserWithCode(context.Background(), userID, codeID)
+
+		s.Require().Error(err)
+		s.False(activated)
 	})
 }
 
@@ -329,20 +389,6 @@ func (s *UserGatewayTestSuite) TestGetValidConfirmationCode() {
 
 		s.Require().Error(err)
 		s.Nil(got)
-	})
-}
-
-func (s *UserGatewayTestSuite) TestMarkConfirmationCodeUsed() {
-	s.Run("should mark the confirmation code as used", func() {
-		defer s.cleanMocks()
-
-		codeID := uuid.New()
-		s.repo.On("MarkConfirmationCodeUsed", mock.Anything, codeID).Return(nil)
-
-		err := s.gateway.MarkConfirmationCodeUsed(context.Background(), codeID)
-
-		s.Require().NoError(err)
-		s.repo.AssertExpectations(s.T())
 	})
 }
 
@@ -437,16 +483,42 @@ func (s *UserGatewayTestSuite) TestGetRefreshToken() {
 }
 
 func (s *UserGatewayTestSuite) TestMarkRefreshTokenUsed() {
-	s.Run("should mark the refresh token as used", func() {
+	s.Run("should report the refresh token as claimed", func() {
 		defer s.cleanMocks()
 
 		tokenID := uuid.New()
-		s.repo.On("MarkRefreshTokenUsed", mock.Anything, tokenID).Return(nil)
+		s.repo.On("MarkRefreshTokenUsed", mock.Anything, tokenID).Return(true, nil)
 
-		err := s.gateway.MarkRefreshTokenUsed(context.Background(), tokenID)
+		claimed, err := s.gateway.MarkRefreshTokenUsed(context.Background(), tokenID)
 
 		s.Require().NoError(err)
+		s.True(claimed)
 		s.repo.AssertExpectations(s.T())
+	})
+
+	s.Run("should report the refresh token as not claimed when it was lost", func() {
+		defer s.cleanMocks()
+
+		tokenID := uuid.New()
+		s.repo.On("MarkRefreshTokenUsed", mock.Anything, tokenID).Return(false, nil)
+
+		claimed, err := s.gateway.MarkRefreshTokenUsed(context.Background(), tokenID)
+
+		s.Require().NoError(err)
+		s.False(claimed)
+	})
+
+	s.Run("should return the repository error", func() {
+		defer s.cleanMocks()
+
+		tokenID := uuid.New()
+		s.repo.On("MarkRefreshTokenUsed", mock.Anything, tokenID).
+			Return(false, errors.New("db down"))
+
+		claimed, err := s.gateway.MarkRefreshTokenUsed(context.Background(), tokenID)
+
+		s.Require().Error(err)
+		s.False(claimed)
 	})
 }
 
