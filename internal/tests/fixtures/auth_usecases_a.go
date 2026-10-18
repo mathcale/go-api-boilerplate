@@ -15,6 +15,13 @@ func AuthAUser(id uuid.UUID, active bool) *user.User {
 	return &user.User{ID: id, Email: AuthAEmail, Active: active}
 }
 
+func AuthAUserWithVersion(id uuid.UUID, version int) *user.User {
+	u := AuthAUser(id, true)
+	u.TokenVersion = version
+
+	return u
+}
+
 func AuthAUserWithRoles(id uuid.UUID, roles []string) *user.User {
 	u := AuthAUser(id, true)
 	u.Roles = roles
@@ -58,6 +65,10 @@ func AuthARevokedRefreshToken(userID, familyID uuid.UUID) *user.RefreshToken {
 
 func AuthAVerifiedJWT(userID uuid.UUID, tokenID string) *jwt.Token {
 	return &jwt.Token{Subject: userID.String(), ID: tokenID}
+}
+
+func AuthAVerifiedJWTWithVersion(userID uuid.UUID, tokenID string, version int) *jwt.Token {
+	return &jwt.Token{Subject: userID.String(), ID: tokenID, TokenVersion: version}
 }
 
 func AuthAAccessJWT(token string) *jwt.Token {

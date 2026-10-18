@@ -44,6 +44,18 @@ func (m *UserRepository) Save(ctx context.Context, u models.User, code models.Co
 	return m.Called(ctx, u, code).Error(0)
 }
 
+func (m *UserRepository) GetAuthState(
+	ctx context.Context,
+	userID uuid.UUID,
+) (*models.UserAuthState, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(*models.UserAuthState), args.Error(1)
+}
+
 func (m *UserRepository) UpdatePassword(ctx context.Context, userID uuid.UUID, hashedPassword string) error {
 	return m.Called(ctx, userID, hashedPassword).Error(0)
 }

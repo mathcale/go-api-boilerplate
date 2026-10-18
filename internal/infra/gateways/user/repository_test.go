@@ -78,6 +78,7 @@ func (s *UserRepositoryTestSuite) TestGetByID() {
 		s.Require().NoError(err)
 		s.Require().NotNil(u)
 		s.Equal(id, u.ID)
+		s.Equal(4, u.TokenVersion)
 		s.NoError(s.mock.ExpectationsWereMet())
 	})
 
@@ -105,6 +106,50 @@ func (s *UserRepositoryTestSuite) TestGetByID() {
 
 		s.Require().Error(err)
 		s.Nil(u)
+	})
+}
+
+func (s *UserRepositoryTestSuite) TestGetAuthState() {
+	s.Run("should return the token version and active flag of the user", func() {
+		id := uuid.New()
+
+		s.mock.ExpectQuery(regexp.QuoteMeta(queryGetUserAuthState)).
+			WithArgs(id).
+			WillReturnRows(fixtures.InfraUserAuthStateRows(5, true))
+
+		state, err := s.repo.GetAuthState(context.Background(), id)
+
+		s.Require().NoError(err)
+		s.Require().NotNil(state)
+		s.Equal(5, state.TokenVersion)
+		s.True(state.Active)
+		s.NoError(s.mock.ExpectationsWereMet())
+	})
+
+	s.Run("should return nil when the user does not exist", func() {
+		id := uuid.New()
+
+		s.mock.ExpectQuery(regexp.QuoteMeta(queryGetUserAuthState)).
+			WithArgs(id).
+			WillReturnError(sql.ErrNoRows)
+
+		state, err := s.repo.GetAuthState(context.Background(), id)
+
+		s.Require().NoError(err)
+		s.Nil(state)
+	})
+
+	s.Run("should return an error when the query fails", func() {
+		id := uuid.New()
+
+		s.mock.ExpectQuery(regexp.QuoteMeta(queryGetUserAuthState)).
+			WithArgs(id).
+			WillReturnError(sqlmock.ErrCancelled)
+
+		state, err := s.repo.GetAuthState(context.Background(), id)
+
+		s.Require().Error(err)
+		s.Nil(state)
 	})
 }
 
@@ -247,7 +292,10 @@ func (s *UserRepositoryTestSuite) TestUpdatePassword() {
 	s.Run("should update the user's password", func() {
 		userID := uuid.New()
 
+		s.Contains(queryUpdateUserPassword, "token_version = token_version + 1")
+
 		s.mock.ExpectExec(regexp.QuoteMeta(queryUpdateUserPassword)).
+			WithArgs("new-hash", sqlmock.AnyArg(), userID).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 
 		err := s.repo.UpdatePassword(context.Background(), userID, "new-hash")

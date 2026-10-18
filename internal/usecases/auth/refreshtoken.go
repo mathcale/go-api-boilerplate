@@ -35,7 +35,7 @@ func (uc *refreshTokenUseCase) Execute(
 	ctx context.Context,
 	refreshToken string,
 ) (*TokenPair, error) {
-	stored, err := uc.resolveStoredToken(ctx, refreshToken)
+	stored, tokenVersion, err := uc.resolveStoredToken(ctx, refreshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -53,25 +53,29 @@ func (uc *refreshTokenUseCase) Execute(
 		return nil, err
 	}
 
+	if tokenVersion != owner.TokenVersion {
+		return nil, uc.handleStaleVersion(ctx, *stored)
+	}
+
 	return uc.rotate(ctx, *owner, *stored)
 }
 
 func (uc *refreshTokenUseCase) resolveStoredToken(
 	ctx context.Context,
 	refreshToken string,
-) (*user.RefreshToken, error) {
+) (*user.RefreshToken, int, error) {
 	unauthorized := apperror.BE0003_UNAUTHORIZED
 
 	verified, err := uc.jwtAuth.VerifyRefreshToken(refreshToken)
 	if err != nil {
-		return nil, apperror.New(
+		return nil, 0, apperror.New(
 			err, "invalid refresh token", apperror.UnauthorizedKind,
 			apperror.UseCaseOrigin, "refresh_token", &unauthorized, nil,
 		)
 	}
 
 	if verified.ID == "" {
-		return nil, apperror.New(
+		return nil, 0, apperror.New(
 			errors.New("missing jti"), "invalid refresh token", apperror.UnauthorizedKind,
 			apperror.UseCaseOrigin, "refresh_token", &unauthorized, nil,
 		)
@@ -79,7 +83,7 @@ func (uc *refreshTokenUseCase) resolveStoredToken(
 
 	tokenID, err := uuid.Parse(verified.ID)
 	if err != nil {
-		return nil, apperror.New(
+		return nil, 0, apperror.New(
 			err, "invalid refresh token id", apperror.UnauthorizedKind,
 			apperror.UseCaseOrigin, "refresh_token", &unauthorized, nil,
 		)
@@ -87,17 +91,17 @@ func (uc *refreshTokenUseCase) resolveStoredToken(
 
 	stored, err := uc.gateway.GetRefreshToken(ctx, tokenID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	if stored == nil || stored.IsRevoked() {
-		return nil, apperror.New(
+		return nil, 0, apperror.New(
 			nil, "refresh token unknown or revoked", apperror.UnauthorizedKind,
 			apperror.UseCaseOrigin, "refresh_token", &unauthorized, nil,
 		)
 	}
 
-	return stored, nil
+	return stored, verified.TokenVersion, nil
 }
 
 func (uc *refreshTokenUseCase) resolveOwner(
@@ -136,17 +140,19 @@ func (uc *refreshTokenUseCase) rotate(
 	extraClaims := jwt.ExtraClaims{Roles: roles}
 
 	newAccessToken, err := uc.jwtAuth.IssueAccessToken(jwt.IssueTokenParams{
-		UserID:      owner.ID.String(),
-		ExtraClaims: extraClaims,
+		UserID:       owner.ID.String(),
+		ExtraClaims:  extraClaims,
+		TokenVersion: owner.TokenVersion,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	newRefreshToken, err := uc.jwtAuth.IssueRefreshToken(jwt.IssueTokenParams{
-		UserID:      owner.ID.String(),
-		ExtraClaims: extraClaims,
-		TokenID:     newFamilyMemberID.String(),
+		UserID:       owner.ID.String(),
+		ExtraClaims:  extraClaims,
+		TokenID:      newFamilyMemberID.String(),
+		TokenVersion: owner.TokenVersion,
 	})
 	if err != nil {
 		return nil, err
@@ -195,6 +201,37 @@ func (uc *refreshTokenUseCase) handleReuse(ctx context.Context, stored user.Refr
 
 	return apperror.New(
 		nil, "refresh token reuse detected", apperror.UnauthorizedKind,
+		apperror.UseCaseOrigin, "refresh_token", &unauthorized, nil,
+	)
+}
+
+func (uc *refreshTokenUseCase) handleStaleVersion(
+	ctx context.Context,
+	stored user.RefreshToken,
+) error {
+	unauthorized := apperror.BE0003_UNAUTHORIZED
+
+	if revokeErr := uc.gateway.RevokeRefreshTokenFamily(ctx, stored.FamilyID); revokeErr != nil {
+		uc.logger.Error(
+			"failed to revoke refresh token family after stale token version",
+			revokeErr,
+			"family_id", stored.FamilyID.String(),
+		)
+
+		return apperror.New(
+			revokeErr, "refresh token version is stale", apperror.UnauthorizedKind,
+			apperror.UseCaseOrigin, "refresh_token", &unauthorized, nil,
+		)
+	}
+
+	uc.logger.Warn(
+		"refresh token version is stale; family revoked",
+		logFieldUserID, stored.UserID.String(),
+		"family_id", stored.FamilyID.String(),
+	)
+
+	return apperror.New(
+		nil, "refresh token version is stale", apperror.UnauthorizedKind,
 		apperror.UseCaseOrigin, "refresh_token", &unauthorized, nil,
 	)
 }

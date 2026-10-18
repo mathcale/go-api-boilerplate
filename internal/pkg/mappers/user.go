@@ -19,6 +19,15 @@ func UserModelToDomain(m models.User) user.User {
 		Roles:     []string(m.Roles),
 		CreatedAt: m.CreatedAt,
 		UpdatedAt: m.UpdatedAt,
+
+		TokenVersion: m.TokenVersion,
+	}
+}
+
+func UserAuthStateModelToDomain(m models.UserAuthState) user.AuthState {
+	return user.AuthState{
+		TokenVersion: m.TokenVersion,
+		Active:       m.Active,
 	}
 }
 
@@ -40,5 +49,7 @@ func UserDomainToModel(u user.User) models.User {
 		Roles:     pq.StringArray(roles),
 		CreatedAt: u.CreatedAt,
 		UpdatedAt: u.UpdatedAt,
+
+		TokenVersion: u.TokenVersion,
 	}
 }

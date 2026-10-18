@@ -45,6 +45,13 @@ func AuthBActiveUser() *user.User {
 	}
 }
 
+func AuthBActiveUserWithVersion(version int) *user.User {
+	u := AuthBActiveUser()
+	u.TokenVersion = version
+
+	return u
+}
+
 func AuthBInactiveUser() *user.User {
 	u := AuthBActiveUser()
 	u.Active = false

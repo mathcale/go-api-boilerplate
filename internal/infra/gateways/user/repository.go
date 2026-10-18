@@ -18,7 +18,8 @@ const (
 	queryGetUserByEmailIncludingInactive = `SELECT * FROM users WHERE email = $1`
 	queryGetUserByID                     = `SELECT * FROM users WHERE id = $1`
 	queryInsertUser                      = `INSERT INTO users (id, name, surname, avatar_url, email, password, active, roles) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
-	queryUpdateUserPassword              = `UPDATE users SET password = $1, updated_at = $2 WHERE id = $3`
+	queryGetUserAuthState                = `SELECT token_version, active FROM users WHERE id = $1`
+	queryUpdateUserPassword              = `UPDATE users SET password = $1, token_version = token_version + 1, updated_at = $2 WHERE id = $3`
 	queryActivateUser                    = `UPDATE users SET active = TRUE, updated_at = $1 WHERE id = $2`
 	queryInsertConfirmationCode          = `INSERT INTO account_confirmation_codes (id, user_id, code, purpose, expires_at) VALUES ($1, $2, $3, $4, $5)`
 	queryGetConfirmationCode             = `SELECT * FROM account_confirmation_codes WHERE user_id = $1 AND code = $2 AND purpose = $3 AND used IS FALSE`
@@ -35,6 +36,7 @@ type (
 		ExistsIncludingInactive(ctx context.Context, email string) (*bool, error)
 		GetIncludingInactive(ctx context.Context, email string) (*models.User, error)
 		GetByID(ctx context.Context, userID uuid.UUID) (*models.User, error)
+		GetAuthState(ctx context.Context, userID uuid.UUID) (*models.UserAuthState, error)
 		Save(ctx context.Context, user models.User, code models.ConfirmationCode) error
 		UpdatePassword(ctx context.Context, userID uuid.UUID, hashedPassword string) error
 		ActivateUser(ctx context.Context, userID uuid.UUID) error
@@ -109,6 +111,26 @@ func (r *repository) GetByID(ctx context.Context, userID uuid.UUID) (*models.Use
 	}
 
 	return &u, nil
+}
+
+func (r *repository) GetAuthState(
+	ctx context.Context,
+	userID uuid.UUID,
+) (*models.UserAuthState, error) {
+	var state models.UserAuthState
+
+	if err := r.db.GetContext(ctx, &state, queryGetUserAuthState, userID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+
+		return nil, apperror.New(
+			err, "get user auth state query failed", apperror.DatabaseKind,
+			apperror.RepositoryOrigin, "user", nil, nil,
+		)
+	}
+
+	return &state, nil
 }
 
 func (r *repository) Save(ctx context.Context, u models.User, code models.ConfirmationCode) error {

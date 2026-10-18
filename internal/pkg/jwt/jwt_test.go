@@ -41,6 +41,17 @@ func (s *JWTAuthTestSuite) TestIssueAccessToken() {
 		s.Equal(fixtures.DomainPkgIssuer, issued.Issuer)
 	})
 
+	s.Run("should issue an access token carrying its type and token version", func() {
+		issued, err := s.auth.IssueAccessToken(jwt.IssueTokenParams{
+			UserID:       "user-123",
+			TokenVersion: fixtures.DomainPkgTokenVersion,
+		})
+
+		s.Require().NoError(err)
+		s.Equal(jwt.TokenTypeAccess, issued.Type)
+		s.Equal(fixtures.DomainPkgTokenVersion, issued.TokenVersion)
+	})
+
 	s.Run("should issue an access token with no token ID by default", func() {
 		issued, err := s.auth.IssueAccessToken(jwt.IssueTokenParams{UserID: "user-123"})
 
@@ -60,6 +71,17 @@ func (s *JWTAuthTestSuite) TestIssueRefreshToken() {
 		s.Require().NotNil(issued.Token)
 		s.Equal("some-uuid", issued.ID)
 	})
+
+	s.Run("should issue a refresh token carrying its type and token version", func() {
+		issued, err := s.auth.IssueRefreshToken(jwt.IssueTokenParams{
+			UserID:       "user-123",
+			TokenVersion: fixtures.DomainPkgTokenVersion,
+		})
+
+		s.Require().NoError(err)
+		s.Equal(jwt.TokenTypeRefresh, issued.Type)
+		s.Equal(fixtures.DomainPkgTokenVersion, issued.TokenVersion)
+	})
 }
 
 func (s *JWTAuthTestSuite) TestVerifyAccessToken() {
@@ -78,6 +100,121 @@ func (s *JWTAuthTestSuite) TestVerifyAccessToken() {
 		s.Equal(fixtures.DomainPkgIssuer, verified.Issuer)
 		s.Equal([]string{"admin", "user"}, verified.ExtraClaims.Roles)
 		s.Empty(verified.ID)
+	})
+
+	s.Run("should round-trip the token type and version", func() {
+		issued, err := s.auth.IssueAccessToken(jwt.IssueTokenParams{
+			UserID:       "user-123",
+			TokenVersion: fixtures.DomainPkgTokenVersion,
+		})
+		s.Require().NoError(err)
+
+		verified, err := s.auth.VerifyAccessToken(*issued.Token)
+
+		s.Require().NoError(err)
+		s.Equal(jwt.TokenTypeAccess, verified.Type)
+		s.Equal(fixtures.DomainPkgTokenVersion, verified.TokenVersion)
+		s.Equal([]string{fixtures.DomainPkgAudience}, verified.Audience)
+	})
+
+	s.Run("should accept a token whose aud claim is an array", func() {
+		claims := fixtures.DomainPkgClaims()
+		claims["aud"] = []string{fixtures.DomainPkgAudience, "other"}
+
+		tokenStr, err := fixtures.DomainPkgSignAccessClaims(claims)
+		s.Require().NoError(err)
+
+		verified, err := s.auth.VerifyAccessToken(tokenStr)
+
+		s.Require().NoError(err)
+		s.Equal([]string{fixtures.DomainPkgAudience, "other"}, verified.Audience)
+	})
+
+	s.Run("should reject a refresh token even when both secrets are identical", func() {
+		shared := fixtures.DomainPkgSharedSecretJWTAuth()
+
+		issued, err := shared.IssueRefreshToken(jwt.IssueTokenParams{UserID: "user-123"})
+		s.Require().NoError(err)
+
+		_, err = shared.VerifyAccessToken(*issued.Token)
+
+		s.Require().Error(err)
+	})
+
+	s.Run("should reject a token without a type claim", func() {
+		claims := fixtures.DomainPkgClaims()
+		delete(claims, "typ")
+
+		tokenStr, err := fixtures.DomainPkgSignAccessClaims(claims)
+		s.Require().NoError(err)
+
+		_, err = s.auth.VerifyAccessToken(tokenStr)
+
+		s.Require().Error(err)
+	})
+
+	s.Run("should reject a token with an unknown type claim", func() {
+		claims := fixtures.DomainPkgClaims()
+		claims["typ"] = "id"
+
+		tokenStr, err := fixtures.DomainPkgSignAccessClaims(claims)
+		s.Require().NoError(err)
+
+		_, err = s.auth.VerifyAccessToken(tokenStr)
+
+		s.Require().Error(err)
+	})
+
+	s.Run("should reject a token without a subject instead of panicking", func() {
+		claims := fixtures.DomainPkgClaims()
+		delete(claims, "sub")
+
+		tokenStr, err := fixtures.DomainPkgSignAccessClaims(claims)
+		s.Require().NoError(err)
+
+		s.NotPanics(func() {
+			_, err = s.auth.VerifyAccessToken(tokenStr)
+		})
+		s.Require().Error(err)
+	})
+
+	s.Run("should reject a token without an expiry instead of panicking", func() {
+		claims := fixtures.DomainPkgClaims()
+		delete(claims, "exp")
+
+		tokenStr, err := fixtures.DomainPkgSignAccessClaims(claims)
+		s.Require().NoError(err)
+
+		s.NotPanics(func() {
+			_, err = s.auth.VerifyAccessToken(tokenStr)
+		})
+		s.Require().Error(err)
+	})
+
+	s.Run("should reject a token without a token version", func() {
+		claims := fixtures.DomainPkgClaims()
+		delete(claims, "tv")
+
+		tokenStr, err := fixtures.DomainPkgSignAccessClaims(claims)
+		s.Require().NoError(err)
+
+		_, err = s.auth.VerifyAccessToken(tokenStr)
+
+		s.Require().Error(err)
+	})
+
+	s.Run("should reject a token with a non-numeric or negative token version", func() {
+		for _, bad := range []any{"1", -1, 1.5} {
+			claims := fixtures.DomainPkgClaims()
+			claims["tv"] = bad
+
+			tokenStr, err := fixtures.DomainPkgSignAccessClaims(claims)
+			s.Require().NoError(err)
+
+			_, err = s.auth.VerifyAccessToken(tokenStr)
+
+			s.Require().Error(err)
+		}
 	})
 
 	s.Run("should reject a malformed or tampered token string", func() {
@@ -149,6 +286,31 @@ func (s *JWTAuthTestSuite) TestVerifyRefreshToken() {
 
 		s.Require().NoError(err)
 		s.Equal("some-uuid", verified.ID)
+	})
+
+	s.Run("should round-trip the token type and version", func() {
+		issued, err := s.auth.IssueRefreshToken(jwt.IssueTokenParams{
+			UserID:       "user-123",
+			TokenVersion: fixtures.DomainPkgTokenVersion,
+		})
+		s.Require().NoError(err)
+
+		verified, err := s.auth.VerifyRefreshToken(*issued.Token)
+
+		s.Require().NoError(err)
+		s.Equal(jwt.TokenTypeRefresh, verified.Type)
+		s.Equal(fixtures.DomainPkgTokenVersion, verified.TokenVersion)
+	})
+
+	s.Run("should reject an access token even when both secrets are identical", func() {
+		shared := fixtures.DomainPkgSharedSecretJWTAuth()
+
+		issued, err := shared.IssueAccessToken(jwt.IssueTokenParams{UserID: "user-123"})
+		s.Require().NoError(err)
+
+		_, err = shared.VerifyRefreshToken(*issued.Token)
+
+		s.Require().Error(err)
 	})
 
 	s.Run("should reject an access token when verified as a refresh token", func() {

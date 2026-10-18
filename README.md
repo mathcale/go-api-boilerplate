@@ -38,6 +38,9 @@ cp .env.example .env
 Then fill in `ACCESS_TOKEN_SECRET` and `REFRESH_TOKEN_SECRET` with distinct values of at
 least 64 bytes (e.g. `openssl rand -base64 64`). The API refuses to start otherwise.
 
+Access tokens are short-lived (`ACCESS_TOKEN_LIFETIME_MINUTES`, 15 by default). Each user carries a
+`token_version` that is bumped on password change; tokens issued with an older version are rejected.
+
 Email delivery is controlled by `MAILER_PROVIDER`:
 
 - `fake` (default, local development only): emails are not sent. Rejected when

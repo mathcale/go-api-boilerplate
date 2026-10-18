@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
 	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
 	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
 	"github.com/mathcale/go-api-boilerplate/internal/usecases/auth"
@@ -36,6 +37,27 @@ func TestSignInUseCase(t *testing.T) {
 }
 
 func (s *SignInUseCaseTestSuite) TestExecute() {
+	s.Run("should issue both tokens carrying the user's current token version", func() {
+		hasVersion := mock.MatchedBy(func(p jwt.IssueTokenParams) bool {
+			return p.TokenVersion == 6
+		})
+
+		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBEmail).
+			Return(fixtures.AuthBActiveUserWithVersion(6), nil)
+		s.pw.On("Verify", fixtures.AuthBPassword, fixtures.AuthBStoredHash).Return(nil)
+		s.j.On("IssueAccessToken", hasVersion).Return(fixtures.AuthBAccessJWT(), nil)
+		s.j.On("IssueRefreshToken", hasVersion).Return(fixtures.AuthBRefreshJWT(), nil)
+		s.gw.On("SaveRefreshToken", mock.Anything, mock.AnythingOfType("user.RefreshToken")).
+			Return(nil)
+
+		uc := auth.NewSignInUseCase(mocks.NoopLogger{}, s.gw, s.pw, s.j)
+
+		_, err := uc.Execute(context.Background(), fixtures.AuthBEmail, fixtures.AuthBPassword)
+
+		s.Require().NoError(err)
+		s.j.AssertExpectations(s.T())
+	})
+
 	s.Run("should sign in and return an access and refresh token pair", func() {
 		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBEmail).
 			Return(fixtures.AuthBActiveUser(), nil)

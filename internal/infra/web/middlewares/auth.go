@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/mathcale/go-api-boilerplate/internal/domain/gateway"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/webcontext"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
@@ -18,12 +19,18 @@ type AuthMiddleware interface {
 
 type authMiddleware struct {
 	jwtAuth  jwt.JWTAuth
+	users    gateway.User
 	response handlers.Response
 }
 
-func NewAuthMiddleware(jwtAuth jwt.JWTAuth, response handlers.Response) AuthMiddleware {
+func NewAuthMiddleware(
+	jwtAuth jwt.JWTAuth,
+	users gateway.User,
+	response handlers.Response,
+) AuthMiddleware {
 	return &authMiddleware{
 		jwtAuth:  jwtAuth,
+		users:    users,
 		response: response,
 	}
 }
@@ -53,6 +60,18 @@ func (m *authMiddleware) Handler(next http.Handler) http.Handler {
 
 			m.response.RespondWithError(w, apperror.New(
 				err, "invalid subject claim", apperror.UnauthorizedKind,
+				apperror.MiddlewareOrigin, "auth", &unauthorized, nil,
+			), nil)
+			return
+		}
+
+		state, err := m.users.GetUserAuthState(r.Context(), userID)
+		if err != nil || state == nil || !state.Active ||
+			state.TokenVersion != verified.TokenVersion {
+			unauthorized := apperror.BE0003_UNAUTHORIZED
+
+			m.response.RespondWithError(w, apperror.New(
+				err, "access token no longer valid", apperror.UnauthorizedKind,
 				apperror.MiddlewareOrigin, "auth", &unauthorized, nil,
 			), nil)
 			return

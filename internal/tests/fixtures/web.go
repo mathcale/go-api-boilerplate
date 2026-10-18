@@ -7,6 +7,7 @@ import (
 
 	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers/dto"
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
 	"github.com/mathcale/go-api-boilerplate/internal/usecases/auth"
 )
 
@@ -96,4 +97,20 @@ func webJSON(v interface{}) string {
 	}
 
 	return string(out)
+}
+
+func WebVerifiedAccessToken(userID uuid.UUID, version int) *jwt.Token {
+	return &jwt.Token{
+		Subject:      userID.String(),
+		ExtraClaims:  jwt.ExtraClaims{Roles: WebRoles()},
+		TokenVersion: version,
+	}
+}
+
+func WebAuthState(version int, active bool) *user.AuthState {
+	return &user.AuthState{TokenVersion: version, Active: active}
+}
+
+func WebRoles() []string {
+	return []string{"user", "manager"}
 }

@@ -19,6 +19,13 @@ type User struct {
 	Roles     []string
 	CreatedAt time.Time
 	UpdatedAt time.Time
+
+	TokenVersion int
+}
+
+type AuthState struct {
+	TokenVersion int
+	Active       bool
 }
 
 type CreateUserParams struct {

@@ -85,17 +85,19 @@ func (uc *signInUseCase) Execute(
 	extraClaims := jwt.ExtraClaims{Roles: roles}
 
 	accessToken, err := uc.jwtAuth.IssueAccessToken(jwt.IssueTokenParams{
-		UserID:      target.ID.String(),
-		ExtraClaims: extraClaims,
+		UserID:       target.ID.String(),
+		ExtraClaims:  extraClaims,
+		TokenVersion: target.TokenVersion,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	refreshToken, err := uc.jwtAuth.IssueRefreshToken(jwt.IssueTokenParams{
-		UserID:      target.ID.String(),
-		ExtraClaims: extraClaims,
-		TokenID:     familyID.String(),
+		UserID:       target.ID.String(),
+		ExtraClaims:  extraClaims,
+		TokenID:      familyID.String(),
+		TokenVersion: target.TokenVersion,
 	})
 	if err != nil {
 		return nil, err

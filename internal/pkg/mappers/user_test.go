@@ -34,6 +34,18 @@ func (s *MappersUserTestSuite) TestUserModelToDomain() {
 		s.Equal([]string{"admin"}, got.Roles)
 		s.Equal(m.CreatedAt, got.CreatedAt)
 		s.Equal(m.UpdatedAt, got.UpdatedAt)
+		s.Equal(m.TokenVersion, got.TokenVersion)
+	})
+}
+
+func (s *MappersUserTestSuite) TestUserAuthStateModelToDomain() {
+	s.Run("should map an auth state model to its domain representation", func() {
+		m := fixtures.DomainPkgUserAuthStateModel()
+
+		got := UserAuthStateModelToDomain(m)
+
+		s.Equal(m.TokenVersion, got.TokenVersion)
+		s.Equal(m.Active, got.Active)
 	})
 }
 
@@ -53,6 +65,7 @@ func (s *MappersUserTestSuite) TestUserDomainToModel() {
 		s.Equal(pq.StringArray{"admin"}, got.Roles)
 		s.Equal(u.CreatedAt, got.CreatedAt)
 		s.Equal(u.UpdatedAt, got.UpdatedAt)
+		s.Equal(u.TokenVersion, got.TokenVersion)
 	})
 
 	s.Run("should map nil roles to an empty slice instead of null", func() {

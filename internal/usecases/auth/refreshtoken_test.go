@@ -89,6 +89,35 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 		s.j.AssertExpectations(s.T())
 	})
 
+	s.Run("should issue tokens carrying the user's current token version", func() {
+		userID := uuid.New()
+		familyID := uuid.New()
+		expiresAt := time.Now().Add(24 * time.Hour)
+		hasVersion := mock.MatchedBy(func(p jwt.IssueTokenParams) bool {
+			return p.TokenVersion == 3
+		})
+
+		s.j.On("VerifyRefreshToken", oldRefreshToken).
+			Return(fixtures.AuthAVerifiedJWTWithVersion(userID, familyID.String(), 3), nil)
+		s.gw.On("GetRefreshToken", mock.Anything, familyID).
+			Return(fixtures.AuthAStoredRefreshToken(userID, familyID), nil)
+		s.gw.On("MarkRefreshTokenUsed", mock.Anything, familyID).Return(nil)
+		s.gw.On("GetUserByID", mock.Anything, userID).
+			Return(fixtures.AuthAUserWithVersion(userID, 3), nil)
+		s.j.On("IssueAccessToken", hasVersion).
+			Return(fixtures.AuthAAccessJWT("new-access-token"), nil)
+		s.j.On("IssueRefreshToken", hasVersion).
+			Return(fixtures.AuthARefreshJWT("new-refresh-token", &expiresAt), nil)
+		s.gw.On("SaveRefreshToken", mock.Anything, mock.AnythingOfType("user.RefreshToken")).
+			Return(nil)
+
+		tokens, err := s.uc.Execute(context.Background(), oldRefreshToken)
+
+		s.Require().NoError(err)
+		s.Require().NotNil(tokens)
+		s.j.AssertExpectations(s.T())
+	})
+
 	s.Run("should issue tokens with the roles currently stored for the user", func() {
 		userID := uuid.New()
 		familyID := uuid.New()
@@ -294,6 +323,51 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 		tokens, err := s.uc.Execute(context.Background(), oldRefreshToken)
 
 		s.Require().Error(err)
+		s.Nil(tokens)
+		s.assertUnauthorized(err, apperror.UnauthorizedKind)
+		s.j.AssertNotCalled(s.T(), "IssueAccessToken", mock.Anything)
+	})
+
+	s.Run("should revoke the family and reject a refresh token with a stale version", func() {
+		userID := uuid.New()
+		familyID := uuid.New()
+
+		s.j.On("VerifyRefreshToken", oldRefreshToken).
+			Return(fixtures.AuthAVerifiedJWTWithVersion(userID, familyID.String(), 2), nil)
+		s.gw.On("GetRefreshToken", mock.Anything, familyID).
+			Return(fixtures.AuthAStoredRefreshToken(userID, familyID), nil)
+		s.gw.On("MarkRefreshTokenUsed", mock.Anything, familyID).Return(nil)
+		s.gw.On("GetUserByID", mock.Anything, userID).
+			Return(fixtures.AuthAUserWithVersion(userID, 3), nil)
+		s.gw.On("RevokeRefreshTokenFamily", mock.Anything, familyID).Return(nil)
+
+		tokens, err := s.uc.Execute(context.Background(), oldRefreshToken)
+
+		s.Require().Error(err)
+		s.Nil(tokens)
+		s.assertUnauthorized(err, apperror.UnauthorizedKind)
+		s.gw.AssertExpectations(s.T())
+		s.j.AssertNotCalled(s.T(), "IssueAccessToken", mock.Anything)
+		s.j.AssertNotCalled(s.T(), "IssueRefreshToken", mock.Anything)
+	})
+
+	s.Run("should still reject a stale version when revoking the family fails", func() {
+		userID := uuid.New()
+		familyID := uuid.New()
+		revokeErr := errors.New("db down")
+
+		s.j.On("VerifyRefreshToken", oldRefreshToken).
+			Return(fixtures.AuthAVerifiedJWTWithVersion(userID, familyID.String(), 2), nil)
+		s.gw.On("GetRefreshToken", mock.Anything, familyID).
+			Return(fixtures.AuthAStoredRefreshToken(userID, familyID), nil)
+		s.gw.On("MarkRefreshTokenUsed", mock.Anything, familyID).Return(nil)
+		s.gw.On("GetUserByID", mock.Anything, userID).
+			Return(fixtures.AuthAUserWithVersion(userID, 3), nil)
+		s.gw.On("RevokeRefreshTokenFamily", mock.Anything, familyID).Return(revokeErr)
+
+		tokens, err := s.uc.Execute(context.Background(), oldRefreshToken)
+
+		s.Require().ErrorIs(err, revokeErr)
 		s.Nil(tokens)
 		s.assertUnauthorized(err, apperror.UnauthorizedKind)
 		s.j.AssertNotCalled(s.T(), "IssueAccessToken", mock.Anything)

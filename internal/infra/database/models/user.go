@@ -18,4 +18,11 @@ type User struct {
 	Roles     pq.StringArray `db:"roles"`
 	CreatedAt time.Time      `db:"created_at"`
 	UpdatedAt time.Time      `db:"updated_at"`
+
+	TokenVersion int `db:"token_version"`
+}
+
+type UserAuthState struct {
+	TokenVersion int  `db:"token_version"`
+	Active       bool `db:"active"`
 }

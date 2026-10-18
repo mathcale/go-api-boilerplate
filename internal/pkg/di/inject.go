@@ -101,7 +101,7 @@ func (di *dependencyInjector) Inject(ctx context.Context) (*Dependencies, error)
 	corsMiddleware := middlewares.NewCORSMiddleware(di.corsAllowedOrigins())
 	correlationIDMiddleware := middlewares.NewCorrelationIDMiddleware(log)
 	loggingMiddleware := middlewares.NewLoggingMiddleware(log)
-	authMiddleware := middlewares.NewAuthMiddleware(jwtAuth, rh)
+	authMiddleware := middlewares.NewAuthMiddleware(jwtAuth, userGateway, rh)
 	rateLimitMiddleware := middlewares.NewRateLimitMiddleware(
 		di.config.RateLimitRequestsPerMinute,
 		di.config.RateLimitBurst,

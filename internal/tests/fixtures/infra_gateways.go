@@ -72,12 +72,20 @@ func InfraModelRefreshToken() models.RefreshToken {
 func InfraUserRows(id uuid.UUID) *sqlmock.Rows {
 	columns := []string{
 		"id", "name", "surname", "avatar_url", "email",
-		"password", "active", "roles", "created_at", "updated_at",
+		"password", "active", "roles", "created_at", "updated_at", "token_version",
 	}
 
 	return sqlmock.NewRows(columns).AddRow(
-		id, "Jane", "Doe", nil, InfraUserEmail, "hashed", true, "{}", time.Now(), time.Now(),
+		id, "Jane", "Doe", nil, InfraUserEmail, "hashed", true, "{}", time.Now(), time.Now(), 4,
 	)
+}
+
+func InfraUserAuthStateRows(version int, active bool) *sqlmock.Rows {
+	return sqlmock.NewRows([]string{"token_version", "active"}).AddRow(version, active)
+}
+
+func InfraModelUserAuthState() models.UserAuthState {
+	return models.UserAuthState{TokenVersion: 4, Active: true}
 }
 
 func InfraConfirmationCodeRows(id, userID uuid.UUID, code string) *sqlmock.Rows {

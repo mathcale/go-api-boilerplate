@@ -13,6 +13,7 @@ type User interface {
 	SaveUser(ctx context.Context, u user.User, code user.ConfirmationCode) error
 	GetUserByEmailIncludingInactive(ctx context.Context, email string) (*user.User, error)
 	GetUserByID(ctx context.Context, userID uuid.UUID) (*user.User, error)
+	GetUserAuthState(ctx context.Context, userID uuid.UUID) (*user.AuthState, error)
 	UpdatePassword(ctx context.Context, userID uuid.UUID, hashedPassword string) error
 	ActivateUser(ctx context.Context, userID uuid.UUID) error
 	SaveConfirmationCode(ctx context.Context, code user.ConfirmationCode) error

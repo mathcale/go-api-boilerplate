@@ -180,6 +180,47 @@ func (s *UserGatewayTestSuite) TestGetUserByID() {
 	})
 }
 
+func (s *UserGatewayTestSuite) TestGetUserAuthState() {
+	s.Run("should return the auth state of the user", func() {
+		defer s.cleanMocks()
+
+		m := fixtures.InfraModelUserAuthState()
+		userID := uuid.New()
+		s.repo.On("GetAuthState", mock.Anything, userID).Return(&m, nil)
+
+		got, err := s.gateway.GetUserAuthState(context.Background(), userID)
+
+		s.Require().NoError(err)
+		s.Require().NotNil(got)
+		s.Equal(m.TokenVersion, got.TokenVersion)
+		s.Equal(m.Active, got.Active)
+	})
+
+	s.Run("should return nil when the user does not exist", func() {
+		defer s.cleanMocks()
+
+		userID := uuid.New()
+		s.repo.On("GetAuthState", mock.Anything, userID).Return(nil, nil)
+
+		got, err := s.gateway.GetUserAuthState(context.Background(), userID)
+
+		s.Require().NoError(err)
+		s.Nil(got)
+	})
+
+	s.Run("should return an error when the repository fails", func() {
+		defer s.cleanMocks()
+
+		userID := uuid.New()
+		s.repo.On("GetAuthState", mock.Anything, userID).Return(nil, errors.New("db down"))
+
+		got, err := s.gateway.GetUserAuthState(context.Background(), userID)
+
+		s.Require().Error(err)
+		s.Nil(got)
+	})
+}
+
 func (s *UserGatewayTestSuite) TestUpdatePassword() {
 	s.Run("should update the user's password", func() {
 		defer s.cleanMocks()

@@ -19,6 +19,7 @@ const (
 	DomainPkgIssuer        = "boilerplate"
 	DomainPkgAudience      = "boilerplate-clients"
 	DomainPkgAvatarURL     = "https://example.com/avatar.png"
+	DomainPkgTokenVersion  = 7
 )
 
 func DomainPkgCreateUserParams() user.CreateUserParams {
@@ -46,6 +47,8 @@ func DomainPkgUser() user.User {
 		Roles:     []string{"admin"},
 		CreatedAt: now,
 		UpdatedAt: now,
+
+		TokenVersion: 3,
 	}
 }
 
@@ -64,7 +67,13 @@ func DomainPkgUserModel() models.User {
 		Roles:     pq.StringArray{"admin"},
 		CreatedAt: now,
 		UpdatedAt: now,
+
+		TokenVersion: 3,
 	}
+}
+
+func DomainPkgUserAuthStateModel() models.UserAuthState {
+	return models.UserAuthState{TokenVersion: 5, Active: true}
 }
 
 func DomainPkgConfirmationCode() user.ConfirmationCode {
@@ -174,7 +183,21 @@ func DomainPkgClaims() jwtlib.MapClaims {
 		"aud": DomainPkgAudience,
 		"iat": time.Now().Unix(),
 		"exp": time.Now().Add(time.Hour).Unix(),
+		"typ": jwt.TokenTypeAccess,
+		"tv":  DomainPkgTokenVersion,
 	}
+}
+
+func DomainPkgSharedSecretJWTAuth() jwt.JWTAuth {
+	return jwt.NewJWTAuth(
+		mocks.NoopLogger{},
+		[]byte(DomainPkgAccessSecret),
+		[]byte(DomainPkgAccessSecret),
+		15,
+		60,
+		DomainPkgIssuer,
+		DomainPkgAudience,
+	)
 }
 
 func DomainPkgSignAccessClaims(claims jwtlib.MapClaims) (string, error) {

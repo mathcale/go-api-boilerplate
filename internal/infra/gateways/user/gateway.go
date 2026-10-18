@@ -79,6 +79,24 @@ func (g *userGateway) GetUserByID(ctx context.Context, userID uuid.UUID) (*user.
 	return &u, nil
 }
 
+func (g *userGateway) GetUserAuthState(
+	ctx context.Context,
+	userID uuid.UUID,
+) (*user.AuthState, error) {
+	m, err := g.repo.GetAuthState(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if m == nil {
+		return nil, nil
+	}
+
+	state := mappers.UserAuthStateModelToDomain(*m)
+
+	return &state, nil
+}
+
 func (g *userGateway) UpdatePassword(
 	ctx context.Context,
 	userID uuid.UUID,
