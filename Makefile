@@ -1,4 +1,4 @@
-.PHONY: build run test tidy run-containers init-database create-migration migrate-up migrate-down install-deps install-deps-force setup clean rename-pkgs all openapi-gen openapi-fmt lint lint-fix fmt
+.PHONY: build run test tidy run-containers init-database create-migration migrate-up migrate-down install-deps install-deps-force setup clean rename-pkgs all openapi-gen openapi-fmt lint lint-fix fmt sec
 
 include .env
 
@@ -6,6 +6,8 @@ PLATFORM := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 ARCH := $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/' -e 's/armv7l/armv7/' -e 's/i386\|i686/386/')
 
 MIGRATE_VERSION ?= v4.20.1
+GOSEC_VERSION ?= v2.29.0
+GOVULNCHECK_VERSION ?= v1.9.0
 
 # Set FORCE=1 to reinstall tools even if already present (see install-deps-force)
 FORCE ?=
@@ -54,6 +56,12 @@ lint-fix:
 fmt:
 	@echo "==> Formatting Go code..."
 	@golangci-lint fmt
+
+sec:
+	@echo "==> Running gosec..."
+	@go run github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION) ./...
+	@echo "==> Running govulncheck..."
+	@go run golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION) ./...
 
 install-deps:
 	@if [ -z "$(FORCE)" ] && command -v air >/dev/null 2>&1; then \

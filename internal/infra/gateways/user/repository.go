@@ -19,14 +19,14 @@ const (
 	queryGetUserByID                     = `SELECT * FROM users WHERE id = $1`
 	queryInsertUser                      = `INSERT INTO users (id, name, surname, avatar_url, email, password, active, roles) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 	queryGetUserAuthState                = `SELECT token_version, active FROM users WHERE id = $1`
-	queryUpdateUserPassword              = `UPDATE users SET password = $1, token_version = token_version + 1, updated_at = $2 WHERE id = $3`
+	queryUpdateUserPassword              = `UPDATE users SET password = $1, token_version = token_version + 1, updated_at = $2 WHERE id = $3` // #nosec G101 -- SQL statement, not a credential
 	queryActivateUser                    = `UPDATE users SET active = TRUE, updated_at = $1 WHERE id = $2`
 	queryInsertConfirmationCode          = `INSERT INTO account_confirmation_codes (id, user_id, code, purpose, expires_at) VALUES ($1, $2, $3, $4, $5)`
 	queryGetConfirmationCode             = `SELECT * FROM account_confirmation_codes WHERE user_id = $1 AND code = $2 AND purpose = $3 AND used IS FALSE`
 	queryConsumeConfirmationCode         = `UPDATE account_confirmation_codes SET used = TRUE WHERE id = $1 AND used IS FALSE AND expires_at > $2`
 	queryInvalidateConfirmationCodes     = `UPDATE account_confirmation_codes SET used = TRUE WHERE user_id = $1 AND purpose = $2 AND used IS FALSE`
-	queryInsertRefreshToken              = `INSERT INTO refresh_tokens (id, user_id, family_id, expires_at) VALUES ($1, $2, $3, $4)`
-	queryGetRefreshToken                 = `SELECT * FROM refresh_tokens WHERE id = $1`
+	queryInsertRefreshToken              = `INSERT INTO refresh_tokens (id, user_id, family_id, expires_at) VALUES ($1, $2, $3, $4)` // #nosec G101 -- SQL statement, not a credential
+	queryGetRefreshToken                 = `SELECT * FROM refresh_tokens WHERE id = $1`                                              // #nosec G101 -- SQL statement, not a credential
 	queryMarkRefreshTokenUsed            = `UPDATE refresh_tokens SET used_at = $1 WHERE id = $2 AND used_at IS NULL AND revoked_at IS NULL`
 	queryRevokeRefreshTokenFamily        = `UPDATE refresh_tokens SET revoked_at = $1 WHERE family_id = $2 AND revoked_at IS NULL`
 	queryRevokeUserRefreshTokens         = `UPDATE refresh_tokens SET revoked_at = $1 WHERE user_id = $2 AND revoked_at IS NULL`
