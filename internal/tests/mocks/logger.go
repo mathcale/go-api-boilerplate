@@ -36,10 +36,6 @@ func (m *Logger) With(kv ...any) logger.Logger {
 	return args.Get(0).(logger.Logger)
 }
 
-func (m *Logger) SetGlobalValue(key string, value any) {
-	m.Called(key, value)
-}
-
 func (m *Logger) Instance() zerolog.Logger {
 	args := m.Called()
 	return args.Get(0).(zerolog.Logger)

@@ -22,7 +22,6 @@ type (
 		Debug(msg string, keysAndValues ...any)
 		Trace(msg string, keysAndValues ...any)
 		With(keysAndValues ...any) Logger
-		SetGlobalValue(key string, value any)
 		Instance() zerolog.Logger
 	}
 
@@ -42,6 +41,10 @@ func NewLogger(level string, prod bool) Logger {
 	}
 
 	return newWithWriter(level, writer)
+}
+
+func NewWithWriter(level string, w io.Writer) Logger {
+	return newWithWriter(level, w)
 }
 
 func newWithWriter(level string, w io.Writer) Logger {
@@ -66,6 +69,14 @@ func FromCtx(ctx context.Context) Logger {
 	return &logger{
 		instance: zerolog.Nop(),
 	}
+}
+
+func FromCtxOr(ctx context.Context, fallback Logger) Logger {
+	if l, ok := ctx.Value(contextKey{}).(Logger); ok && l != nil {
+		return l
+	}
+
+	return fallback
 }
 
 func fields(keysAndValues []any) map[string]any {
@@ -113,12 +124,6 @@ func (l *logger) With(keysAndValues ...any) Logger {
 	return &logger{
 		instance: l.instance.With().Fields(fields(keysAndValues)).Logger(),
 	}
-}
-
-func (l *logger) SetGlobalValue(key string, value any) {
-	l.instance.UpdateContext(func(c zerolog.Context) zerolog.Context {
-		return c.Any(key, value)
-	})
 }
 
 func (l *logger) Instance() zerolog.Logger {

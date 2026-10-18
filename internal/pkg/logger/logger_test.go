@@ -129,15 +129,6 @@ func (s *LoggerTestSuite) TestWith() {
 	})
 }
 
-func (s *LoggerTestSuite) TestSetGlobalValue() {
-	s.Run("should appear in subsequent output", func() {
-		s.log.SetGlobalValue("correlation_id", "xyz")
-		s.log.Info("hi")
-
-		s.Equal("xyz", s.lastEntry()["correlation_id"])
-	})
-}
-
 func (s *LoggerTestSuite) TestWithCtx() {
 	s.Run("should round trip the logger through the context", func() {
 		ctx := WithCtx(context.Background(), s.log)
@@ -152,5 +143,18 @@ func (s *LoggerTestSuite) TestFromCtx() {
 
 		s.NotNil(l)
 		s.NotPanics(func() { l.Info("silent", "k", "v") })
+	})
+}
+
+func (s *LoggerTestSuite) TestFromCtxOr() {
+	s.Run("should return the logger attached to the context", func() {
+		attached := s.log.With("k", "v")
+		ctx := WithCtx(context.Background(), attached)
+
+		s.Same(attached, FromCtxOr(ctx, s.log))
+	})
+
+	s.Run("should return the fallback when none is attached", func() {
+		s.Same(s.log, FromCtxOr(context.Background(), s.log))
 	})
 }

@@ -22,8 +22,6 @@ func (n NoopLogger) With(...any) logger.Logger {
 	return n
 }
 
-func (NoopLogger) SetGlobalValue(string, any) {}
-
 func (NoopLogger) Instance() zerolog.Logger {
 	return zerolog.Nop()
 }

@@ -30,4 +30,22 @@ func (s *FakeClientTestSuite) TestFake_Send() {
 		s.Require().NoError(err)
 		logger.AssertExpectations(s.T())
 	})
+
+	s.Run("should not log the email body", func() {
+		input := fixtures.InfraEmailSendInput()
+		var logged []any
+
+		logger := new(mocks.Logger)
+		logger.On("Info", mock.Anything, mock.Anything).
+			Run(func(args mock.Arguments) { logged = args.Get(1).([]any) }).
+			Return()
+
+		client := NewFake(logger, "Boilerplate", "no-reply@example.com")
+
+		s.Require().NoError(client.Send(input))
+		s.Contains(logged, "recipient_email")
+		s.Contains(logged, "subject")
+		s.NotContains(logged, "body")
+		s.NotContains(logged, input.HTMLBody)
+	})
 }

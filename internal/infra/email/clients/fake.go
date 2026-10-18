@@ -27,7 +27,6 @@ func (c *fake) Send(input email.SendInput) error {
 		"recipient_name", input.RecipientName,
 		"recipient_email", input.RecipientEmail,
 		"subject", input.Subject,
-		"body", input.HTMLBody,
 	)
 
 	return nil
