@@ -146,6 +146,7 @@ func (di *dependencyInjector) Inject(ctx context.Context) (*Dependencies, error)
 	webServer := web.NewServer(
 		log,
 		di.config.WebServerPort,
+		di.config.Environment != config.EnvironmentProduction,
 		rh,
 		routes,
 		globalMiddlewares,

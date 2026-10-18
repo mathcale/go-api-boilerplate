@@ -35,11 +35,13 @@ type server struct {
 	authMiddleware      middlewares.AuthMiddleware
 	rateLimitMiddleware middlewares.RateLimitMiddleware
 	port                int
+	docsEnabled         bool
 }
 
 func NewServer(
 	l logger.Logger,
 	port int,
+	docsEnabled bool,
 	response handlers.Response,
 	handlers []handler,
 	globalMiddlewares []middlewareHandler,
@@ -55,6 +57,7 @@ func NewServer(
 		authMiddleware:      authMiddleware,
 		rateLimitMiddleware: rateLimitMiddleware,
 		port:                port,
+		docsEnabled:         docsEnabled,
 	}
 }
 
@@ -71,7 +74,7 @@ func (s *server) Start(ctx context.Context) error {
 		s.router.Handle(fmt.Sprintf("%s %s", h.method, h.path), s.wrap(h))
 	}
 
-	s.router.Handle("GET /swagger/", httpSwagger.WrapHandler)
+	s.registerDocs()
 
 	middlewareChain := alice.New()
 
@@ -107,6 +110,14 @@ func (s *server) Start(ctx context.Context) error {
 
 		return srv.Shutdown(shutdownCtx)
 	}
+}
+
+func (s *server) registerDocs() {
+	if !s.docsEnabled {
+		return
+	}
+
+	s.router.Handle("GET /swagger/", httpSwagger.WrapHandler)
 }
 
 func (s *server) wrap(h handler) http.Handler {
