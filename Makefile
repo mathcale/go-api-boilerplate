@@ -5,7 +5,6 @@ include .env
 PLATFORM := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 ARCH := $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/' -e 's/armv7l/armv7/' -e 's/i386\|i686/386/')
 
-# golang-migrate release to install
 MIGRATE_VERSION ?= v4.20.1
 
 # Set FORCE=1 to reinstall tools even if already present (see install-deps-force)
