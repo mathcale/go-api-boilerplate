@@ -3,6 +3,7 @@ package jwt_test
 import (
 	"testing"
 
+	jwtlib "github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
@@ -82,6 +83,30 @@ func (s *JWTAuthTestSuite) TestVerifyAccessToken() {
 		_, err := s.auth.VerifyAccessToken("not-a-real-token")
 
 		s.Require().Error(err)
+	})
+
+	s.Run("should reject a token issued by a different issuer", func() {
+		claims := fixtures.DomainPkgClaims()
+		claims["iss"] = "someone-else"
+
+		tokenStr, err := fixtures.DomainPkgSignAccessClaims(claims)
+		s.Require().NoError(err)
+
+		_, err = s.auth.VerifyAccessToken(tokenStr)
+
+		s.Require().ErrorIs(err, jwtlib.ErrTokenInvalidIssuer)
+	})
+
+	s.Run("should reject a token issued for a different audience", func() {
+		claims := fixtures.DomainPkgClaims()
+		claims["aud"] = "other-clients"
+
+		tokenStr, err := fixtures.DomainPkgSignAccessClaims(claims)
+		s.Require().NoError(err)
+
+		_, err = s.auth.VerifyAccessToken(tokenStr)
+
+		s.Require().ErrorIs(err, jwtlib.ErrTokenInvalidAudience)
 	})
 }
 

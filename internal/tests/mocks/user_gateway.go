@@ -135,3 +135,7 @@ func (m *UserGateway) MarkRefreshTokenUsed(ctx context.Context, tokenID uuid.UUI
 func (m *UserGateway) RevokeRefreshTokenFamily(ctx context.Context, familyID uuid.UUID) error {
 	return m.Called(ctx, familyID).Error(0)
 }
+
+func (m *UserGateway) RevokeUserRefreshTokens(ctx context.Context, userID uuid.UUID) error {
+	return m.Called(ctx, userID).Error(0)
+}

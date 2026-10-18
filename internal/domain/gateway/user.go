@@ -29,4 +29,5 @@ type User interface {
 	GetRefreshToken(ctx context.Context, tokenID uuid.UUID) (*user.RefreshToken, error)
 	MarkRefreshTokenUsed(ctx context.Context, tokenID uuid.UUID) error
 	RevokeRefreshTokenFamily(ctx context.Context, familyID uuid.UUID) error
+	RevokeUserRefreshTokens(ctx context.Context, userID uuid.UUID) error
 }

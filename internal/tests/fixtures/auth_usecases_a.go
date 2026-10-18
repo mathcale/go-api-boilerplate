@@ -15,6 +15,13 @@ func AuthAUser(id uuid.UUID, active bool) *user.User {
 	return &user.User{ID: id, Email: AuthAEmail, Active: active}
 }
 
+func AuthAUserWithRoles(id uuid.UUID, roles []string) *user.User {
+	u := AuthAUser(id, true)
+	u.Roles = roles
+
+	return u
+}
+
 func AuthAValidConfirmationCode(id uuid.UUID) *user.ConfirmationCode {
 	return &user.ConfirmationCode{ID: id, ExpiresAt: time.Now().Add(time.Minute)}
 }

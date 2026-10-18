@@ -3,6 +3,7 @@ package auth_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 
 	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
 	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
 	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
 	"github.com/mathcale/go-api-boilerplate/internal/usecases/auth"
@@ -52,6 +54,7 @@ func (s *RefreshTokenUseCaseTestSuite) expectRotationStart(
 	s.expectVerified(userID, familyID.String())
 	s.gw.On("GetRefreshToken", mock.Anything, familyID).Return(stored, nil)
 	s.gw.On("MarkRefreshTokenUsed", mock.Anything, familyID).Return(nil)
+	s.gw.On("GetUserByID", mock.Anything, userID).Return(fixtures.AuthAUser(userID, true), nil)
 }
 
 func (s *RefreshTokenUseCaseTestSuite) assertUnauthorized(err error, kind apperror.Kind) {
@@ -83,6 +86,35 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 		s.Equal("new-access-token", tokens.AccessToken)
 		s.Equal("new-refresh-token", tokens.RefreshToken)
 		s.gw.AssertExpectations(s.T())
+		s.j.AssertExpectations(s.T())
+	})
+
+	s.Run("should issue tokens with the roles currently stored for the user", func() {
+		userID := uuid.New()
+		familyID := uuid.New()
+		expiresAt := time.Now().Add(24 * time.Hour)
+		currentRoles := []string{"user"}
+		hasCurrentRoles := mock.MatchedBy(func(p jwt.IssueTokenParams) bool {
+			return p.UserID == userID.String() && slices.Equal(currentRoles, p.ExtraClaims.Roles)
+		})
+
+		s.expectVerified(userID, familyID.String())
+		s.gw.On("GetRefreshToken", mock.Anything, familyID).
+			Return(fixtures.AuthAStoredRefreshToken(userID, familyID), nil)
+		s.gw.On("MarkRefreshTokenUsed", mock.Anything, familyID).Return(nil)
+		s.gw.On("GetUserByID", mock.Anything, userID).
+			Return(fixtures.AuthAUserWithRoles(userID, currentRoles), nil)
+		s.j.On("IssueAccessToken", hasCurrentRoles).
+			Return(fixtures.AuthAAccessJWT("new-access-token"), nil)
+		s.j.On("IssueRefreshToken", hasCurrentRoles).
+			Return(fixtures.AuthARefreshJWT("new-refresh-token", &expiresAt), nil)
+		s.gw.On("SaveRefreshToken", mock.Anything, mock.AnythingOfType("user.RefreshToken")).
+			Return(nil)
+
+		tokens, err := s.uc.Execute(context.Background(), oldRefreshToken)
+
+		s.Require().NoError(err)
+		s.Require().NotNil(tokens)
 		s.j.AssertExpectations(s.T())
 	})
 
@@ -223,6 +255,61 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 		tokens, err := s.uc.Execute(context.Background(), oldRefreshToken)
 
 		s.Require().ErrorIs(err, markErr)
+		s.Nil(tokens)
+		s.j.AssertNotCalled(s.T(), "IssueAccessToken", mock.Anything)
+	})
+
+	s.Run("should return unauthorized when the token owner no longer exists", func() {
+		userID := uuid.New()
+		familyID := uuid.New()
+
+		s.expectVerified(userID, familyID.String())
+		s.gw.On("GetRefreshToken", mock.Anything, familyID).
+			Return(fixtures.AuthAStoredRefreshToken(userID, familyID), nil)
+		s.gw.On("MarkRefreshTokenUsed", mock.Anything, familyID).Return(nil)
+		s.gw.On("GetUserByID", mock.Anything, userID).Return(nil, nil)
+
+		tokens, err := s.uc.Execute(context.Background(), oldRefreshToken)
+
+		s.Require().Error(err)
+		s.Nil(tokens)
+		s.assertUnauthorized(err, apperror.UnauthorizedKind)
+		s.j.AssertNotCalled(s.T(), "IssueAccessToken", mock.Anything)
+	})
+
+	s.Run("should return unauthorized when the token owner is inactive", func() {
+		userID := uuid.New()
+		familyID := uuid.New()
+
+		s.expectVerified(userID, familyID.String())
+		s.gw.On("GetRefreshToken", mock.Anything, familyID).
+			Return(fixtures.AuthAStoredRefreshToken(userID, familyID), nil)
+		s.gw.On("MarkRefreshTokenUsed", mock.Anything, familyID).Return(nil)
+		s.gw.On("GetUserByID", mock.Anything, userID).
+			Return(fixtures.AuthAUser(userID, false), nil)
+
+		tokens, err := s.uc.Execute(context.Background(), oldRefreshToken)
+
+		s.Require().Error(err)
+		s.Nil(tokens)
+		s.assertUnauthorized(err, apperror.UnauthorizedKind)
+		s.j.AssertNotCalled(s.T(), "IssueAccessToken", mock.Anything)
+	})
+
+	s.Run("should propagate the error when fetching the token owner fails", func() {
+		userID := uuid.New()
+		familyID := uuid.New()
+		gwErr := errors.New("db down")
+
+		s.expectVerified(userID, familyID.String())
+		s.gw.On("GetRefreshToken", mock.Anything, familyID).
+			Return(fixtures.AuthAStoredRefreshToken(userID, familyID), nil)
+		s.gw.On("MarkRefreshTokenUsed", mock.Anything, familyID).Return(nil)
+		s.gw.On("GetUserByID", mock.Anything, userID).Return(nil, gwErr)
+
+		tokens, err := s.uc.Execute(context.Background(), oldRefreshToken)
+
+		s.Require().ErrorIs(err, gwErr)
 		s.Nil(tokens)
 		s.j.AssertNotCalled(s.T(), "IssueAccessToken", mock.Anything)
 	})

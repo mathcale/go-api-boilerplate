@@ -78,5 +78,9 @@ func (uc *updatePasswordUseCase) Execute(
 		return err
 	}
 
+	if err := uc.gateway.RevokeUserRefreshTokens(ctx, userID); err != nil {
+		return err
+	}
+
 	return uc.gateway.MarkConfirmationCodeUsed(ctx, recoveryCode.ID)
 }

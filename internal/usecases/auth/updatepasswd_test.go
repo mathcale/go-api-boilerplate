@@ -37,7 +37,7 @@ func TestUpdatePasswordUseCase(t *testing.T) {
 }
 
 func (s *UpdatePasswordUseCaseTestSuite) TestExecute() {
-	s.Run("should update the password and mark the confirmation code as used", func() {
+	s.Run("should update the password, revoke sessions and mark the code as used", func() {
 		userID := fixtures.AuthBNewID()
 		code := fixtures.AuthBValidConfirmationCode()
 		hashed := fixtures.AuthBNewHash
@@ -48,6 +48,7 @@ func (s *UpdatePasswordUseCaseTestSuite) TestExecute() {
 		).Return(code, nil)
 		s.pw.On("Hash", fixtures.AuthBNewPassword).Return(&hashed, nil)
 		s.gw.On("UpdatePassword", mock.Anything, userID, hashed).Return(nil)
+		s.gw.On("RevokeUserRefreshTokens", mock.Anything, userID).Return(nil)
 		s.gw.On("MarkConfirmationCodeUsed", mock.Anything, code.ID).Return(nil)
 
 		err := s.uc.Execute(
@@ -152,6 +153,28 @@ func (s *UpdatePasswordUseCaseTestSuite) TestExecute() {
 		)
 
 		s.Require().ErrorIs(err, updateErr)
+		s.gw.AssertNotCalled(s.T(), "RevokeUserRefreshTokens", mock.Anything, mock.Anything)
+		s.gw.AssertNotCalled(s.T(), "MarkConfirmationCodeUsed", mock.Anything, mock.Anything)
+	})
+
+	s.Run("should propagate the error when revoking the user refresh tokens fails", func() {
+		userID := fixtures.AuthBNewID()
+		hashed := fixtures.AuthBNewHash
+		revokeErr := errors.New("db down")
+
+		s.gw.On(
+			"GetValidConfirmationCode", mock.Anything, userID, fixtures.AuthBCode,
+			user.PurposePasswordRecovery,
+		).Return(fixtures.AuthBValidConfirmationCode(), nil)
+		s.pw.On("Hash", fixtures.AuthBNewPassword).Return(&hashed, nil)
+		s.gw.On("UpdatePassword", mock.Anything, userID, hashed).Return(nil)
+		s.gw.On("RevokeUserRefreshTokens", mock.Anything, userID).Return(revokeErr)
+
+		err := s.uc.Execute(
+			context.Background(), userID, fixtures.AuthBCode, fixtures.AuthBNewPassword,
+		)
+
+		s.Require().ErrorIs(err, revokeErr)
 		s.gw.AssertNotCalled(s.T(), "MarkConfirmationCodeUsed", mock.Anything, mock.Anything)
 	})
 
@@ -167,6 +190,7 @@ func (s *UpdatePasswordUseCaseTestSuite) TestExecute() {
 		).Return(code, nil)
 		s.pw.On("Hash", fixtures.AuthBNewPassword).Return(&hashed, nil)
 		s.gw.On("UpdatePassword", mock.Anything, userID, hashed).Return(nil)
+		s.gw.On("RevokeUserRefreshTokens", mock.Anything, userID).Return(nil)
 		s.gw.On("MarkConfirmationCodeUsed", mock.Anything, code.ID).Return(markErr)
 
 		err := s.uc.Execute(

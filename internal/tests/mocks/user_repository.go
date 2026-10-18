@@ -94,3 +94,7 @@ func (m *UserRepository) MarkRefreshTokenUsed(ctx context.Context, tokenID uuid.
 func (m *UserRepository) RevokeRefreshTokenFamily(ctx context.Context, familyID uuid.UUID) error {
 	return m.Called(ctx, familyID).Error(0)
 }
+
+func (m *UserRepository) RevokeUserRefreshTokens(ctx context.Context, userID uuid.UUID) error {
+	return m.Called(ctx, userID).Error(0)
+}

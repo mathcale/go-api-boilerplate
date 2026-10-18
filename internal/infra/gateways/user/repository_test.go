@@ -523,3 +523,29 @@ func (s *UserRepositoryTestSuite) TestRevokeRefreshTokenFamily() {
 		s.Require().Error(err)
 	})
 }
+
+func (s *UserRepositoryTestSuite) TestRevokeUserRefreshTokens() {
+	s.Run("should revoke every refresh token of the user", func() {
+		userID := uuid.New()
+
+		s.mock.ExpectExec(regexp.QuoteMeta(queryRevokeUserRefreshTokens)).
+			WithArgs(sqlmock.AnyArg(), userID).
+			WillReturnResult(sqlmock.NewResult(1, 3))
+
+		err := s.repo.RevokeUserRefreshTokens(context.Background(), userID)
+
+		s.Require().NoError(err)
+		s.NoError(s.mock.ExpectationsWereMet())
+	})
+
+	s.Run("should return an error when revoking the user refresh tokens fails", func() {
+		userID := uuid.New()
+
+		s.mock.ExpectExec(regexp.QuoteMeta(queryRevokeUserRefreshTokens)).
+			WillReturnError(sqlmock.ErrCancelled)
+
+		err := s.repo.RevokeUserRefreshTokens(context.Background(), userID)
+
+		s.Require().Error(err)
+	})
+}

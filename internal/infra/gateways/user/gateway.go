@@ -185,3 +185,7 @@ func (g *userGateway) MarkRefreshTokenUsed(ctx context.Context, tokenID uuid.UUI
 func (g *userGateway) RevokeRefreshTokenFamily(ctx context.Context, familyID uuid.UUID) error {
 	return g.repo.RevokeRefreshTokenFamily(ctx, familyID)
 }
+
+func (g *userGateway) RevokeUserRefreshTokens(ctx context.Context, userID uuid.UUID) error {
+	return g.repo.RevokeUserRefreshTokens(ctx, userID)
+}

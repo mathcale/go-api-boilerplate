@@ -128,7 +128,11 @@ func (j *jwtAuth) issue(params IssueTokenParams, secret []byte, lifetime int) (*
 func (j *jwtAuth) verify(token string, secret []byte) (*Token, error) {
 	t, err := jwtlib.Parse(token, func(token *jwtlib.Token) (interface{}, error) {
 		return secret, nil
-	}, jwtlib.WithValidMethods([]string{j.signingMethod.Alg()}))
+	},
+		jwtlib.WithValidMethods([]string{j.signingMethod.Alg()}),
+		jwtlib.WithIssuer(j.issuer),
+		jwtlib.WithAudience(j.audience),
+	)
 	if err != nil {
 		return nil, apperror.New(
 			err, "token parsing failed", apperror.ParseKind,

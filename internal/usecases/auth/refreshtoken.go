@@ -35,7 +35,7 @@ func (uc *refreshTokenUseCase) Execute(
 	ctx context.Context,
 	refreshToken string,
 ) (*TokenPair, error) {
-	verified, stored, err := uc.resolveStoredToken(ctx, refreshToken)
+	stored, err := uc.resolveStoredToken(ctx, refreshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -48,25 +48,30 @@ func (uc *refreshTokenUseCase) Execute(
 		return nil, markErr
 	}
 
-	return uc.rotate(ctx, verified, *stored)
+	owner, err := uc.resolveOwner(ctx, *stored)
+	if err != nil {
+		return nil, err
+	}
+
+	return uc.rotate(ctx, *owner, *stored)
 }
 
 func (uc *refreshTokenUseCase) resolveStoredToken(
 	ctx context.Context,
 	refreshToken string,
-) (*jwt.Token, *user.RefreshToken, error) {
+) (*user.RefreshToken, error) {
 	unauthorized := apperror.BE0003_UNAUTHORIZED
 
 	verified, err := uc.jwtAuth.VerifyRefreshToken(refreshToken)
 	if err != nil {
-		return nil, nil, apperror.New(
+		return nil, apperror.New(
 			err, "invalid refresh token", apperror.UnauthorizedKind,
 			apperror.UseCaseOrigin, "refresh_token", &unauthorized, nil,
 		)
 	}
 
 	if verified.ID == "" {
-		return nil, nil, apperror.New(
+		return nil, apperror.New(
 			errors.New("missing jti"), "invalid refresh token", apperror.UnauthorizedKind,
 			apperror.UseCaseOrigin, "refresh_token", &unauthorized, nil,
 		)
@@ -74,7 +79,7 @@ func (uc *refreshTokenUseCase) resolveStoredToken(
 
 	tokenID, err := uuid.Parse(verified.ID)
 	if err != nil {
-		return nil, nil, apperror.New(
+		return nil, apperror.New(
 			err, "invalid refresh token id", apperror.UnauthorizedKind,
 			apperror.UseCaseOrigin, "refresh_token", &unauthorized, nil,
 		)
@@ -82,37 +87,65 @@ func (uc *refreshTokenUseCase) resolveStoredToken(
 
 	stored, err := uc.gateway.GetRefreshToken(ctx, tokenID)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if stored == nil || stored.IsRevoked() {
-		return nil, nil, apperror.New(
+		return nil, apperror.New(
 			nil, "refresh token unknown or revoked", apperror.UnauthorizedKind,
 			apperror.UseCaseOrigin, "refresh_token", &unauthorized, nil,
 		)
 	}
 
-	return verified, stored, nil
+	return stored, nil
+}
+
+func (uc *refreshTokenUseCase) resolveOwner(
+	ctx context.Context,
+	stored user.RefreshToken,
+) (*user.User, error) {
+	owner, err := uc.gateway.GetUserByID(ctx, stored.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if owner == nil || !owner.Active {
+		unauthorized := apperror.BE0003_UNAUTHORIZED
+
+		return nil, apperror.New(
+			nil, "refresh token owner not found or inactive", apperror.UnauthorizedKind,
+			apperror.UseCaseOrigin, "refresh_token", &unauthorized, nil,
+		)
+	}
+
+	return owner, nil
 }
 
 func (uc *refreshTokenUseCase) rotate(
 	ctx context.Context,
-	verified *jwt.Token,
+	owner user.User,
 	stored user.RefreshToken,
 ) (*TokenPair, error) {
 	newFamilyMemberID := uuid.New()
 
+	roles := owner.Roles
+	if roles == nil {
+		roles = []string{}
+	}
+
+	extraClaims := jwt.ExtraClaims{Roles: roles}
+
 	newAccessToken, err := uc.jwtAuth.IssueAccessToken(jwt.IssueTokenParams{
-		UserID:      verified.Subject,
-		ExtraClaims: verified.ExtraClaims,
+		UserID:      owner.ID.String(),
+		ExtraClaims: extraClaims,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	newRefreshToken, err := uc.jwtAuth.IssueRefreshToken(jwt.IssueTokenParams{
-		UserID:      verified.Subject,
-		ExtraClaims: verified.ExtraClaims,
+		UserID:      owner.ID.String(),
+		ExtraClaims: extraClaims,
 		TokenID:     newFamilyMemberID.String(),
 	})
 	if err != nil {

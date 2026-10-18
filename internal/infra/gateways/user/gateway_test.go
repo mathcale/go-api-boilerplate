@@ -409,6 +409,20 @@ func (s *UserGatewayTestSuite) TestMarkRefreshTokenUsed() {
 	})
 }
 
+func (s *UserGatewayTestSuite) TestRevokeUserRefreshTokens() {
+	s.Run("should revoke every refresh token of the user", func() {
+		defer s.cleanMocks()
+
+		userID := uuid.New()
+		s.repo.On("RevokeUserRefreshTokens", mock.Anything, userID).Return(nil)
+
+		err := s.gateway.RevokeUserRefreshTokens(context.Background(), userID)
+
+		s.Require().NoError(err)
+		s.repo.AssertExpectations(s.T())
+	})
+}
+
 func (s *UserGatewayTestSuite) TestRevokeRefreshTokenFamily() {
 	s.Run("should revoke the entire refresh token family", func() {
 		defer s.cleanMocks()

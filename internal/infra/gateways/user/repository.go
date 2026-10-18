@@ -27,6 +27,7 @@ const (
 	queryGetRefreshToken                 = `SELECT * FROM refresh_tokens WHERE id = $1`
 	queryMarkRefreshTokenUsed            = `UPDATE refresh_tokens SET used_at = $1 WHERE id = $2`
 	queryRevokeRefreshTokenFamily        = `UPDATE refresh_tokens SET revoked_at = $1 WHERE family_id = $2 AND revoked_at IS NULL`
+	queryRevokeUserRefreshTokens         = `UPDATE refresh_tokens SET revoked_at = $1 WHERE user_id = $2 AND revoked_at IS NULL`
 )
 
 type (
@@ -49,6 +50,7 @@ type (
 		GetRefreshToken(ctx context.Context, tokenID uuid.UUID) (*models.RefreshToken, error)
 		MarkRefreshTokenUsed(ctx context.Context, tokenID uuid.UUID) error
 		RevokeRefreshTokenFamily(ctx context.Context, familyID uuid.UUID) error
+		RevokeUserRefreshTokens(ctx context.Context, userID uuid.UUID) error
 	}
 
 	repository struct {
@@ -296,6 +298,19 @@ func (r *repository) RevokeRefreshTokenFamily(ctx context.Context, familyID uuid
 	); err != nil {
 		return apperror.New(
 			err, "revoke refresh token family query failed", apperror.DatabaseKind,
+			apperror.RepositoryOrigin, "user", nil, nil,
+		)
+	}
+
+	return nil
+}
+
+func (r *repository) RevokeUserRefreshTokens(ctx context.Context, userID uuid.UUID) error {
+	if _, err := r.db.ExecContext(
+		ctx, queryRevokeUserRefreshTokens, time.Now(), userID,
+	); err != nil {
+		return apperror.New(
+			err, "revoke user refresh tokens query failed", apperror.DatabaseKind,
 			apperror.RepositoryOrigin, "user", nil, nil,
 		)
 	}
