@@ -12,7 +12,7 @@ type corsMiddleware struct {
 
 func NewCORSMiddleware(allowedOrigins []string) MiddlewareHandler {
 	if len(allowedOrigins) == 0 {
-		allowedOrigins = []string{"*"}
+		return &corsMiddleware{handler: func(next http.Handler) http.Handler { return next }}
 	}
 
 	c := cors.New(cors.Options{

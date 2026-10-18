@@ -35,6 +35,9 @@ A slightly opinionated HTTP API boilerplate with the Go programming language, fo
 cp .env.example .env
 ```
 
+Then fill in `ACCESS_TOKEN_SECRET` and `REFRESH_TOKEN_SECRET` with distinct values of at
+least 64 bytes (e.g. `openssl rand -base64 64`). The API refuses to start otherwise.
+
 2. Rename packages to your project's name
 
 ```sh

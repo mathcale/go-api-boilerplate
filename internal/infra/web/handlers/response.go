@@ -76,10 +76,10 @@ func (h *response) RespondWithError(w http.ResponseWriter, err error, headers ma
 		output.Message = messageForStatus(status)
 		output.Code = appErr.BusinessCode()
 
-		if h.environment != config.EnvironmentProduction {
+		if h.exposeCause() {
 			output.Cause = appErr.Error()
 		}
-	} else if err != nil && h.environment != config.EnvironmentProduction {
+	} else if err != nil && h.exposeCause() {
 		output.Cause = err.Error()
 	}
 
@@ -93,6 +93,11 @@ func (h *response) RespondWithError(w http.ResponseWriter, err error, headers ma
 	if encErr := json.NewEncoder(w).Encode(output); encErr != nil {
 		h.logger.Error("failed to encode error response", encErr)
 	}
+}
+
+func (h *response) exposeCause() bool {
+	return h.environment == config.EnvironmentDevelopment ||
+		h.environment == config.EnvironmentTest
 }
 
 func kindToStatus(kind apperror.Kind) int {

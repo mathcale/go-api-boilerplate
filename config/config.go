@@ -1,9 +1,11 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -13,6 +15,13 @@ const (
 	EnvironmentDevelopment = "development"
 	EnvironmentTest        = "test"
 )
+
+const minSecretLength = 64
+
+var defaultSecrets = map[string]struct{}{
+	"change-me-access-secret":  {},
+	"change-me-refresh-secret": {},
+}
 
 type Config struct {
 	Environment                 string `mapstructure:"ENVIRONMENT"`
@@ -60,5 +69,67 @@ func Load(path string) (*Config, error) {
 		return nil, err
 	}
 
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+
 	return cfg, nil
+}
+
+func (c *Config) Validate() error {
+	var errs []error
+
+	switch c.Environment {
+	case EnvironmentProduction, EnvironmentDevelopment, EnvironmentTest:
+	default:
+		errs = append(errs, fmt.Errorf(
+			"ENVIRONMENT must be one of %q, %q or %q",
+			EnvironmentProduction, EnvironmentDevelopment, EnvironmentTest,
+		))
+	}
+
+	errs = append(errs, validateSecret("ACCESS_TOKEN_SECRET", c.AccessTokenSecret)...)
+	errs = append(errs, validateSecret("REFRESH_TOKEN_SECRET", c.RefreshTokenSecret)...)
+
+	if c.AccessTokenSecret != "" && c.AccessTokenSecret == c.RefreshTokenSecret {
+		errs = append(errs, errors.New(
+			"ACCESS_TOKEN_SECRET and REFRESH_TOKEN_SECRET must differ",
+		))
+	}
+
+	if strings.TrimSpace(c.TokenIssuer) == "" {
+		errs = append(errs, errors.New("TOKEN_ISSUER must not be empty"))
+	}
+
+	if strings.TrimSpace(c.TokenAudience) == "" {
+		errs = append(errs, errors.New("TOKEN_AUDIENCE must not be empty"))
+	}
+
+	if c.AccessTokenLifetimeMinutes <= 0 {
+		errs = append(errs, errors.New("ACCESS_TOKEN_LIFETIME_MINUTES must be greater than 0"))
+	}
+
+	if c.RefreshTokenLifetimeMinutes <= 0 {
+		errs = append(errs, errors.New("REFRESH_TOKEN_LIFETIME_MINUTES must be greater than 0"))
+	}
+
+	if c.Environment == EnvironmentProduction && strings.TrimSpace(c.CORSAllowedOrigins) == "" {
+		errs = append(errs, errors.New("CORS_ALLOWED_ORIGINS must not be empty in production"))
+	}
+
+	return errors.Join(errs...)
+}
+
+func validateSecret(name, value string) []error {
+	var errs []error
+
+	if len(value) < minSecretLength {
+		errs = append(errs, fmt.Errorf("%s must be at least %d bytes long", name, minSecretLength))
+	}
+
+	if _, ok := defaultSecrets[value]; ok {
+		errs = append(errs, fmt.Errorf("%s must not use a default placeholder value", name))
+	}
+
+	return errs
 }
