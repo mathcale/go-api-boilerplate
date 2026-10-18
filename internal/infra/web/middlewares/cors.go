@@ -10,9 +10,6 @@ type corsMiddleware struct {
 	handler func(http.Handler) http.Handler
 }
 
-// NewCORSMiddleware configures CORS from the comma-separated allowed origins.
-// An empty or "*" origin list allows any origin, which is convenient for local
-// development but should be tightened in production.
 func NewCORSMiddleware(allowedOrigins []string) MiddlewareHandler {
 	if len(allowedOrigins) == 0 {
 		allowedOrigins = []string{"*"}

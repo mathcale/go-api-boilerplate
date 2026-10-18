@@ -10,48 +10,46 @@ import (
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
 )
 
-// ExtraClaims holds the application-specific claims embedded in every token.
-// It is intentionally minimal: only the roles needed for authorization travel
-// in the token, so RBAC checks require no database round-trip. Everything else
-// about the user is fetched from the /v1/auth/me endpoint.
-type ExtraClaims struct {
-	Roles []string `json:"roles,omitempty"`
-}
+type (
+	ExtraClaims struct {
+		Roles []string `json:"roles,omitempty"`
+	}
 
-type IssueTokenParams struct {
-	UserID      string
-	ExtraClaims ExtraClaims
-	TokenID     string
-}
+	IssueTokenParams struct {
+		UserID      string
+		ExtraClaims ExtraClaims
+		TokenID     string
+	}
 
-type JWTAuth interface {
-	IssueAccessToken(params IssueTokenParams) (*Token, error)
-	IssueRefreshToken(params IssueTokenParams) (*Token, error)
-	VerifyAccessToken(at string) (*Token, error)
-	VerifyRefreshToken(rt string) (*Token, error)
-}
+	JWTAuth interface {
+		IssueAccessToken(params IssueTokenParams) (*Token, error)
+		IssueRefreshToken(params IssueTokenParams) (*Token, error)
+		VerifyAccessToken(at string) (*Token, error)
+		VerifyRefreshToken(rt string) (*Token, error)
+	}
 
-type jwtAuth struct {
-	logger          logger.Logger
-	accessSecret    []byte
-	accessLifetime  int
-	refreshSecret   []byte
-	refreshLifetime int
-	issuer          string
-	audience        string
-	signingMethod   jwtlib.SigningMethod
-}
+	jwtAuth struct {
+		logger          logger.Logger
+		accessSecret    []byte
+		accessLifetime  int
+		refreshSecret   []byte
+		refreshLifetime int
+		issuer          string
+		audience        string
+		signingMethod   jwtlib.SigningMethod
+	}
 
-type Token struct {
-	Token       *string     `json:"token,omitempty"`
-	Issuer      string      `json:"iss,omitempty"`
-	Subject     string      `json:"sub,omitempty"`
-	ExtraClaims ExtraClaims `json:"extra_claims,omitempty"`
-	Audience    []string    `json:"aud,omitempty"`
-	ExpiresAt   *time.Time  `json:"exp,omitempty"`
-	IssuedAt    *time.Time  `json:"iat,omitempty"`
-	ID          string      `json:"jti,omitempty"`
-}
+	Token struct {
+		Token       *string     `json:"token,omitempty"`
+		Issuer      string      `json:"iss,omitempty"`
+		Subject     string      `json:"sub,omitempty"`
+		ExtraClaims ExtraClaims `json:"extra_claims,omitempty"`
+		Audience    []string    `json:"aud,omitempty"`
+		ExpiresAt   *time.Time  `json:"exp,omitempty"`
+		IssuedAt    *time.Time  `json:"iat,omitempty"`
+		ID          string      `json:"jti,omitempty"`
+	}
+)
 
 func NewJWTAuth(
 	l logger.Logger,

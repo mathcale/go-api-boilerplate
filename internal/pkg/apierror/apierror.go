@@ -6,22 +6,21 @@ import (
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
 )
 
-// ApiError is the outward-facing representation of an error: an HTTP status, a
-// safe message and an optional business code. It is derived from an AppError by
-// the web layer.
-type ApiError interface {
-	Error() string
-	Status() int
-	Message() string
-	BusinessCode() *apperror.BusinessCode
-}
+type (
+	ApiError interface {
+		Error() string
+		Status() int
+		Message() string
+		BusinessCode() *apperror.BusinessCode
+	}
 
-type apiError struct {
-	err          error
-	status       int
-	message      string
-	businessCode *apperror.BusinessCode
-}
+	apiError struct {
+		err          error
+		status       int
+		message      string
+		businessCode *apperror.BusinessCode
+	}
+)
 
 func New(err error, status int, msg string, bc *apperror.BusinessCode) ApiError {
 	return &apiError{

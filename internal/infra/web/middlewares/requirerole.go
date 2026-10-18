@@ -8,17 +8,16 @@ import (
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
 )
 
-// RequireRoleMiddleware guards a route so that only requests whose authenticated
-// user carries at least one of the accepted roles are allowed through. It must be
-// layered AFTER AuthMiddleware, which populates the roles in the request context.
-type RequireRoleMiddleware interface {
-	Handler(next http.Handler) http.Handler
-}
+type (
+	RequireRoleMiddleware interface {
+		Handler(next http.Handler) http.Handler
+	}
 
-type requireRoleMiddleware struct {
-	acceptedRoles []string
-	response      handlers.Response
-}
+	requireRoleMiddleware struct {
+		acceptedRoles []string
+		response      handlers.Response
+	}
+)
 
 func NewRequireRoleMiddleware(
 	response handlers.Response,

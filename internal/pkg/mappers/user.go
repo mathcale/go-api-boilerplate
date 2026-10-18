@@ -25,8 +25,7 @@ func UserModelToDomain(m models.User) user.User {
 func UserDomainToModel(u user.User) models.User {
 	roles := u.Roles
 	if roles == nil {
-		// pq.StringArray(nil).Value() marshals to SQL NULL, which violates the
-		// roles NOT NULL constraint; a non-nil empty slice marshals to '{}'.
+		// pq.StringArray(nil).Value() marshals to SQL NULL, which violates the roles NOT NULL constraint; a non-nil empty slice marshals to '{}'.
 		roles = []string{}
 	}
 

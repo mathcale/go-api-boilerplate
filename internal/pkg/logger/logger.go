@@ -10,27 +10,27 @@ import (
 	"github.com/rs/zerolog/pkgerrors"
 )
 
-type logger struct {
-	instance zerolog.Logger
-}
+type (
+	logger struct {
+		instance zerolog.Logger
+	}
 
-type Logger interface {
-	Info(msg string, keysAndValues ...any)
-	Warn(msg string, keysAndValues ...any)
-	Error(msg string, err error, keysAndValues ...any)
-	Debug(msg string, keysAndValues ...any)
-	Trace(msg string, keysAndValues ...any)
-	With(keysAndValues ...any) Logger
-	SetGlobalValue(key string, value any)
-	Instance() zerolog.Logger
-}
+	Logger interface {
+		Info(msg string, keysAndValues ...any)
+		Warn(msg string, keysAndValues ...any)
+		Error(msg string, err error, keysAndValues ...any)
+		Debug(msg string, keysAndValues ...any)
+		Trace(msg string, keysAndValues ...any)
+		With(keysAndValues ...any) Logger
+		SetGlobalValue(key string, value any)
+		Instance() zerolog.Logger
+	}
 
-type contextKey struct{}
+	contextKey struct{}
+)
 
 const badKey = "!BADKEY"
 
-// NewLogger builds the structured logger. In production it emits JSON to
-// stdout; outside production it uses the human-friendly console writer.
 func NewLogger(level string, prod bool) Logger {
 	var writer io.Writer = os.Stdout
 
@@ -63,12 +63,11 @@ func FromCtx(ctx context.Context) Logger {
 		return l
 	}
 
-	return &logger{instance: zerolog.Nop()}
+	return &logger{
+		instance: zerolog.Nop(),
+	}
 }
 
-// fields turns alternating key/value arguments into a map. Non-string keys and a
-// trailing key without a value are reported under "!BADKEY" instead of being
-// silently dropped.
 func fields(keysAndValues []any) map[string]any {
 	out := make(map[string]any, len(keysAndValues)/2)
 
@@ -111,7 +110,9 @@ func (l *logger) Trace(msg string, keysAndValues ...any) {
 }
 
 func (l *logger) With(keysAndValues ...any) Logger {
-	return &logger{instance: l.instance.With().Fields(fields(keysAndValues)).Logger()}
+	return &logger{
+		instance: l.instance.With().Fields(fields(keysAndValues)).Logger(),
+	}
 }
 
 func (l *logger) SetGlobalValue(key string, value any) {
