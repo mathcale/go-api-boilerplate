@@ -3,17 +3,24 @@
 set -e
 
 open_report=1
+keep_profile=0
 
 for arg in "$@"; do
   case "$arg" in
     --no-open|-n)
       open_report=0
       ;;
+    --keep)
+      keep_profile=1
+      ;;
   esac
 done
 
 cleanup() {
-  rm -f coverage.txt coverage.tmp profile.out coverage.filtered.out
+  rm -f coverage.txt profile.out coverage.filtered.out
+  if [ "$keep_profile" -eq 0 ]; then
+    rm -f coverage.tmp
+  fi
 }
 
 trap cleanup EXIT
