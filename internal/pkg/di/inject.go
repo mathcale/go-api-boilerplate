@@ -8,6 +8,7 @@ import (
 
 	"github.com/mathcale/go-api-boilerplate/config"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/database"
+	"github.com/mathcale/go-api-boilerplate/internal/infra/email"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/email/clients"
 	usergateway "github.com/mathcale/go-api-boilerplate/internal/infra/gateways/user"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web"
@@ -64,11 +65,7 @@ func (di *dependencyInjector) Inject(ctx context.Context) (*Dependencies, error)
 	}
 
 	// Email
-	emailClient := clients.NewFake(
-		log,
-		di.config.MailerSenderName,
-		di.config.MailerSenderEmail,
-	)
+	emailClient := di.newEmailClient(log)
 
 	// Repositories & gateways
 	userRepo := usergateway.NewUserRepository(db)
@@ -135,6 +132,22 @@ func (di *dependencyInjector) Inject(ctx context.Context) (*Dependencies, error)
 		Context:   ctx,
 		WebServer: webServer,
 	}, nil
+}
+
+func (di *dependencyInjector) newEmailClient(l logger.Logger) email.Client {
+	if di.config.MailerProvider == config.MailerProviderSMTP {
+		return clients.NewSMTP(l, clients.SMTPConfig{
+			Host:        di.config.SMTPHost,
+			Port:        di.config.SMTPPort,
+			Username:    di.config.SMTPUsername,
+			Password:    di.config.SMTPPassword,
+			ImplicitTLS: di.config.SMTPTLSMode == config.SMTPTLSModeImplicit,
+			SenderName:  di.config.MailerSenderName,
+			SenderEmail: di.config.MailerSenderEmail,
+		})
+	}
+
+	return clients.NewFake(l, di.config.MailerSenderName, di.config.MailerSenderEmail)
 }
 
 func (di *dependencyInjector) corsAllowedOrigins() []string {

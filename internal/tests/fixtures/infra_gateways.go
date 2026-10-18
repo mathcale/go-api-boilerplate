@@ -106,3 +106,10 @@ func InfraEmailSendInput() email.SendInput {
 		HTMLBody:       "<p>Hello Jane</p>",
 	}
 }
+
+func InfraSMTPSendInputWithName(name string) email.SendInput {
+	in := InfraEmailSendInput()
+	in.RecipientName = name
+
+	return in
+}

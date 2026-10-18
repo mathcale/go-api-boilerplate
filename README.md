@@ -38,6 +38,14 @@ cp .env.example .env
 Then fill in `ACCESS_TOKEN_SECRET` and `REFRESH_TOKEN_SECRET` with distinct values of at
 least 64 bytes (e.g. `openssl rand -base64 64`). The API refuses to start otherwise.
 
+Email delivery is controlled by `MAILER_PROVIDER`:
+
+- `fake` (default, local development only): emails are not sent. Rejected when
+  `ENVIRONMENT=production`.
+- `smtp`: sends through an SMTP server over an encrypted connection. Requires `SMTP_HOST` and
+  `SMTP_PORT`; `SMTP_USERNAME`/`SMTP_PASSWORD` enable PLAIN authentication, and `SMTP_TLS_MODE` is
+  `starttls` (default, e.g. port 587) or `implicit` (e.g. port 465).
+
 2. Rename packages to your project's name
 
 ```sh

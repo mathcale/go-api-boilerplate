@@ -16,6 +16,14 @@ const (
 	EnvironmentTest        = "test"
 )
 
+const (
+	MailerProviderFake = "fake"
+	MailerProviderSMTP = "smtp"
+
+	SMTPTLSModeStartTLS = "starttls"
+	SMTPTLSModeImplicit = "implicit"
+)
+
 const minSecretLength = 64
 
 var defaultSecrets = map[string]struct{}{
@@ -45,6 +53,12 @@ type Config struct {
 	TokenAudience               string `mapstructure:"TOKEN_AUDIENCE"`
 	MailerSenderName            string `mapstructure:"MAILER_SENDER_NAME"`
 	MailerSenderEmail           string `mapstructure:"MAILER_SENDER_EMAIL"`
+	MailerProvider              string `mapstructure:"MAILER_PROVIDER"`
+	SMTPHost                    string `mapstructure:"SMTP_HOST"`
+	SMTPPort                    int    `mapstructure:"SMTP_PORT"`
+	SMTPUsername                string `mapstructure:"SMTP_USERNAME"`
+	SMTPPassword                string `mapstructure:"SMTP_PASSWORD"`
+	SMTPTLSMode                 string `mapstructure:"SMTP_TLS_MODE"`
 	AccountConfirmationBaseURL  string `mapstructure:"ACCOUNT_CONFIRMATION_BASE_URL"`
 	PasswordRecoveryBaseURL     string `mapstructure:"PASSWORD_RECOVERY_BASE_URL"`
 	CORSAllowedOrigins          string `mapstructure:"CORS_ALLOWED_ORIGINS"`
@@ -58,6 +72,12 @@ func Load(path string) (*Config, error) {
 	viper.SetConfigFile(filepath.Join(path, ".env"))
 	viper.SetConfigType("env")
 	viper.AutomaticEnv()
+	viper.SetDefault("MAILER_PROVIDER", MailerProviderFake)
+	viper.SetDefault("SMTP_PORT", 0)
+	viper.SetDefault("SMTP_HOST", "")
+	viper.SetDefault("SMTP_USERNAME", "")
+	viper.SetDefault("SMTP_PASSWORD", "")
+	viper.SetDefault("SMTP_TLS_MODE", SMTPTLSModeStartTLS)
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok && !os.IsNotExist(err) {
@@ -117,7 +137,47 @@ func (c *Config) Validate() error {
 		errs = append(errs, errors.New("CORS_ALLOWED_ORIGINS must not be empty in production"))
 	}
 
+	errs = append(errs, c.validateMailer()...)
+
 	return errors.Join(errs...)
+}
+
+func (c *Config) validateMailer() []error {
+	switch c.MailerProvider {
+	case MailerProviderFake:
+		if c.Environment == EnvironmentProduction {
+			return []error{errors.New("MAILER_PROVIDER must not be \"fake\" in production")}
+		}
+
+		return nil
+	case MailerProviderSMTP:
+	default:
+		return []error{fmt.Errorf(
+			"MAILER_PROVIDER must be one of %q or %q", MailerProviderFake, MailerProviderSMTP,
+		)}
+	}
+
+	var errs []error
+
+	if strings.TrimSpace(c.SMTPHost) == "" {
+		errs = append(errs, errors.New("SMTP_HOST must not be empty when MAILER_PROVIDER is smtp"))
+	}
+
+	if c.SMTPPort <= 0 {
+		errs = append(errs, errors.New(
+			"SMTP_PORT must be greater than 0 when MAILER_PROVIDER is smtp",
+		))
+	}
+
+	switch c.SMTPTLSMode {
+	case SMTPTLSModeStartTLS, SMTPTLSModeImplicit:
+	default:
+		errs = append(errs, fmt.Errorf(
+			"SMTP_TLS_MODE must be one of %q or %q", SMTPTLSModeStartTLS, SMTPTLSModeImplicit,
+		))
+	}
+
+	return errs
 }
 
 func validateSecret(name, value string) []error {
