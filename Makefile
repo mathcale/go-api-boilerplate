@@ -1,9 +1,15 @@
-.PHONY: build run test tidy run-containers init-database create-migration migrate-up migrate-down install-deps setup clean rename-pkgs all openapi-gen openapi-fmt lint lint-fix fmt
+.PHONY: build run test tidy run-containers init-database create-migration migrate-up migrate-down install-deps install-deps-force setup clean rename-pkgs all openapi-gen openapi-fmt lint lint-fix fmt
 
 include .env
 
 PLATFORM := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 ARCH := $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/' -e 's/armv7l/armv7/' -e 's/i386\|i686/386/')
+
+# golang-migrate release to install
+MIGRATE_VERSION ?= v4.20.1
+
+# Set FORCE=1 to reinstall tools even if already present (see install-deps-force)
+FORCE ?=
 
 build:
 	@go build -ldflags="-w -s -buildid=" -trimpath -o ./bin/api ./cmd/api/main.go
@@ -51,28 +57,28 @@ fmt:
 	@golangci-lint fmt
 
 install-deps:
-	@if command -v air >/dev/null 2>&1; then \
+	@if [ -z "$(FORCE)" ] && command -v air >/dev/null 2>&1; then \
 		echo "==> air already installed, skipping"; \
 	else \
 		echo "==> Installing air-verse/air"; \
 		go install github.com/air-verse/air@latest; \
 	fi
 
-	@if command -v migrate >/dev/null 2>&1; then \
+	@if [ -z "$(FORCE)" ] && command -v migrate >/dev/null 2>&1; then \
 		echo "==> migrate already installed, skipping"; \
 	else \
 		echo "==> Installing golang-migrate/migrate"; \
-		curl -L https://github.com/golang-migrate/migrate/releases/download/v4.20.1/migrate.$(PLATFORM)-$(ARCH).tar.gz | tar xvz migrate && sudo mv migrate /usr/local/bin; \
+		curl -L https://github.com/golang-migrate/migrate/releases/download/$(MIGRATE_VERSION)/migrate.$(PLATFORM)-$(ARCH).tar.gz | tar xvz migrate && sudo mv migrate /usr/local/bin; \
 	fi
 
-	@if command -v golangci-lint >/dev/null 2>&1; then \
+	@if [ -z "$(FORCE)" ] && command -v golangci-lint >/dev/null 2>&1; then \
 		echo "==> golangci-lint already installed, skipping"; \
 	else \
 		echo "==> Installing golangci/golangci-lint"; \
 		go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest; \
 	fi
 
-	@if command -v swag >/dev/null 2>&1; then \
+	@if [ -z "$(FORCE)" ] && command -v swag >/dev/null 2>&1; then \
 		echo "==> swag already installed, skipping"; \
 	else \
 		echo "==> Installing swaggo/swag"; \
@@ -83,5 +89,8 @@ install-deps:
 
 rename-pkgs:
 	@./scripts/rename-pkgs.sh
+
+install-deps-force:
+	@$(MAKE) install-deps FORCE=1
 
 setup: install-deps run-containers init-database migrate-up
