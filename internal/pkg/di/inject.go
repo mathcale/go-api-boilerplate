@@ -11,10 +11,12 @@ import (
 	"github.com/mathcale/go-api-boilerplate/internal/infra/email"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/email/clients"
 	usergateway "github.com/mathcale/go-api-boilerplate/internal/infra/gateways/user"
+	"github.com/mathcale/go-api-boilerplate/internal/infra/ratelimit"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/middlewares"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/bcrypt"
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/clientip"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
 	"github.com/mathcale/go-api-boilerplate/internal/usecases/auth"
@@ -28,12 +30,19 @@ type (
 	Dependencies struct {
 		Context   context.Context
 		WebServer web.Server
+		closers   []func()
 	}
 
 	dependencyInjector struct {
 		config *config.Config
 	}
 )
+
+func (d *Dependencies) Close() {
+	for _, closeFn := range d.closers {
+		closeFn()
+	}
+}
 
 func NewDependencyInjector(cfg *config.Config) DependencyInjector {
 	return &dependencyInjector{
@@ -77,10 +86,25 @@ func (di *dependencyInjector) Inject(ctx context.Context) (*Dependencies, error)
 		di.config.PasswordRecoveryBaseURL,
 	)
 
+	// Rate limiting
+	limiters, err := di.newRateLimiters()
+	if err != nil {
+		return nil, err
+	}
+
 	// Use-cases
+	signInUseCase, err := auth.NewSignInUseCase(
+		log, userGateway, password, jwtAuth, limiters.signIn,
+	)
+	if err != nil {
+		limiters.Close()
+
+		return nil, err
+	}
+
 	authUseCases := handlers.AuthUseCases{
 		SignUp:               auth.NewSignUpUseCase(log, userGateway, password),
-		SignIn:               auth.NewSignInUseCase(log, userGateway, password, jwtAuth),
+		SignIn:               signInUseCase,
 		RefreshToken:         auth.NewRefreshTokenUseCase(log, jwtAuth, userGateway),
 		ConfirmAccount:       auth.NewConfirmAccountUseCase(log, userGateway),
 		ResendConfirmation:   auth.NewResendConfirmationCodeUseCase(log, userGateway),
@@ -103,8 +127,8 @@ func (di *dependencyInjector) Inject(ctx context.Context) (*Dependencies, error)
 	loggingMiddleware := middlewares.NewLoggingMiddleware(log)
 	authMiddleware := middlewares.NewAuthMiddleware(jwtAuth, userGateway, rh)
 	rateLimitMiddleware := middlewares.NewRateLimitMiddleware(
-		di.config.RateLimitRequestsPerMinute,
-		di.config.RateLimitBurst,
+		limiters.ip,
+		limiters.resolver,
 		rh,
 	)
 
@@ -132,6 +156,37 @@ func (di *dependencyInjector) Inject(ctx context.Context) (*Dependencies, error)
 	return &Dependencies{
 		Context:   ctx,
 		WebServer: webServer,
+		closers:   []func(){limiters.Close},
+	}, nil
+}
+
+type rateLimiters struct {
+	ip       *ratelimit.KeyedLimiter
+	signIn   *ratelimit.KeyedLimiter
+	resolver *clientip.Resolver
+}
+
+func (r rateLimiters) Close() {
+	r.ip.Close()
+	r.signIn.Close()
+}
+
+func (di *dependencyInjector) newRateLimiters() (rateLimiters, error) {
+	trustedProxies, err := clientip.ParseTrustedProxies(di.config.TrustedProxies)
+	if err != nil {
+		return rateLimiters{}, err
+	}
+
+	return rateLimiters{
+		ip: ratelimit.NewKeyedLimiter(ratelimit.Config{
+			RequestsPerMinute: di.config.RateLimitRequestsPerMinute,
+			Burst:             di.config.RateLimitBurst,
+		}),
+		signIn: ratelimit.NewKeyedLimiter(ratelimit.Config{
+			RequestsPerMinute: di.config.SignInRateLimitPerMinute,
+			Burst:             di.config.SignInRateLimitBurst,
+		}),
+		resolver: clientip.NewResolver(trustedProxies),
 	}, nil
 }
 

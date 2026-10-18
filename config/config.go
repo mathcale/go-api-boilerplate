@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/spf13/viper"
+
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/clientip"
 )
 
 const (
@@ -64,6 +66,9 @@ type Config struct {
 	CORSAllowedOrigins          string `mapstructure:"CORS_ALLOWED_ORIGINS"`
 	RateLimitRequestsPerMinute  int    `mapstructure:"RATE_LIMIT_REQUESTS_PER_MINUTE"`
 	RateLimitBurst              int    `mapstructure:"RATE_LIMIT_BURST"`
+	SignInRateLimitPerMinute    int    `mapstructure:"SIGNIN_RATE_LIMIT_PER_MINUTE"`
+	SignInRateLimitBurst        int    `mapstructure:"SIGNIN_RATE_LIMIT_BURST"`
+	TrustedProxies              string `mapstructure:"TRUSTED_PROXIES"`
 }
 
 func Load(path string) (*Config, error) {
@@ -78,6 +83,9 @@ func Load(path string) (*Config, error) {
 	viper.SetDefault("SMTP_USERNAME", "")
 	viper.SetDefault("SMTP_PASSWORD", "")
 	viper.SetDefault("SMTP_TLS_MODE", SMTPTLSModeStartTLS)
+	viper.SetDefault("SIGNIN_RATE_LIMIT_PER_MINUTE", 5)
+	viper.SetDefault("SIGNIN_RATE_LIMIT_BURST", 5)
+	viper.SetDefault("TRUSTED_PROXIES", "")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok && !os.IsNotExist(err) {
@@ -135,6 +143,18 @@ func (c *Config) Validate() error {
 
 	if c.Environment == EnvironmentProduction && strings.TrimSpace(c.CORSAllowedOrigins) == "" {
 		errs = append(errs, errors.New("CORS_ALLOWED_ORIGINS must not be empty in production"))
+	}
+
+	if c.SignInRateLimitPerMinute <= 0 {
+		errs = append(errs, errors.New("SIGNIN_RATE_LIMIT_PER_MINUTE must be greater than 0"))
+	}
+
+	if c.SignInRateLimitBurst <= 0 {
+		errs = append(errs, errors.New("SIGNIN_RATE_LIMIT_BURST must be greater than 0"))
+	}
+
+	if _, err := clientip.ParseTrustedProxies(c.TrustedProxies); err != nil {
+		errs = append(errs, fmt.Errorf("TRUSTED_PROXIES: %w", err))
 	}
 
 	errs = append(errs, c.validateMailer()...)

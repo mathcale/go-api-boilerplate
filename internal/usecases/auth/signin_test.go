@@ -20,12 +20,28 @@ type SignInUseCaseTestSuite struct {
 	gw *mocks.UserGateway
 	pw *mocks.Password
 	j  *mocks.JWTAuth
+	l  *mocks.AttemptLimiter
 }
 
 func (s *SignInUseCaseTestSuite) SetupTest() {
 	s.gw = new(mocks.UserGateway)
 	s.pw = new(mocks.Password)
 	s.j = new(mocks.JWTAuth)
+	s.l = new(mocks.AttemptLimiter)
+}
+
+func (s *SignInUseCaseTestSuite) newUseCase() auth.SignInUseCase {
+	dummy := fixtures.AuthBDummyHash
+	s.pw.On("Hash", mock.AnythingOfType("string")).Return(&dummy, nil).Once()
+
+	if len(s.l.ExpectedCalls) == 0 {
+		s.l.On("Allow", mock.Anything).Return(true)
+	}
+
+	uc, err := auth.NewSignInUseCase(mocks.NoopLogger{}, s.gw, s.pw, s.j, s.l)
+	s.Require().NoError(err)
+
+	return uc
 }
 
 func (s *SignInUseCaseTestSuite) SetupSubTest() {
@@ -34,6 +50,24 @@ func (s *SignInUseCaseTestSuite) SetupSubTest() {
 
 func TestSignInUseCase(t *testing.T) {
 	suite.Run(t, new(SignInUseCaseTestSuite))
+}
+
+func (s *SignInUseCaseTestSuite) TestNewSignInUseCase() {
+	s.Run("should hash a dummy password once at construction", func() {
+		s.newUseCase()
+
+		s.pw.AssertNumberOfCalls(s.T(), "Hash", 1)
+	})
+
+	s.Run("should return the error when the dummy hash cannot be generated", func() {
+		hashErr := errors.New("hash failure")
+		s.pw.On("Hash", mock.AnythingOfType("string")).Return(nil, hashErr)
+
+		uc, err := auth.NewSignInUseCase(mocks.NoopLogger{}, s.gw, s.pw, s.j, s.l)
+
+		s.Nil(uc)
+		s.ErrorIs(err, hashErr)
+	})
 }
 
 func (s *SignInUseCaseTestSuite) TestExecute() {
@@ -50,7 +84,7 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 		s.gw.On("SaveRefreshToken", mock.Anything, mock.AnythingOfType("user.RefreshToken")).
 			Return(nil)
 
-		uc := auth.NewSignInUseCase(mocks.NoopLogger{}, s.gw, s.pw, s.j)
+		uc := s.newUseCase()
 
 		_, err := uc.Execute(context.Background(), fixtures.AuthBEmail, fixtures.AuthBPassword)
 
@@ -61,8 +95,9 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 	s.Run("should normalise the email before looking up the user", func() {
 		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBEmail).
 			Return(nil, nil)
+		s.pw.On("Verify", mock.Anything, mock.Anything).Return(errors.New("mismatch"))
 
-		uc := auth.NewSignInUseCase(mocks.NoopLogger{}, s.gw, s.pw, s.j)
+		uc := s.newUseCase()
 
 		_, err := uc.Execute(
 			context.Background(), fixtures.AuthBMixedCaseEmail, fixtures.AuthBPassword,
@@ -83,7 +118,7 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 		s.gw.On("SaveRefreshToken", mock.Anything, mock.AnythingOfType("user.RefreshToken")).
 			Return(nil)
 
-		uc := auth.NewSignInUseCase(mocks.NoopLogger{}, s.gw, s.pw, s.j)
+		uc := s.newUseCase()
 
 		tokens, err := uc.Execute(context.Background(), fixtures.AuthBEmail, fixtures.AuthBPassword)
 
@@ -96,11 +131,50 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 		s.j.AssertExpectations(s.T())
 	})
 
+	s.Run("should check the limiter with the normalised email", func() {
+		s.l.On("Allow", fixtures.AuthBEmail).Return(true)
+		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBEmail).
+			Return(nil, nil)
+		s.pw.On("Verify", mock.Anything, mock.Anything).Return(errors.New("mismatch"))
+
+		uc := s.newUseCase()
+
+		_, err := uc.Execute(
+			context.Background(), fixtures.AuthBMixedCaseEmail, fixtures.AuthBPassword,
+		)
+
+		s.Require().Error(err)
+		s.l.AssertCalled(s.T(), "Allow", fixtures.AuthBEmail)
+	})
+
+	s.Run("should return a too-many-requests error when the limiter rejects", func() {
+		s.l.On("Allow", fixtures.AuthBEmail).Return(false)
+
+		uc := s.newUseCase()
+
+		tokens, err := uc.Execute(
+			context.Background(), fixtures.AuthBMixedCaseEmail, fixtures.AuthBPassword,
+		)
+
+		s.Require().Error(err)
+		s.Nil(tokens)
+
+		var appErr apperror.AppError
+		s.Require().ErrorAs(err, &appErr)
+		s.Equal(apperror.TooManyRequests, appErr.Kind())
+		s.Require().NotNil(appErr.BusinessCode())
+		s.Equal(apperror.BE0005_RATE_LIMITED, *appErr.BusinessCode())
+		s.gw.AssertNotCalled(s.T(), "GetUserByEmailIncludingInactive", mock.Anything, mock.Anything)
+		s.pw.AssertNotCalled(s.T(), "Verify", mock.Anything, mock.Anything)
+	})
+
 	s.Run("should return an unauthorized error when the user does not exist", func() {
 		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBUnknownEmail).
 			Return(nil, nil)
+		s.pw.On("Verify", fixtures.AuthBPassword, fixtures.AuthBDummyHash).
+			Return(errors.New("mismatch"))
 
-		uc := auth.NewSignInUseCase(mocks.NoopLogger{}, s.gw, s.pw, s.j)
+		uc := s.newUseCase()
 
 		tokens, err := uc.Execute(
 			context.Background(), fixtures.AuthBUnknownEmail, fixtures.AuthBPassword,
@@ -114,6 +188,7 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 		s.Equal(apperror.UnauthorizedKind, appErr.Kind())
 		s.Require().NotNil(appErr.BusinessCode())
 		s.Equal(apperror.BE1010_INVALID_CREDENTIALS, *appErr.BusinessCode())
+		s.pw.AssertCalled(s.T(), "Verify", fixtures.AuthBPassword, fixtures.AuthBDummyHash)
 	})
 
 	s.Run("should return an unauthorized error when the password does not match", func() {
@@ -122,7 +197,7 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 		s.pw.On("Verify", fixtures.AuthBWrongPassword, fixtures.AuthBStoredHash).
 			Return(errors.New("mismatch"))
 
-		uc := auth.NewSignInUseCase(mocks.NoopLogger{}, s.gw, s.pw, s.j)
+		uc := s.newUseCase()
 
 		tokens, err := uc.Execute(
 			context.Background(), fixtures.AuthBEmail, fixtures.AuthBWrongPassword,
@@ -144,7 +219,7 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 			Return(fixtures.AuthBInactiveUser(), nil)
 		s.pw.On("Verify", fixtures.AuthBPassword, fixtures.AuthBStoredHash).Return(nil)
 
-		uc := auth.NewSignInUseCase(mocks.NoopLogger{}, s.gw, s.pw, s.j)
+		uc := s.newUseCase()
 
 		tokens, err := uc.Execute(context.Background(), fixtures.AuthBEmail, fixtures.AuthBPassword)
 
@@ -165,7 +240,7 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBEmail).
 			Return(nil, gwErr)
 
-		uc := auth.NewSignInUseCase(mocks.NoopLogger{}, s.gw, s.pw, s.j)
+		uc := s.newUseCase()
 
 		tokens, err := uc.Execute(context.Background(), fixtures.AuthBEmail, fixtures.AuthBPassword)
 
@@ -183,7 +258,7 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 		s.j.On("IssueAccessToken", mock.AnythingOfType("jwt.IssueTokenParams")).
 			Return(nil, issueErr)
 
-		uc := auth.NewSignInUseCase(mocks.NoopLogger{}, s.gw, s.pw, s.j)
+		uc := s.newUseCase()
 
 		tokens, err := uc.Execute(context.Background(), fixtures.AuthBEmail, fixtures.AuthBPassword)
 
@@ -203,7 +278,7 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 		s.j.On("IssueRefreshToken", mock.AnythingOfType("jwt.IssueTokenParams")).
 			Return(nil, issueErr)
 
-		uc := auth.NewSignInUseCase(mocks.NoopLogger{}, s.gw, s.pw, s.j)
+		uc := s.newUseCase()
 
 		tokens, err := uc.Execute(context.Background(), fixtures.AuthBEmail, fixtures.AuthBPassword)
 
@@ -221,7 +296,7 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 		s.j.On("IssueRefreshToken", mock.AnythingOfType("jwt.IssueTokenParams")).
 			Return(fixtures.AuthBRefreshJWTWithoutExpiry(), nil)
 
-		uc := auth.NewSignInUseCase(mocks.NoopLogger{}, s.gw, s.pw, s.j)
+		uc := s.newUseCase()
 
 		tokens, err := uc.Execute(context.Background(), fixtures.AuthBEmail, fixtures.AuthBPassword)
 
@@ -248,7 +323,7 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 		s.gw.On("SaveRefreshToken", mock.Anything, mock.AnythingOfType("user.RefreshToken")).
 			Return(saveErr)
 
-		uc := auth.NewSignInUseCase(mocks.NoopLogger{}, s.gw, s.pw, s.j)
+		uc := s.newUseCase()
 
 		tokens, err := uc.Execute(context.Background(), fixtures.AuthBEmail, fixtures.AuthBPassword)
 

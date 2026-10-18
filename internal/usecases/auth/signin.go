@@ -23,6 +23,9 @@ type (
 		gateway  gateway.User
 		password bcrypt.Password
 		jwtAuth  jwt.JWTAuth
+		limiter  gateway.AttemptLimiter
+
+		dummyHash string
 	}
 )
 
@@ -31,13 +34,21 @@ func NewSignInUseCase(
 	gw gateway.User,
 	pw bcrypt.Password,
 	j jwt.JWTAuth,
-) SignInUseCase {
-	return &signInUseCase{
-		logger:   l,
-		gateway:  gw,
-		password: pw,
-		jwtAuth:  j,
+	limiter gateway.AttemptLimiter,
+) (SignInUseCase, error) {
+	dummyHash, err := pw.Hash(uuid.NewString())
+	if err != nil {
+		return nil, err
 	}
+
+	return &signInUseCase{
+		logger:    l,
+		gateway:   gw,
+		password:  pw,
+		jwtAuth:   j,
+		limiter:   limiter,
+		dummyHash: *dummyHash,
+	}, nil
 }
 
 func (uc *signInUseCase) Execute(
@@ -46,12 +57,25 @@ func (uc *signInUseCase) Execute(
 ) (*TokenPair, error) {
 	invalidCreds := apperror.BE1010_INVALID_CREDENTIALS
 
-	target, err := uc.gateway.GetUserByEmailIncludingInactive(ctx, user.NormalizeEmail(email))
+	email = user.NormalizeEmail(email)
+
+	if !uc.limiter.Allow(email) {
+		rateLimited := apperror.BE0005_RATE_LIMITED
+
+		return nil, apperror.New(
+			nil, "too many sign-in attempts", apperror.TooManyRequests,
+			apperror.UseCaseOrigin, "signin", &rateLimited, nil,
+		)
+	}
+
+	target, err := uc.gateway.GetUserByEmailIncludingInactive(ctx, email)
 	if err != nil {
 		return nil, err
 	}
 
 	if target == nil {
+		_ = uc.password.Verify(password, uc.dummyHash)
+
 		return nil, apperror.New(
 			nil, "invalid credentials", apperror.UnauthorizedKind,
 			apperror.UseCaseOrigin, "signin", &invalidCreds, nil,
@@ -76,6 +100,13 @@ func (uc *signInUseCase) Execute(
 		)
 	}
 
+	return uc.issueTokenPair(ctx, target)
+}
+
+func (uc *signInUseCase) issueTokenPair(
+	ctx context.Context,
+	target *user.User,
+) (*TokenPair, error) {
 	roles := target.Roles
 	if roles == nil {
 		roles = []string{}

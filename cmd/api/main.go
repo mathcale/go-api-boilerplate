@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/mathcale/go-api-boilerplate/config"
 	_ "github.com/mathcale/go-api-boilerplate/docs"
@@ -18,7 +21,7 @@ import (
 // @name						Authorization
 // @description				Type "Bearer" followed by a space and the access token.
 func main() {
-	ctx := context.Background()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 
 	cfg, err := config.Load(".")
 	if err != nil {
@@ -30,7 +33,12 @@ func main() {
 		log.Fatalf("Failed to inject dependencies: %v", err)
 	}
 
-	if err := deps.WebServer.Start(); err != nil {
-		log.Fatalf("Failed to start web server: %v", err)
+	serveErr := deps.WebServer.Start(ctx)
+
+	deps.Close()
+	stop()
+
+	if serveErr != nil {
+		log.Fatalf("Web server stopped: %v", serveErr)
 	}
 }

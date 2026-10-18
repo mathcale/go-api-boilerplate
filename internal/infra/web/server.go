@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -17,10 +18,12 @@ const (
 	readTimeout  = 15 * time.Second
 	writeTimeout = 30 * time.Second
 	idleTimeout  = 60 * time.Second
+
+	shutdownTimeout = 10 * time.Second
 )
 
 type Server interface {
-	Start() error
+	Start(ctx context.Context) error
 }
 
 type server struct {
@@ -55,7 +58,7 @@ func NewServer(
 	}
 }
 
-func (s *server) Start() error {
+func (s *server) Start(ctx context.Context) error {
 	for _, h := range s.handlers {
 		s.logger.Debug(
 			"Registering route",
@@ -89,7 +92,21 @@ func (s *server) Start() error {
 
 	s.logger.Info("Starting http server", "port", s.port)
 
-	return srv.ListenAndServe()
+	errCh := make(chan error, 1)
+
+	go func() { errCh <- srv.ListenAndServe() }()
+
+	select {
+	case err := <-errCh:
+		return err
+	case <-ctx.Done():
+		s.logger.Info("Shutting down http server")
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer cancel()
+
+		return srv.Shutdown(shutdownCtx)
+	}
 }
 
 func (s *server) wrap(h handler) http.Handler {

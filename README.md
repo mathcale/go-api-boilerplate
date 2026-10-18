@@ -49,6 +49,19 @@ Email delivery is controlled by `MAILER_PROVIDER`:
   `SMTP_PORT`; `SMTP_USERNAME`/`SMTP_PASSWORD` enable PLAIN authentication, and `SMTP_TLS_MODE` is
   `starttls` (default, e.g. port 587) or `implicit` (e.g. port 465).
 
+Rate limiting is keyed by client IP (IPv6 clients by their /64). By default only the TCP peer
+address is used. When running behind a reverse proxy or load balancer, set `TRUSTED_PROXIES` to a
+comma-separated list of the proxies' IPs/CIDRs (e.g. `10.0.0.0/8,192.168.1.5`); `X-Forwarded-For`
+is then honoured only for requests coming from those addresses, taking the first untrusted entry
+from the right. Leave it empty otherwise, or clients could spoof their address.
+
+Sign-in attempts are additionally limited per account email (`SIGNIN_RATE_LIMIT_PER_MINUTE` and
+`SIGNIN_RATE_LIMIT_BURST`, 5 and 5 by default).
+
+> Rate limits are kept in process memory and are not shared across replicas: with several
+> instances each one enforces its own limits. Use a shared store such as Redis if you need limits
+> that hold across replicas.
+
 2. Rename packages to your project's name
 
 ```sh

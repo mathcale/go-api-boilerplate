@@ -127,6 +127,9 @@ TOKEN_AUDIENCE=test_audience`
 		s.Require().NoError(err)
 		s.Equal("fake", cfg.MailerProvider)
 		s.Equal("starttls", cfg.SMTPTLSMode)
+		s.Equal(5, cfg.SignInRateLimitPerMinute)
+		s.Equal(5, cfg.SignInRateLimitBurst)
+		s.Empty(cfg.TrustedProxies)
 	})
 	s.Run("should return an error when the loaded config is invalid", func() {
 		envPath := filepath.Join(s.tempDir, ".env")
@@ -154,6 +157,8 @@ func (s *ConfigTestSuite) validConfig() *Config {
 		SMTPPort:                    587,
 		SMTPPassword:                fixtures.ConfigSMTPCredential,
 		SMTPTLSMode:                 SMTPTLSModeStartTLS,
+		SignInRateLimitPerMinute:    5,
+		SignInRateLimitBurst:        5,
 	}
 }
 
@@ -184,6 +189,12 @@ func (s *ConfigTestSuite) TestValidate() {
 		cfg.Environment = EnvironmentDevelopment
 		cfg.MailerProvider = MailerProviderFake
 		cfg.SMTPHost = ""
+		s.NoError(cfg.Validate())
+	})
+
+	s.Run("should accept a list of trusted proxy IPs and CIDRs", func() {
+		cfg := s.validConfig()
+		cfg.TrustedProxies = "10.0.0.1, 192.168.0.0/16, fd00::/8"
 		s.NoError(cfg.Validate())
 	})
 
@@ -248,6 +259,26 @@ func (s *ConfigTestSuite) TestValidate() {
 		{"empty smtp host", func(c *Config) { c.SMTPHost = " " }, "SMTP_HOST"},
 		{"zero smtp port", func(c *Config) { c.SMTPPort = 0 }, "SMTP_PORT"},
 		{"invalid smtp tls mode", func(c *Config) { c.SMTPTLSMode = "none" }, "SMTP_TLS_MODE"},
+		{
+			"invalid trusted proxy",
+			func(c *Config) { c.TrustedProxies = "10.0.0.1,not-an-ip" },
+			"TRUSTED_PROXIES",
+		},
+		{
+			"invalid trusted proxy CIDR",
+			func(c *Config) { c.TrustedProxies = "10.0.0.0/40" },
+			"TRUSTED_PROXIES",
+		},
+		{
+			"zero sign-in rate limit",
+			func(c *Config) { c.SignInRateLimitPerMinute = 0 },
+			"SIGNIN_RATE_LIMIT_PER_MINUTE",
+		},
+		{
+			"negative sign-in burst",
+			func(c *Config) { c.SignInRateLimitBurst = -1 },
+			"SIGNIN_RATE_LIMIT_BURST",
+		},
 		{"empty issuer", func(c *Config) { c.TokenIssuer = "" }, "TOKEN_ISSUER"},
 		{"empty audience", func(c *Config) { c.TokenAudience = "" }, "TOKEN_AUDIENCE"},
 		{

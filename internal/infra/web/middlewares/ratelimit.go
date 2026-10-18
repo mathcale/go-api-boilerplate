@@ -1,14 +1,11 @@
 package middlewares
 
 import (
-	"net"
 	"net/http"
-	"sync"
-
-	"golang.org/x/time/rate"
 
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/clientip"
 )
 
 type (
@@ -16,38 +13,32 @@ type (
 		Handler(next http.Handler) http.Handler
 	}
 
+	KeyLimiter interface {
+		Allow(key string) bool
+	}
+
 	rateLimitMiddleware struct {
 		response handlers.Response
-		limit    rate.Limit
-		burst    int
-		mu       sync.Mutex
-		limiters map[string]*rate.Limiter
+		limiter  KeyLimiter
+		resolver *clientip.Resolver
 	}
 )
 
 func NewRateLimitMiddleware(
-	requestsPerMinute, burst int,
+	limiter KeyLimiter,
+	resolver *clientip.Resolver,
 	response handlers.Response,
 ) RateLimitMiddleware {
-	if requestsPerMinute <= 0 {
-		requestsPerMinute = 60
-	}
-
-	if burst <= 0 {
-		burst = requestsPerMinute
-	}
-
 	return &rateLimitMiddleware{
 		response: response,
-		limit:    rate.Limit(float64(requestsPerMinute) / 60.0),
-		burst:    burst,
-		limiters: make(map[string]*rate.Limiter),
+		limiter:  limiter,
+		resolver: resolver,
 	}
 }
 
 func (m *rateLimitMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !m.limiterFor(m.clientIP(r)).Allow() {
+		if !m.limiter.Allow(m.resolver.Resolve(r)) {
 			code := apperror.BE0005_RATE_LIMITED
 
 			m.response.RespondWithError(w, apperror.New(
@@ -60,25 +51,4 @@ func (m *rateLimitMiddleware) Handler(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
-}
-
-func (m *rateLimitMiddleware) limiterFor(ip string) *rate.Limiter {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	limiter, ok := m.limiters[ip]
-	if !ok {
-		limiter = rate.NewLimiter(m.limit, m.burst)
-		m.limiters[ip] = limiter
-	}
-
-	return limiter
-}
-
-func (m *rateLimitMiddleware) clientIP(r *http.Request) string {
-	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
-		return host
-	}
-
-	return r.RemoteAddr
 }

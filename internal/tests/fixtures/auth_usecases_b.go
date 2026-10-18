@@ -17,6 +17,7 @@ const (
 	AuthBPassword       = "secret123"
 	AuthBWrongPassword  = "wrong"
 	AuthBStoredHash     = "stored-hash"
+	AuthBDummyHash      = "dummy-hash"
 	AuthBHashedPassword = "hashed-password"
 	AuthBNewPassword    = "new-password"
 	AuthBNewHash        = "new-hash"
