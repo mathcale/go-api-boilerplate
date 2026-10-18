@@ -89,7 +89,7 @@ make build      # Production build to ./bin/api
 ## Implementation Guidelines
 
 - **Error Handling**: Use Go's error handling idioms. Prefer returning errors over panicking, except in truly exceptional situations. Always wrap the underlying error via `apperror.New(err, ...)` so the cause chain is preserved.
-- **Logging**: Use structured logging for better log management and analysis. Ensure that sensitive information (passwords, tokens, codes) is never logged.
+- **Logging**: Use structured logging for better log management and analysis. Ensure that sensitive information (passwords, tokens, codes) is never logged. Pass fields as alternating key/value arguments, e.g. `logger.Info("msg", "key", value)`; keys must be strings (`Error` takes the error before them: `logger.Error("msg", err, "key", value)`).
 - **Testing**: Write unit tests for functions and methods using `testify` with hand-written mocks. See `.rules/testing.md`.
 - **Code style**: Follow Go conventions with `gofmt` / `golangci-lint`. Keep lines within 100 columns. Use tabs for indentation.
 - **Use-case Driven Development**: Structure your code around use cases.

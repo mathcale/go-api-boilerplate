@@ -175,8 +175,9 @@ func (uc *refreshTokenUseCase) handleReuse(ctx context.Context, stored user.Refr
 
 	if revokeErr := uc.gateway.RevokeRefreshTokenFamily(ctx, stored.FamilyID); revokeErr != nil {
 		uc.logger.Error(
-			"failed to revoke refresh token family after reuse", revokeErr,
-			map[string]interface{}{"family_id": stored.FamilyID.String()},
+			"failed to revoke refresh token family after reuse",
+			revokeErr,
+			"family_id", stored.FamilyID.String(),
 		)
 
 		return apperror.New(
@@ -185,11 +186,12 @@ func (uc *refreshTokenUseCase) handleReuse(ctx context.Context, stored user.Refr
 		)
 	}
 
-	uc.logger.Warn("refresh token reuse detected; family revoked", map[string]interface{}{
-		logFieldUserID:  stored.UserID.String(),
-		"family_id":     stored.FamilyID.String(),
-		"business_code": apperror.BE1011_REFRESH_TOKEN_REUSE_DETECTED,
-	})
+	uc.logger.Warn(
+		"refresh token reuse detected; family revoked",
+		logFieldUserID, stored.UserID.String(),
+		"family_id", stored.FamilyID.String(),
+		"business_code", apperror.BE1011_REFRESH_TOKEN_REUSE_DETECTED,
+	)
 
 	return apperror.New(
 		nil, "refresh token reuse detected", apperror.UnauthorizedKind,

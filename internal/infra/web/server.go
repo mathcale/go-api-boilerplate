@@ -57,12 +57,13 @@ func NewServer(
 
 func (s *server) Start() error {
 	for _, h := range s.handlers {
-		s.logger.Debug("Registering route", map[string]interface{}{
-			"method":       h.method,
-			"path":         h.path,
-			"protected":    h.protected,
-			"rate_limited": h.rateLimited,
-		})
+		s.logger.Debug(
+			"Registering route",
+			"method", h.method,
+			"path", h.path,
+			"protected", h.protected,
+			"rate_limited", h.rateLimited,
+		)
 
 		s.router.Handle(fmt.Sprintf("%s %s", h.method, h.path), s.wrap(h))
 	}
@@ -72,9 +73,7 @@ func (s *server) Start() error {
 	middlewareChain := alice.New()
 
 	for _, mw := range s.middlewares {
-		s.logger.Debug("Registering middleware", map[string]interface{}{
-			"name": mw.name,
-		})
+		s.logger.Debug("Registering middleware", "name", mw.name)
 
 		middlewareChain = middlewareChain.Append(mw.handlerFunc)
 	}
@@ -88,9 +87,7 @@ func (s *server) Start() error {
 		IdleTimeout:       idleTimeout,
 	}
 
-	s.logger.Info("Starting http server", map[string]interface{}{
-		"port": s.port,
-	})
+	s.logger.Info("Starting http server", "port", s.port)
 
 	return srv.ListenAndServe()
 }

@@ -192,8 +192,11 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 		s.gw.On("GetRefreshToken", mock.Anything, familyID).
 			Return(fixtures.AuthAUsedRefreshToken(userID, familyID), nil)
 		s.gw.On("RevokeRefreshTokenFamily", mock.Anything, familyID).Return(nil)
-		log.On("Warn", mock.Anything, mock.MatchedBy(func(tags map[string]interface{}) bool {
-			return tags["business_code"] == apperror.BE1011_REFRESH_TOKEN_REUSE_DETECTED
+		log.On("Warn", mock.Anything, mock.MatchedBy(func(kv []any) bool {
+			i := slices.Index(kv, any("business_code"))
+
+			return i >= 0 && i+1 < len(kv) &&
+				kv[i+1] == apperror.BE1011_REFRESH_TOKEN_REUSE_DETECTED
 		})).Return()
 
 		tokens, err := uc.Execute(context.Background(), oldRefreshToken)

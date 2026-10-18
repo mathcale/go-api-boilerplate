@@ -44,20 +44,22 @@ func (m *loggingMiddleware) Handler(next http.Handler) http.Handler {
 			if panicVal := recover(); panicVal != nil {
 				lrw.statusCode = http.StatusInternalServerError
 
-				m.logger.Error("Recovered from panic", nil, map[string]interface{}{
-					"panic":  panicVal,
-					"method": r.Method,
-					"url":    r.URL.RequestURI(),
-				})
+				m.logger.Error(
+					"Recovered from panic", nil,
+					"panic", panicVal,
+					"method", r.Method,
+					"url", r.URL.RequestURI(),
+				)
 			}
 
-			m.logger.Info("Incoming request", map[string]interface{}{
-				"method":      r.Method,
-				"url":         r.URL.RequestURI(),
-				"status_code": lrw.statusCode,
-				"user_agent":  r.UserAgent(),
-				"elapsed_ms":  time.Since(start).Milliseconds(),
-			})
+			m.logger.Info(
+				"Incoming request",
+				"method", r.Method,
+				"url", r.URL.RequestURI(),
+				"status_code", lrw.statusCode,
+				"user_agent", r.UserAgent(),
+				"elapsed_ms", time.Since(start).Milliseconds(),
+			)
 		}()
 
 		next.ServeHTTP(lrw, r)

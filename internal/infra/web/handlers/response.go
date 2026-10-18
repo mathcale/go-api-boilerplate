@@ -42,7 +42,7 @@ func (h *response) Respond(
 
 	if data != nil {
 		if err := json.NewEncoder(w).Encode(&data); err != nil {
-			h.logger.Error("failed to encode response body", err, nil)
+			h.logger.Error("failed to encode response body", err)
 		}
 	}
 }
@@ -62,7 +62,7 @@ func (h *response) RespondPlainText(
 	w.WriteHeader(statusCode)
 
 	if _, err := w.Write([]byte(data)); err != nil {
-		h.logger.Error("failed to write plain text response", err, nil)
+		h.logger.Error("failed to write plain text response", err)
 	}
 }
 
@@ -84,14 +84,14 @@ func (h *response) RespondWithError(w http.ResponseWriter, err error, headers ma
 	}
 
 	if status >= http.StatusInternalServerError {
-		h.logger.Error("request failed", err, map[string]interface{}{"status": status})
+		h.logger.Error("request failed", err, "status", status)
 	}
 
 	setHeaders(w, headers)
 	w.WriteHeader(status)
 
 	if encErr := json.NewEncoder(w).Encode(output); encErr != nil {
-		h.logger.Error("failed to encode error response", encErr, nil)
+		h.logger.Error("failed to encode error response", encErr)
 	}
 }
 

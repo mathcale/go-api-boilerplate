@@ -86,9 +86,10 @@ func (uc *signUpUseCase) Execute(ctx context.Context, input SignUpInput) (*user.
 	}
 
 	if err := uc.gateway.SendConfirmationEmail(ctx, newUser, confirmationCode); err != nil {
-		uc.logger.Error("failed to send confirmation email", err, map[string]interface{}{
-			logFieldUserID: newUser.ID.String(),
-		})
+		uc.logger.Error(
+			"failed to send confirmation email", err,
+			logFieldUserID, newUser.ID.String(),
+		)
 	}
 
 	return &newUser, nil

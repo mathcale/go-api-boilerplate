@@ -50,9 +50,10 @@ func (uc *resendConfirmationCodeUseCase) Execute(ctx context.Context, email stri
 	}
 
 	if err := uc.gateway.SendConfirmationEmail(ctx, *target, confirmationCode); err != nil {
-		uc.logger.Error("failed to send confirmation email", err, map[string]interface{}{
-			logFieldUserID: target.ID.String(),
-		})
+		uc.logger.Error(
+			"failed to send confirmation email", err,
+			logFieldUserID, target.ID.String(),
+		)
 	}
 
 	return nil

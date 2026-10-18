@@ -47,9 +47,7 @@ func (uc *setRecoveryCodeUseCase) Execute(ctx context.Context, email string) err
 	}
 
 	if err := uc.gateway.SendRecoveryEmail(ctx, *target, recoveryCode); err != nil {
-		uc.logger.Error("failed to send recovery email", err, map[string]interface{}{
-			logFieldUserID: target.ID.String(),
-		})
+		uc.logger.Error("failed to send recovery email", err, logFieldUserID, target.ID.String())
 	}
 
 	return nil

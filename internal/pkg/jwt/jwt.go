@@ -110,9 +110,7 @@ func (j *jwtAuth) issue(params IssueTokenParams, secret []byte, lifetime int) (*
 
 	token := jwtlib.NewWithClaims(j.signingMethod, claims)
 
-	j.logger.Debug("Token claims added", map[string]interface{}{
-		"sub": params.UserID,
-	})
+	j.logger.Debug("Token claims added", "sub", params.UserID)
 
 	tokenStr, err := token.SignedString(secret)
 	if err != nil {

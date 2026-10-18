@@ -59,9 +59,7 @@ func (uc *signInUseCase) Execute(
 	}
 
 	if verifyErr := uc.password.Verify(password, target.Password); verifyErr != nil {
-		uc.logger.Debug("password verification failed", map[string]interface{}{
-			logFieldUserID: target.ID.String(),
-		})
+		uc.logger.Debug("password verification failed", logFieldUserID, target.ID.String())
 
 		return nil, apperror.New(
 			nil, "invalid credentials", apperror.UnauthorizedKind,

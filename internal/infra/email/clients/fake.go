@@ -20,14 +20,15 @@ func NewFake(l logger.Logger, senderName, senderEmail string) email.Client {
 }
 
 func (c *fake) Send(input email.SendInput) error {
-	c.logger.Info("[fake email client] email would be sent", map[string]interface{}{
-		"from_name":       c.senderName,
-		"from_email":      c.senderEmail,
-		"recipient_name":  input.RecipientName,
-		"recipient_email": input.RecipientEmail,
-		"subject":         input.Subject,
-		"body":            input.HTMLBody,
-	})
+	c.logger.Info(
+		"[fake email client] email would be sent",
+		"from_name", c.senderName,
+		"from_email", c.senderEmail,
+		"recipient_name", input.RecipientName,
+		"recipient_email", input.RecipientEmail,
+		"subject", input.Subject,
+		"body", input.HTMLBody,
+	)
 
 	return nil
 }
