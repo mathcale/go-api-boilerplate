@@ -103,9 +103,6 @@ func InfraEmailSendInput() email.SendInput {
 		RecipientName:  "Jane",
 		RecipientEmail: InfraUserEmail,
 		Subject:        "Hello",
-		TemplateID:     "welcome",
-		TemplateVariables: map[string]interface{}{
-			"first_name": "Jane",
-		},
+		HTMLBody:       "<p>Hello Jane</p>",
 	}
 }

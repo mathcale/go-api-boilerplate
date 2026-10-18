@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"fmt"
+	"html"
 
 	"github.com/google/uuid"
 
@@ -129,11 +130,11 @@ func (g *userGateway) SendConfirmationEmail(
 		RecipientName:  u.Name,
 		RecipientEmail: u.Email,
 		Subject:        "Confirm your account",
-		TemplateID:     "account-confirmation",
-		TemplateVariables: map[string]interface{}{
-			"first_name":   u.Name,
-			"confirm_link": link,
-		},
+		HTMLBody: fmt.Sprintf(
+			"<p>Hi %s,</p><p>Confirm your account by clicking "+
+				"<a href=\"%s\">this link</a>.</p>",
+			html.EscapeString(u.Name), html.EscapeString(link),
+		),
 	})
 }
 
@@ -148,11 +149,11 @@ func (g *userGateway) SendRecoveryEmail(
 		RecipientName:  u.Name,
 		RecipientEmail: u.Email,
 		Subject:        "Reset your password",
-		TemplateID:     "password-recovery",
-		TemplateVariables: map[string]interface{}{
-			"first_name":   u.Name,
-			"recover_link": link,
-		},
+		HTMLBody: fmt.Sprintf(
+			"<p>Hi %s,</p><p>Reset your password by clicking "+
+				"<a href=\"%s\">this link</a>.</p>",
+			html.EscapeString(u.Name), html.EscapeString(link),
+		),
 	})
 }
 
