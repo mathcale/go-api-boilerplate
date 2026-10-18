@@ -56,6 +56,7 @@ func NewAuthHandler(response Response, useCases AuthUseCases) AuthHandler {
 // @Success		201		{object}	dto.SignUpOutput
 // @Failure		400		{object}	dto.ErrorOutput
 // @Failure		409		{object}	dto.ErrorOutput
+// @Failure		413		{object}	dto.ErrorOutput
 // @Router			/v1/auth/signup [post]
 func (h *authHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	var input dto.SignUpInput
@@ -94,6 +95,7 @@ func (h *authHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 // @Success		200		{object}	dto.TokenPairOutput
 // @Failure		400		{object}	dto.ErrorOutput
 // @Failure		401		{object}	dto.ErrorOutput
+// @Failure		413		{object}	dto.ErrorOutput
 // @Router			/v1/auth/signin [post]
 func (h *authHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 	var input dto.SignInInput
@@ -122,6 +124,7 @@ func (h *authHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 // @Param			body	body		dto.RefreshTokenInput	true	"Refresh token"
 // @Success		200		{object}	dto.TokenPairOutput
 // @Failure		401		{object}	dto.ErrorOutput
+// @Failure		413		{object}	dto.ErrorOutput
 // @Router			/v1/auth/refresh-token [post]
 func (h *authHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	var input dto.RefreshTokenInput
@@ -150,6 +153,7 @@ func (h *authHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 // @Param			body	body	dto.ConfirmAccountInput	true	"Confirmation payload"
 // @Success		204		"No Content"
 // @Failure		400		{object}	dto.ErrorOutput
+// @Failure		413		{object}	dto.ErrorOutput
 // @Router			/v1/auth/confirm-account [post]
 func (h *authHandler) ConfirmAccount(w http.ResponseWriter, r *http.Request) {
 	var input dto.ConfirmAccountInput
@@ -179,6 +183,7 @@ func (h *authHandler) ConfirmAccount(w http.ResponseWriter, r *http.Request) {
 // @Produce		json
 // @Param			body	body	dto.ResendConfirmationCodeInput	true	"Email payload"
 // @Success		204		"No Content"
+// @Failure		413		{object}	dto.ErrorOutput
 // @Router			/v1/auth/resend-confirmation-code [post]
 func (h *authHandler) ResendConfirmationCode(w http.ResponseWriter, r *http.Request) {
 	var input dto.ResendConfirmationCodeInput
@@ -240,6 +245,7 @@ func (h *authHandler) Me(w http.ResponseWriter, r *http.Request) {
 // @Produce		json
 // @Param			body	body	dto.SetRecoveryCodeInput	true	"Email payload"
 // @Success		204		"No Content"
+// @Failure		413		{object}	dto.ErrorOutput
 // @Router			/v1/auth/recovery-code [post]
 func (h *authHandler) SetRecoveryCode(w http.ResponseWriter, r *http.Request) {
 	var input dto.SetRecoveryCodeInput
@@ -264,6 +270,7 @@ func (h *authHandler) SetRecoveryCode(w http.ResponseWriter, r *http.Request) {
 // @Param			body	body	dto.ValidateRecoveryCodeInput	true	"Recovery payload"
 // @Success		204		"No Content"
 // @Failure		400		{object}	dto.ErrorOutput
+// @Failure		413		{object}	dto.ErrorOutput
 // @Router			/v1/auth/recovery-code/validate [post]
 func (h *authHandler) ValidateRecoveryCode(w http.ResponseWriter, r *http.Request) {
 	var input dto.ValidateRecoveryCodeInput
@@ -294,6 +301,7 @@ func (h *authHandler) ValidateRecoveryCode(w http.ResponseWriter, r *http.Reques
 // @Param			body	body	dto.UpdatePasswordInput	true	"Update payload"
 // @Success		204		"No Content"
 // @Failure		400		{object}	dto.ErrorOutput
+// @Failure		413		{object}	dto.ErrorOutput
 // @Router			/v1/auth/password [put]
 func (h *authHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	var input dto.UpdatePasswordInput

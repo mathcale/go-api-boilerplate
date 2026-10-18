@@ -11,6 +11,7 @@ import (
 
 	"github.com/mathcale/go-api-boilerplate/config"
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers/dto"
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
 	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
 )
 
@@ -47,5 +48,11 @@ func (s *ResponseTestSuite) TestRespondWithError() {
 		for _, env := range []string{config.EnvironmentProduction, "", "staging", "Development"} {
 			s.Empty(respond(env).Cause, env)
 		}
+	})
+}
+
+func (s *ResponseTestSuite) TestKindToStatus() {
+	s.Run("should map the payload too large kind to 413", func() {
+		s.Equal(http.StatusRequestEntityTooLarge, kindToStatus(apperror.PayloadTooLargeKind))
 	})
 }

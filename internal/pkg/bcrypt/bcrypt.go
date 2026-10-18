@@ -1,10 +1,14 @@
 package bcrypt
 
 import (
+	"errors"
+
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
 )
+
+const MaxPasswordBytes = 72
 
 type (
 	Password interface {
@@ -24,6 +28,16 @@ func NewPassword() Password {
 }
 
 func (b *password) Hash(password string) (*string, error) {
+	if len(password) > MaxPasswordBytes {
+		code := apperror.BE0002_INPUT_VALIDATION_FAILED
+
+		return nil, apperror.New(
+			errors.New("password exceeds bcrypt's 72 byte limit"),
+			"password too long", apperror.ValidationKind,
+			apperror.PackageOrigin, "bcrypt", &code, nil,
+		)
+	}
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), b.cost)
 	if err != nil {
 		return nil, apperror.New(

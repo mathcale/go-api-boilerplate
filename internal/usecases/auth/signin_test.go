@@ -58,6 +58,20 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 		s.j.AssertExpectations(s.T())
 	})
 
+	s.Run("should normalise the email before looking up the user", func() {
+		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBEmail).
+			Return(nil, nil)
+
+		uc := auth.NewSignInUseCase(mocks.NoopLogger{}, s.gw, s.pw, s.j)
+
+		_, err := uc.Execute(
+			context.Background(), fixtures.AuthBMixedCaseEmail, fixtures.AuthBPassword,
+		)
+
+		s.Require().Error(err)
+		s.gw.AssertExpectations(s.T())
+	})
+
 	s.Run("should sign in and return an access and refresh token pair", func() {
 		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBEmail).
 			Return(fixtures.AuthBActiveUser(), nil)

@@ -4,8 +4,14 @@ import (
 	"errors"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
+)
+
+const (
+	MinPasswordRunes = 8
+	MaxPasswordBytes = 72
 )
 
 type User struct {
@@ -50,7 +56,7 @@ func CreateFromInput(params CreateUserParams) (User, error) {
 		Name:      strings.TrimSpace(params.Name),
 		Surname:   strings.TrimSpace(params.Surname),
 		AvatarURL: params.AvatarURL,
-		Email:     strings.ToLower(strings.TrimSpace(params.Email)),
+		Email:     NormalizeEmail(params.Email),
 		Password:  params.Password,
 		Active:    params.Active,
 		Roles:     params.Roles,
@@ -74,6 +80,26 @@ func validateUserData(params CreateUserParams) error {
 
 	if strings.TrimSpace(params.Password) == "" {
 		return errors.New("password is required")
+	}
+
+	return nil
+}
+
+func NormalizeEmail(email string) string {
+	return strings.ToLower(strings.TrimSpace(email))
+}
+
+func ValidatePassword(password string) error {
+	if strings.TrimSpace(password) == "" {
+		return errors.New("password is required")
+	}
+
+	if utf8.RuneCountInString(password) < MinPasswordRunes {
+		return errors.New("password is too short")
+	}
+
+	if len(password) > MaxPasswordBytes {
+		return errors.New("password is too long")
 	}
 
 	return nil

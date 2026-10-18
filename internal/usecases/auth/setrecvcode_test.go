@@ -52,6 +52,18 @@ func (s *SetRecoveryCodeUseCaseTestSuite) TestExecute() {
 		s.gw.AssertExpectations(s.T())
 	})
 
+	s.Run("should normalise the email before looking up the user", func() {
+		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBEmail).
+			Return(nil, nil)
+
+		uc := auth.NewSetRecoveryCodeUseCase(mocks.NoopLogger{}, s.gw)
+
+		err := uc.Execute(context.Background(), fixtures.AuthBMixedCaseEmail)
+
+		s.Require().NoError(err)
+		s.gw.AssertExpectations(s.T())
+	})
+
 	s.Run("should silently succeed without sending a code when the email is unknown", func() {
 		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBUnknownEmail).
 			Return(nil, nil)

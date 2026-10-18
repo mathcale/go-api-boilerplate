@@ -4,11 +4,11 @@ import "time"
 
 type (
 	SignUpInput struct {
-		Name      string  `json:"name" validate:"required"`
-		Surname   string  `json:"surname" validate:"required"`
-		AvatarURL *string `json:"avatar_url" validate:"omitempty,url"`
-		Email     string  `json:"email" validate:"required,email"`
-		Password  string  `json:"password" validate:"required,min=8"`
+		Name      string  `json:"name" validate:"required,max=255"`
+		Surname   string  `json:"surname" validate:"required,max=255"`
+		AvatarURL *string `json:"avatar_url" validate:"omitempty,http_url,max=2048"`
+		Email     string  `json:"email" validate:"required,email,max=255"`
+		Password  string  `json:"password" validate:"required,min=8,maxbytes=72"`
 	}
 
 	SignUpOutput struct {
@@ -20,8 +20,8 @@ type (
 	}
 
 	SignInInput struct {
-		Email    string `json:"email" validate:"required,email"`
-		Password string `json:"password" validate:"required"`
+		Email    string `json:"email" validate:"required,email,max=255"`
+		Password string `json:"password" validate:"required,maxbytes=72"`
 	}
 
 	TokenPairOutput struct {
@@ -30,31 +30,31 @@ type (
 	}
 
 	RefreshTokenInput struct {
-		RefreshToken string `json:"refresh_token" validate:"required"`
+		RefreshToken string `json:"refresh_token" validate:"required,max=4096"`
 	}
 
 	ConfirmAccountInput struct {
-		UserID string `json:"user_id" validate:"required,uuid"`
-		Code   string `json:"code" validate:"required"`
+		UserID string `json:"user_id" validate:"required,uuid,max=64"`
+		Code   string `json:"code" validate:"required,max=64"`
 	}
 
 	ResendConfirmationCodeInput struct {
-		Email string `json:"email" validate:"required,email"`
+		Email string `json:"email" validate:"required,email,max=255"`
 	}
 
 	SetRecoveryCodeInput struct {
-		Email string `json:"email" validate:"required,email"`
+		Email string `json:"email" validate:"required,email,max=255"`
 	}
 
 	ValidateRecoveryCodeInput struct {
-		UserID string `json:"user_id" validate:"required,uuid"`
-		Code   string `json:"code" validate:"required"`
+		UserID string `json:"user_id" validate:"required,uuid,max=64"`
+		Code   string `json:"code" validate:"required,max=64"`
 	}
 
 	UpdatePasswordInput struct {
-		UserID      string `json:"user_id" validate:"required,uuid"`
-		Code        string `json:"code" validate:"required"`
-		NewPassword string `json:"new_password" validate:"required,min=8"`
+		UserID      string `json:"user_id" validate:"required,uuid,max=64"`
+		Code        string `json:"code" validate:"required,max=64"`
+		NewPassword string `json:"new_password" validate:"required,min=8,maxbytes=72"`
 	}
 
 	MeOutput struct {

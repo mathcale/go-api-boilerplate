@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+
+	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
 )
 
 type PasswordTestSuite struct {
@@ -26,6 +28,13 @@ func (s *PasswordTestSuite) TestHash() {
 		s.NotEqual("s3cr3t-password", *hash)
 	})
 
+	s.Run("should hash a password of exactly 72 bytes", func() {
+		hash, err := NewPassword().Hash(strings.Repeat("a", MaxPasswordBytes))
+
+		s.Require().NoError(err)
+		s.NotNil(hash)
+	})
+
 	s.Run("should reject hashing a password longer than bcrypt's 72 byte limit", func() {
 		pw := NewPassword()
 
@@ -33,6 +42,12 @@ func (s *PasswordTestSuite) TestHash() {
 
 		s.Require().Error(err)
 		s.Nil(hash)
+
+		var appErr apperror.AppError
+		s.Require().ErrorAs(err, &appErr)
+		s.Equal(apperror.ValidationKind, appErr.Kind())
+		s.Require().NotNil(appErr.BusinessCode())
+		s.Equal(apperror.BE0002_INPUT_VALIDATION_FAILED, *appErr.BusinessCode())
 	})
 }
 

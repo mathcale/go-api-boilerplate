@@ -14,4 +14,6 @@ const (
 	ForbiddenKind    Kind = "forbidden_error"
 	UnauthorizedKind Kind = "unauthorized_error"
 	TooManyRequests  Kind = "too_many_requests_error"
+
+	PayloadTooLargeKind Kind = "payload_too_large_error"
 )

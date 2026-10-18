@@ -2,6 +2,7 @@ package fixtures
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -12,6 +13,8 @@ import (
 )
 
 const (
+	WebName            = "Jane"
+	WebSurname         = "Doe"
 	WebEmail           = "jane@example.com"
 	WebPassword        = "secret123"
 	WebNewPassword     = "new-password123"
@@ -38,15 +41,15 @@ func WebTokenPair() *auth.TokenPair {
 func WebCreatedUser() *user.User {
 	return &user.User{
 		ID:      uuid.New(),
-		Name:    "Jane",
-		Surname: "Doe",
+		Name:    WebName,
+		Surname: WebSurname,
 		Email:   WebEmail,
 		Active:  false,
 	}
 }
 
 func WebAuthenticatedUser(id uuid.UUID) *user.User {
-	return &user.User{ID: id, Name: "Jane", Email: WebEmail}
+	return &user.User{ID: id, Name: WebName, Email: WebEmail}
 }
 
 func WebSignInBody() string {
@@ -59,15 +62,15 @@ func WebSignInMissingPasswordBody() string {
 
 func WebSignUpBody() string {
 	return webJSON(dto.SignUpInput{
-		Name:     "Jane",
-		Surname:  "Doe",
+		Name:     WebName,
+		Surname:  WebSurname,
 		Email:    WebEmail,
 		Password: WebPassword,
 	})
 }
 
 func WebSignUpMissingFieldsBody() string {
-	return webJSON(map[string]string{"name": "Jane"})
+	return webJSON(map[string]string{"name": WebName})
 }
 
 func WebRefreshTokenBody(token string) string {
@@ -113,4 +116,60 @@ func WebAuthState(version int, active bool) *user.AuthState {
 
 func WebRoles() []string {
 	return []string{"user", "manager"}
+}
+
+func WebOversizedBody(size int) string {
+	return `{"email":"` + strings.Repeat("a", size) + `"}`
+}
+
+func WebBodyWithUnknownField() string {
+	return `{"email":"` + WebEmail + `","password":"` + WebPassword + `","admin":true}`
+}
+
+func WebBodyWithTrailingData() string {
+	return WebSignInBody() + `{"email":"other@example.com"}`
+}
+
+func WebBodyWithTrailingGarbage() string {
+	return WebSignInBody() + ` garbage`
+}
+
+func WebValidSignUpInput() dto.SignUpInput {
+	avatar := "https://example.com/a.png"
+
+	return dto.SignUpInput{
+		Name:      WebName,
+		Surname:   WebSurname,
+		AvatarURL: &avatar,
+		Email:     WebEmail,
+		Password:  WebPassword,
+	}
+}
+
+func WebSignUpInputWithAvatar(avatar string) dto.SignUpInput {
+	in := WebValidSignUpInput()
+	in.AvatarURL = &avatar
+
+	return in
+}
+
+func WebSignUpInputWithPassword(password string) dto.SignUpInput {
+	in := WebValidSignUpInput()
+	in.Password = password
+
+	return in
+}
+
+func WebSignUpInputWithName(name string) dto.SignUpInput {
+	in := WebValidSignUpInput()
+	in.Name = name
+
+	return in
+}
+
+func WebSignUpInputWithEmail(email string) dto.SignUpInput {
+	in := WebValidSignUpInput()
+	in.Email = email
+
+	return in
 }

@@ -1,6 +1,7 @@
 package fixtures
 
 import (
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,6 +23,8 @@ const (
 	AuthBAccessToken    = "access-token"
 	AuthBRefreshToken   = "refresh-token"
 	AuthBCode           = "code"
+	AuthBMixedCaseEmail = "  Jane@Example.COM "
+	AuthBShortPassword  = "short"
 )
 
 func AuthBNewID() uuid.UUID {
@@ -99,4 +102,22 @@ func AuthBValidConfirmationCode() *user.ConfirmationCode {
 
 func AuthBExpiredConfirmationCode() *user.ConfirmationCode {
 	return &user.ConfirmationCode{ID: uuid.New(), ExpiresAt: time.Now().Add(-time.Minute)}
+}
+
+func AuthBLongPassword() string {
+	return strings.Repeat("a", user.MaxPasswordBytes+1)
+}
+
+func AuthBSignUpInputWithMixedCaseEmail() auth.SignUpInput {
+	in := AuthBSignUpInput()
+	in.Email = AuthBMixedCaseEmail
+
+	return in
+}
+
+func AuthBSignUpInputWithPassword(password string) auth.SignUpInput {
+	in := AuthBSignUpInput()
+	in.Password = password
+
+	return in
 }

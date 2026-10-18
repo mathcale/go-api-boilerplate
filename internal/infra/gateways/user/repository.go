@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	queryUserExistsIncludingInactive     = `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)`
-	queryGetUserByEmailIncludingInactive = `SELECT * FROM users WHERE email = $1`
+	queryUserExistsIncludingInactive     = `SELECT EXISTS(SELECT 1 FROM users WHERE lower(email) = lower($1))`
+	queryGetUserByEmailIncludingInactive = `SELECT * FROM users WHERE lower(email) = lower($1)`
 	queryGetUserByID                     = `SELECT * FROM users WHERE id = $1`
 	queryInsertUser                      = `INSERT INTO users (id, name, surname, avatar_url, email, password, active, roles) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 	queryGetUserAuthState                = `SELECT token_version, active FROM users WHERE id = $1`

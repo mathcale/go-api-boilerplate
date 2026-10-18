@@ -8,6 +8,7 @@ definitions:
     - E0003
     - E0004
     - E0005
+    - E0006
     - E1000
     - E1001
     - E1002
@@ -17,6 +18,7 @@ definitions:
     - E1008
     - E1009
     - E1010
+    - E1011
     type: string
     x-enum-varnames:
     - BE0000_UNKNOWN_ERROR
@@ -25,6 +27,7 @@ definitions:
     - BE0003_UNAUTHORIZED
     - BE0004_FORBIDDEN
     - BE0005_RATE_LIMITED
+    - BE0006_PAYLOAD_TOO_LARGE
     - BE1000_USER_ALREADY_EXISTS
     - BE1001_USER_NOT_FOUND
     - BE1002_RECOVERY_CODE_MISMATCH
@@ -34,11 +37,14 @@ definitions:
     - BE1008_ACCOUNT_ALREADY_CONFIRMED
     - BE1009_ACCOUNT_NOT_CONFIRMED
     - BE1010_INVALID_CREDENTIALS
+    - BE1011_REFRESH_TOKEN_REUSE_DETECTED
   dto.ConfirmAccountInput:
     properties:
       code:
+        maxLength: 64
         type: string
       user_id:
+        maxLength: 64
         type: string
     required:
     - code
@@ -75,6 +81,7 @@ definitions:
   dto.RefreshTokenInput:
     properties:
       refresh_token:
+        maxLength: 4096
         type: string
     required:
     - refresh_token
@@ -82,6 +89,7 @@ definitions:
   dto.ResendConfirmationCodeInput:
     properties:
       email:
+        maxLength: 255
         type: string
     required:
     - email
@@ -89,6 +97,7 @@ definitions:
   dto.SetRecoveryCodeInput:
     properties:
       email:
+        maxLength: 255
         type: string
     required:
     - email
@@ -96,6 +105,7 @@ definitions:
   dto.SignInInput:
     properties:
       email:
+        maxLength: 255
         type: string
       password:
         type: string
@@ -106,15 +116,19 @@ definitions:
   dto.SignUpInput:
     properties:
       avatar_url:
+        maxLength: 2048
         type: string
       email:
+        maxLength: 255
         type: string
       name:
+        maxLength: 255
         type: string
       password:
         minLength: 8
         type: string
       surname:
+        maxLength: 255
         type: string
     required:
     - email
@@ -145,11 +159,13 @@ definitions:
   dto.UpdatePasswordInput:
     properties:
       code:
+        maxLength: 64
         type: string
       new_password:
         minLength: 8
         type: string
       user_id:
+        maxLength: 64
         type: string
     required:
     - code
@@ -159,8 +175,10 @@ definitions:
   dto.ValidateRecoveryCodeInput:
     properties:
       code:
+        maxLength: 64
         type: string
       user_id:
+        maxLength: 64
         type: string
     required:
     - code
@@ -191,6 +209,10 @@ paths:
           description: No Content
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorOutput'
+        "413":
+          description: Request Entity Too Large
           schema:
             $ref: '#/definitions/dto.ErrorOutput'
       summary: Confirm account
@@ -236,6 +258,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/dto.ErrorOutput'
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/dto.ErrorOutput'
       summary: Update password
       tags:
       - auth
@@ -256,6 +282,10 @@ paths:
       responses:
         "204":
           description: No Content
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/dto.ErrorOutput'
       summary: Request password recovery
       tags:
       - auth
@@ -278,6 +308,10 @@ paths:
           description: No Content
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorOutput'
+        "413":
+          description: Request Entity Too Large
           schema:
             $ref: '#/definitions/dto.ErrorOutput'
       summary: Validate recovery code
@@ -306,6 +340,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/dto.ErrorOutput'
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/dto.ErrorOutput'
       summary: Refresh tokens
       tags:
       - auth
@@ -326,6 +364,10 @@ paths:
       responses:
         "204":
           description: No Content
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/dto.ErrorOutput'
       summary: Resend confirmation code
       tags:
       - auth
@@ -356,6 +398,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/dto.ErrorOutput'
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/dto.ErrorOutput'
       summary: Sign in
       tags:
       - auth
@@ -384,6 +430,10 @@ paths:
             $ref: '#/definitions/dto.ErrorOutput'
         "409":
           description: Conflict
+          schema:
+            $ref: '#/definitions/dto.ErrorOutput'
+        "413":
+          description: Request Entity Too Large
           schema:
             $ref: '#/definitions/dto.ErrorOutput'
       summary: Register a new account

@@ -8,7 +8,9 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers/dto"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
+	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
 )
 
 type RequestTestSuite struct {
@@ -68,6 +70,51 @@ func (s *RequestTestSuite) TestDecodeAndValidate() {
 		s.Equal(apperror.ParseKind, appErr.Kind())
 		s.Require().NotNil(appErr.BusinessCode())
 		s.Equal(apperror.BE0001_INVALID_INPUT, *appErr.BusinessCode())
+	})
+
+	s.Run("should return a payload too large error when the body exceeds the limit", func() {
+		var dst struct {
+			Email string `json:"email"`
+		}
+
+		req := newRequest(fixtures.WebOversizedBody(2048))
+		req.Body = http.MaxBytesReader(httptest.NewRecorder(), req.Body, 1024)
+
+		err := decodeAndValidate(req, &dst, "test_origin")
+
+		var appErr apperror.AppError
+		s.Require().ErrorAs(err, &appErr)
+		s.Equal(apperror.PayloadTooLargeKind, appErr.Kind())
+		s.Require().NotNil(appErr.BusinessCode())
+		s.Equal(apperror.BE0006_PAYLOAD_TOO_LARGE, *appErr.BusinessCode())
+	})
+
+	s.Run("should return a parse error when the body has an unknown field", func() {
+		var dst dto.SignInInput
+
+		err := decodeAndValidate(newRequest(fixtures.WebBodyWithUnknownField()), &dst, "o")
+
+		var appErr apperror.AppError
+		s.Require().ErrorAs(err, &appErr)
+		s.Equal(apperror.ParseKind, appErr.Kind())
+		s.Require().NotNil(appErr.BusinessCode())
+		s.Equal(apperror.BE0001_INVALID_INPUT, *appErr.BusinessCode())
+	})
+
+	s.Run("should return a parse error when data trails the json object", func() {
+		for _, body := range []string{
+			fixtures.WebBodyWithTrailingData(), fixtures.WebBodyWithTrailingGarbage(),
+		} {
+			var dst dto.SignInInput
+
+			err := decodeAndValidate(newRequest(body), &dst, "test_origin")
+
+			var appErr apperror.AppError
+			s.Require().ErrorAs(err, &appErr)
+			s.Equal(apperror.ParseKind, appErr.Kind())
+			s.Require().NotNil(appErr.BusinessCode())
+			s.Equal(apperror.BE0001_INVALID_INPUT, *appErr.BusinessCode())
+		}
 	})
 
 	s.Run("should return a validation error when the payload fails validation", func() {

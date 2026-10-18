@@ -48,6 +48,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorOutput"
                         }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorOutput"
+                        }
                     }
                 }
             }
@@ -116,6 +122,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorOutput"
                         }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorOutput"
+                        }
                     }
                 }
             }
@@ -147,6 +159,12 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorOutput"
+                        }
                     }
                 }
             }
@@ -181,6 +199,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorOutput"
+                        }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorOutput"
                         }
@@ -224,6 +248,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorOutput"
                         }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorOutput"
+                        }
                     }
                 }
             }
@@ -255,6 +285,12 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorOutput"
+                        }
                     }
                 }
             }
@@ -298,6 +334,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorOutput"
+                        }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorOutput"
                         }
@@ -347,6 +389,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorOutput"
                         }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorOutput"
+                        }
                     }
                 }
             }
@@ -362,6 +410,7 @@ const docTemplate = `{
                 "E0003",
                 "E0004",
                 "E0005",
+                "E0006",
                 "E1000",
                 "E1001",
                 "E1002",
@@ -370,7 +419,8 @@ const docTemplate = `{
                 "E1007",
                 "E1008",
                 "E1009",
-                "E1010"
+                "E1010",
+                "E1011"
             ],
             "x-enum-varnames": [
                 "BE0000_UNKNOWN_ERROR",
@@ -379,6 +429,7 @@ const docTemplate = `{
                 "BE0003_UNAUTHORIZED",
                 "BE0004_FORBIDDEN",
                 "BE0005_RATE_LIMITED",
+                "BE0006_PAYLOAD_TOO_LARGE",
                 "BE1000_USER_ALREADY_EXISTS",
                 "BE1001_USER_NOT_FOUND",
                 "BE1002_RECOVERY_CODE_MISMATCH",
@@ -387,7 +438,8 @@ const docTemplate = `{
                 "BE1007_CONFIRMATION_CODE_EXPIRED",
                 "BE1008_ACCOUNT_ALREADY_CONFIRMED",
                 "BE1009_ACCOUNT_NOT_CONFIRMED",
-                "BE1010_INVALID_CREDENTIALS"
+                "BE1010_INVALID_CREDENTIALS",
+                "BE1011_REFRESH_TOKEN_REUSE_DETECTED"
             ]
         },
         "dto.ConfirmAccountInput": {
@@ -398,10 +450,12 @@ const docTemplate = `{
             ],
             "properties": {
                 "code": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 64
                 },
                 "user_id": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 64
                 }
             }
         },
@@ -455,7 +509,8 @@ const docTemplate = `{
             ],
             "properties": {
                 "refresh_token": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 4096
                 }
             }
         },
@@ -466,7 +521,8 @@ const docTemplate = `{
             ],
             "properties": {
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 255
                 }
             }
         },
@@ -477,7 +533,8 @@ const docTemplate = `{
             ],
             "properties": {
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 255
                 }
             }
         },
@@ -489,7 +546,8 @@ const docTemplate = `{
             ],
             "properties": {
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 255
                 },
                 "password": {
                     "type": "string"
@@ -506,20 +564,24 @@ const docTemplate = `{
             ],
             "properties": {
                 "avatar_url": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 2048
                 },
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 255
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 255
                 },
                 "password": {
                     "type": "string",
                     "minLength": 8
                 },
                 "surname": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 255
                 }
             }
         },
@@ -563,14 +625,16 @@ const docTemplate = `{
             ],
             "properties": {
                 "code": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 64
                 },
                 "new_password": {
                     "type": "string",
                     "minLength": 8
                 },
                 "user_id": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 64
                 }
             }
         },
@@ -582,10 +646,12 @@ const docTemplate = `{
             ],
             "properties": {
                 "code": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 64
                 },
                 "user_id": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 64
                 }
             }
         }

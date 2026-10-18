@@ -118,6 +118,30 @@ func (s *UpdatePasswordUseCaseTestSuite) TestExecute() {
 		s.pw.AssertNotCalled(s.T(), "Hash", mock.Anything)
 	})
 
+	s.Run("should reject an invalid raw password before hashing", func() {
+		userID := fixtures.AuthBNewID()
+
+		s.gw.On(
+			"GetValidConfirmationCode", mock.Anything, userID, fixtures.AuthBCode,
+			user.PurposePasswordRecovery,
+		).Return(fixtures.AuthBValidConfirmationCode(), nil)
+
+		err := s.uc.Execute(
+			context.Background(), userID, fixtures.AuthBCode, fixtures.AuthBLongPassword(),
+		)
+
+		var appErr apperror.AppError
+		s.Require().ErrorAs(err, &appErr)
+		s.Equal(apperror.ValidationKind, appErr.Kind())
+		s.Require().NotNil(appErr.BusinessCode())
+		s.Equal(apperror.BE0001_INVALID_INPUT, *appErr.BusinessCode())
+		s.pw.AssertNotCalled(s.T(), "Hash", mock.Anything)
+		s.gw.AssertNotCalled(
+			s.T(), "UpdatePasswordWithCode", mock.Anything, mock.Anything, mock.Anything,
+			mock.Anything,
+		)
+	})
+
 	s.Run("should propagate the error when hashing the new password fails", func() {
 		userID := fixtures.AuthBNewID()
 		hashErr := errors.New("hash failure")

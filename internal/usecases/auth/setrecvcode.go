@@ -27,7 +27,7 @@ func NewSetRecoveryCodeUseCase(l logger.Logger, gw gateway.User) SetRecoveryCode
 }
 
 func (uc *setRecoveryCodeUseCase) Execute(ctx context.Context, email string) error {
-	target, err := uc.gateway.GetUserByEmailIncludingInactive(ctx, email)
+	target, err := uc.gateway.GetUserByEmailIncludingInactive(ctx, user.NormalizeEmail(email))
 	if err != nil {
 		return err
 	}

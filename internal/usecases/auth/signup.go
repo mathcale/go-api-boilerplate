@@ -39,6 +39,8 @@ func NewSignUpUseCase(l logger.Logger, gw gateway.User, pw bcrypt.Password) Sign
 }
 
 func (uc *signUpUseCase) Execute(ctx context.Context, input SignUpInput) (*user.User, error) {
+	input.Email = user.NormalizeEmail(input.Email)
+
 	exists, err := uc.gateway.UserExistsIncludingInactive(ctx, input.Email)
 	if err != nil {
 		return nil, err
@@ -49,6 +51,15 @@ func (uc *signUpUseCase) Execute(ctx context.Context, input SignUpInput) (*user.
 
 		return nil, apperror.New(
 			nil, "user already exists", apperror.ConflictKind,
+			apperror.UseCaseOrigin, "signup", &code, nil,
+		)
+	}
+
+	if pwErr := user.ValidatePassword(input.Password); pwErr != nil {
+		code := apperror.BE0001_INVALID_INPUT
+
+		return nil, apperror.New(
+			pwErr, "invalid sign-up input", apperror.ValidationKind,
 			apperror.UseCaseOrigin, "signup", &code, nil,
 		)
 	}

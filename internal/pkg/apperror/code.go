@@ -10,6 +10,7 @@ const (
 	BE0003_UNAUTHORIZED            BusinessCode = "E0003"
 	BE0004_FORBIDDEN               BusinessCode = "E0004"
 	BE0005_RATE_LIMITED            BusinessCode = "E0005"
+	BE0006_PAYLOAD_TOO_LARGE       BusinessCode = "E0006"
 
 	// User/authentication
 	BE1000_USER_ALREADY_EXISTS       BusinessCode = "E1000"

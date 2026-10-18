@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
 	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
 	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
 	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
@@ -62,6 +63,30 @@ func (s *SignUpUseCaseTestSuite) TestExecute() {
 		s.pw.AssertExpectations(s.T())
 	})
 
+	s.Run("should normalise the email before checking existence and saving", func() {
+		hashed := fixtures.AuthBHashedPassword
+
+		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthBEmail).
+			Return(fixtures.AuthBBoolPtr(false), nil)
+		s.pw.On("Hash", fixtures.AuthBPassword).Return(&hashed, nil)
+		s.gw.On(
+			"SaveUser", mock.Anything,
+			mock.MatchedBy(func(u user.User) bool { return u.Email == fixtures.AuthBEmail }),
+			mock.AnythingOfType("user.ConfirmationCode"),
+		).Return(nil)
+		s.gw.On("SendConfirmationEmail", mock.Anything, mock.Anything, mock.Anything).
+			Return(nil)
+
+		uc := auth.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
+
+		_, err := uc.Execute(
+			context.Background(), fixtures.AuthBSignUpInputWithMixedCaseEmail(),
+		)
+
+		s.Require().NoError(err)
+		s.gw.AssertExpectations(s.T())
+	})
+
 	s.Run("should still create the user even when sending the confirmation email fails", func() {
 		hashed := fixtures.AuthBHashedPassword
 
@@ -99,6 +124,51 @@ func (s *SignUpUseCaseTestSuite) TestExecute() {
 		s.Equal(apperror.BE1000_USER_ALREADY_EXISTS, *appErr.BusinessCode())
 		s.pw.AssertNotCalled(s.T(), "Hash", mock.Anything)
 		s.gw.AssertNotCalled(s.T(), "SaveUser", mock.Anything, mock.Anything, mock.Anything)
+	})
+
+	s.Run("should return a conflict when the email only differs by casing", func() {
+		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthBEmail).
+			Return(fixtures.AuthBBoolPtr(true), nil)
+
+		uc := auth.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
+
+		_, err := uc.Execute(
+			context.Background(), fixtures.AuthBSignUpInputWithMixedCaseEmail(),
+		)
+
+		var appErr apperror.AppError
+		s.Require().ErrorAs(err, &appErr)
+		s.Equal(apperror.ConflictKind, appErr.Kind())
+		s.Require().NotNil(appErr.BusinessCode())
+		s.Equal(apperror.BE1000_USER_ALREADY_EXISTS, *appErr.BusinessCode())
+	})
+
+	s.Run("should reject invalid raw passwords before hashing", func() {
+		for _, pw := range []string{
+			fixtures.AuthBShortPassword, "        ", fixtures.AuthBLongPassword(),
+		} {
+			s.SetupTest()
+			s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthBEmail).
+				Return(fixtures.AuthBBoolPtr(false), nil)
+
+			uc := auth.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
+
+			created, err := uc.Execute(
+				context.Background(), fixtures.AuthBSignUpInputWithPassword(pw),
+			)
+
+			s.Nil(created)
+
+			var appErr apperror.AppError
+			s.Require().ErrorAs(err, &appErr)
+			s.Equal(apperror.ValidationKind, appErr.Kind())
+			s.Require().NotNil(appErr.BusinessCode())
+			s.Equal(apperror.BE0001_INVALID_INPUT, *appErr.BusinessCode())
+			s.pw.AssertNotCalled(s.T(), "Hash", mock.Anything)
+			s.gw.AssertNotCalled(
+				s.T(), "SaveUser", mock.Anything, mock.Anything, mock.Anything,
+			)
+		}
 	})
 
 	s.Run("should propagate the error from checking if the user already exists", func() {

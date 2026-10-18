@@ -1,6 +1,7 @@
 package user_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -64,5 +65,43 @@ func (s *UserDomainTestSuite) TestCreateFromInput() {
 		_, err := user.CreateFromInput(params)
 
 		s.Require().EqualError(err, "password is required")
+	})
+}
+
+func (s *UserDomainTestSuite) TestNormalizeEmail() {
+	s.Run("should trim whitespace and lowercase the email", func() {
+		s.Equal("jane@example.com", user.NormalizeEmail("  Jane@Example.COM \n"))
+	})
+}
+
+func (s *UserDomainTestSuite) TestValidatePassword() {
+	s.Run("should accept a password within the length bounds", func() {
+		s.Require().NoError(user.ValidatePassword("secret123"))
+	})
+
+	s.Run("should accept a password of exactly the maximum byte length", func() {
+		s.Require().NoError(user.ValidatePassword(strings.Repeat("a", user.MaxPasswordBytes)))
+	})
+
+	s.Run("should reject a blank password", func() {
+		s.Require().EqualError(user.ValidatePassword("   "), "password is required")
+	})
+
+	s.Run("should reject a password shorter than the minimum", func() {
+		s.Require().EqualError(user.ValidatePassword("short"), "password is too short")
+	})
+
+	s.Run("should reject a password longer than the maximum byte length", func() {
+		s.Require().EqualError(
+			user.ValidatePassword(strings.Repeat("a", user.MaxPasswordBytes+1)),
+			"password is too long",
+		)
+	})
+
+	s.Run("should count bytes rather than runes", func() {
+		s.Require().EqualError(
+			user.ValidatePassword(strings.Repeat("é", user.MaxPasswordBytes/2+1)),
+			"password is too long",
+		)
 	})
 }

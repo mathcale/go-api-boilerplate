@@ -111,6 +111,7 @@ func (di *dependencyInjector) Inject(ctx context.Context) (*Dependencies, error)
 	globalMiddlewares := web.NewMiddlewaresResolver(
 		securityHeadersMiddleware,
 		corsMiddleware,
+		middlewares.NewBodyLimitMiddleware(middlewares.MaxRequestBodyBytes),
 		correlationIDMiddleware,
 		loggingMiddleware,
 	).Resolve()

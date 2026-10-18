@@ -46,7 +46,7 @@ func (uc *signInUseCase) Execute(
 ) (*TokenPair, error) {
 	invalidCreds := apperror.BE1010_INVALID_CREDENTIALS
 
-	target, err := uc.gateway.GetUserByEmailIncludingInactive(ctx, email)
+	target, err := uc.gateway.GetUserByEmailIncludingInactive(ctx, user.NormalizeEmail(email))
 	if err != nil {
 		return nil, err
 	}

@@ -69,6 +69,15 @@ func (uc *updatePasswordUseCase) Execute(
 		)
 	}
 
+	if pwErr := user.ValidatePassword(newPassword); pwErr != nil {
+		code := apperror.BE0001_INVALID_INPUT
+
+		return apperror.New(
+			pwErr, "invalid new password", apperror.ValidationKind,
+			apperror.UseCaseOrigin, "update_password", &code, nil,
+		)
+	}
+
 	hashed, err := uc.password.Hash(newPassword)
 	if err != nil {
 		return err

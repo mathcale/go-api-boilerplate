@@ -54,6 +54,15 @@ func (s *ResendConfirmationCodeUseCaseTestSuite) TestExecute() {
 		s.gw.AssertExpectations(s.T())
 	})
 
+	s.Run("should normalise the email before looking up the user", func() {
+		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthAEmail).
+			Return(nil, nil)
+
+		_ = s.uc.Execute(context.Background(), " Jane@Example.COM ")
+
+		s.gw.AssertExpectations(s.T())
+	})
+
 	s.Run("should log the error but still succeed when sending the email fails", func() {
 		target := fixtures.AuthAUser(uuid.New(), false)
 		log := new(mocks.Logger)

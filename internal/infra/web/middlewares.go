@@ -18,6 +18,7 @@ type middlewareHandler struct {
 type middlewareResolver struct {
 	securityHeaders middlewares.MiddlewareHandler
 	cors            middlewares.MiddlewareHandler
+	bodyLimit       middlewares.MiddlewareHandler
 	correlationID   middlewares.MiddlewareHandler
 	logging         middlewares.MiddlewareHandler
 }
@@ -25,12 +26,14 @@ type middlewareResolver struct {
 func NewMiddlewaresResolver(
 	securityHeaders middlewares.MiddlewareHandler,
 	cors middlewares.MiddlewareHandler,
+	bodyLimit middlewares.MiddlewareHandler,
 	correlationID middlewares.MiddlewareHandler,
 	logging middlewares.MiddlewareHandler,
 ) MiddlewaresResolver {
 	return &middlewareResolver{
 		securityHeaders: securityHeaders,
 		cors:            cors,
+		bodyLimit:       bodyLimit,
 		correlationID:   correlationID,
 		logging:         logging,
 	}
@@ -45,6 +48,10 @@ func (mr *middlewareResolver) Resolve() []middlewareHandler {
 		{
 			name:        "cors",
 			handlerFunc: mr.cors.Handler,
+		},
+		{
+			name:        "body_limit",
+			handlerFunc: mr.bodyLimit.Handler,
 		},
 		{
 			name:        "correlation_id",

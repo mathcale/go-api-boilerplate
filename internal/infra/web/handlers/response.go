@@ -112,6 +112,8 @@ func kindToStatus(kind apperror.Kind) int {
 		return http.StatusNotFound
 	case apperror.ConflictKind:
 		return http.StatusConflict
+	case apperror.PayloadTooLargeKind:
+		return http.StatusRequestEntityTooLarge
 	case apperror.TooManyRequests:
 		return http.StatusTooManyRequests
 	default:
