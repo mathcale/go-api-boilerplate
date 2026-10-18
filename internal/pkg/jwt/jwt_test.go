@@ -2,6 +2,7 @@ package jwt_test
 
 import (
 	"testing"
+	"time"
 
 	jwtlib "github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/suite"
@@ -107,6 +108,31 @@ func (s *JWTAuthTestSuite) TestVerifyAccessToken() {
 		_, err = s.auth.VerifyAccessToken(tokenStr)
 
 		s.Require().ErrorIs(err, jwtlib.ErrTokenInvalidAudience)
+	})
+
+	s.Run("should reject a token with an invalid iat claim", func() {
+		claims := fixtures.DomainPkgClaims()
+		claims["iat"] = "not-a-timestamp"
+		claims["exp"] = time.Now().Add(time.Hour).Unix()
+
+		tokenStr, err := fixtures.DomainPkgSignAccessClaims(claims)
+		s.Require().NoError(err)
+
+		_, err = s.auth.VerifyAccessToken(tokenStr)
+
+		s.Require().Error(err)
+	})
+
+	s.Run("should reject a token with an invalid exp claim", func() {
+		claims := fixtures.DomainPkgClaims()
+		claims["exp"] = "not-a-timestamp"
+
+		tokenStr, err := fixtures.DomainPkgSignAccessClaims(claims)
+		s.Require().NoError(err)
+
+		_, err = s.auth.VerifyAccessToken(tokenStr)
+
+		s.Require().Error(err)
 	})
 }
 
