@@ -43,11 +43,7 @@ Access tokens are short-lived (`ACCESS_TOKEN_LIFETIME_MINUTES`, 15 by default). 
 
 Email delivery is controlled by `MAILER_PROVIDER`:
 
-- `fake` (default, local development only): emails are not sent. Rejected when
-  `ENVIRONMENT=production`.
-- `smtp`: sends through an SMTP server over an encrypted connection. Requires `SMTP_HOST` and
-  `SMTP_PORT`; `SMTP_USERNAME`/`SMTP_PASSWORD` enable PLAIN authentication, and `SMTP_TLS_MODE` is
-  `starttls` (default, e.g. port 587) or `implicit` (e.g. port 465).
+- `fake` (default): emails are not sent. Add your own provider before going to production.
 
 Rate limiting is keyed by client IP (IPv6 clients by their /64). By default only the TCP peer
 address is used. When running behind a reverse proxy or load balancer, set `TRUSTED_PROXIES` to a

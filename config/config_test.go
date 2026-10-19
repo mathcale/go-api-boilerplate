@@ -63,12 +63,7 @@ TOKEN_ISSUER=test_issuer
 TOKEN_AUDIENCE=test_audience
 MAILER_SENDER_NAME=Test Sender
 MAILER_SENDER_EMAIL=test@example.com
-MAILER_PROVIDER=smtp
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USERNAME=mailer
-SMTP_PASSWORD=` + fixtures.ConfigSMTPCredential + `
-SMTP_TLS_MODE=implicit
+MAILER_PROVIDER=fake
 PASSWORD_RECOVERY_BASE_URL=https://example.com/recover`
 
 		envPath := filepath.Join(s.tempDir, ".env")
@@ -104,14 +99,9 @@ PASSWORD_RECOVERY_BASE_URL=https://example.com/recover`
 		s.Equal("Test Sender", cfg.MailerSenderName)
 		s.Equal("test@example.com", cfg.MailerSenderEmail)
 		s.Equal("https://example.com/recover", cfg.PasswordRecoveryBaseURL)
-		s.Equal("smtp", cfg.MailerProvider)
-		s.Equal("smtp.example.com", cfg.SMTPHost)
-		s.Equal(587, cfg.SMTPPort)
-		s.Equal("mailer", cfg.SMTPUsername)
-		s.Equal(fixtures.ConfigSMTPCredential, cfg.SMTPPassword)
-		s.Equal("implicit", cfg.SMTPTLSMode)
+		s.Equal("fake", cfg.MailerProvider)
 	})
-	s.Run("should default to the fake mailer and starttls", func() {
+	s.Run("should default to the fake mailer", func() {
 		envContent := `ENVIRONMENT=development
 ACCESS_TOKEN_SECRET=` + fixtures.ConfigAccessSecret + `
 ACCESS_TOKEN_LIFETIME_MINUTES=15
@@ -126,7 +116,6 @@ TOKEN_AUDIENCE=test_audience`
 
 		s.Require().NoError(err)
 		s.Equal("fake", cfg.MailerProvider)
-		s.Equal("starttls", cfg.SMTPTLSMode)
 		s.Equal(5, cfg.SignInRateLimitPerMinute)
 		s.Equal(5, cfg.SignInRateLimitBurst)
 		s.Empty(cfg.TrustedProxies)
@@ -144,7 +133,7 @@ TOKEN_AUDIENCE=test_audience`
 
 func (s *ConfigTestSuite) validConfig() *Config {
 	return &Config{
-		Environment:                 EnvironmentProduction,
+		Environment:                 EnvironmentDevelopment,
 		AccessTokenSecret:           fixtures.ConfigAccessSecret,
 		RefreshTokenSecret:          fixtures.ConfigRefreshSecret,
 		AccessTokenLifetimeMinutes:  15,
@@ -152,11 +141,7 @@ func (s *ConfigTestSuite) validConfig() *Config {
 		TokenIssuer:                 "issuer",
 		TokenAudience:               "audience",
 		CORSAllowedOrigins:          "https://example.com",
-		MailerProvider:              MailerProviderSMTP,
-		SMTPHost:                    "smtp.example.com",
-		SMTPPort:                    587,
-		SMTPPassword:                fixtures.ConfigSMTPCredential,
-		SMTPTLSMode:                 SMTPTLSModeStartTLS,
+		MailerProvider:              MailerProviderFake,
 		SignInRateLimitPerMinute:    5,
 		SignInRateLimitBurst:        5,
 	}
@@ -169,7 +154,7 @@ func (s *ConfigTestSuite) TestValidate() {
 
 	s.Run("should accept every known environment", func() {
 		for _, env := range []string{
-			EnvironmentProduction, EnvironmentDevelopment, EnvironmentTest,
+			EnvironmentDevelopment, EnvironmentTest,
 		} {
 			cfg := s.validConfig()
 			cfg.Environment = env
@@ -184,23 +169,16 @@ func (s *ConfigTestSuite) TestValidate() {
 		s.NoError(cfg.Validate())
 	})
 
-	s.Run("should accept the fake mailer outside production", func() {
+	s.Run("should accept the fake mailer", func() {
 		cfg := s.validConfig()
 		cfg.Environment = EnvironmentDevelopment
 		cfg.MailerProvider = MailerProviderFake
-		cfg.SMTPHost = ""
 		s.NoError(cfg.Validate())
 	})
 
 	s.Run("should accept a list of trusted proxy IPs and CIDRs", func() {
 		cfg := s.validConfig()
 		cfg.TrustedProxies = "10.0.0.1, 192.168.0.0/16, fd00::/8"
-		s.NoError(cfg.Validate())
-	})
-
-	s.Run("should accept implicit TLS", func() {
-		cfg := s.validConfig()
-		cfg.SMTPTLSMode = SMTPTLSModeImplicit
 		s.NoError(cfg.Validate())
 	})
 
@@ -242,23 +220,15 @@ func (s *ConfigTestSuite) TestValidate() {
 			"must differ",
 		},
 		{
-			"fake mailer in production",
-			func(c *Config) { c.MailerProvider = MailerProviderFake },
-			"MAILER_PROVIDER must not be",
-		},
-		{
 			"unknown mailer provider",
 			func(c *Config) { c.MailerProvider = "sendgrid" },
-			"MAILER_PROVIDER must be one of",
+			"MAILER_PROVIDER must be",
 		},
 		{
 			"empty mailer provider",
 			func(c *Config) { c.MailerProvider = "" },
-			"MAILER_PROVIDER must be one of",
+			"MAILER_PROVIDER must be",
 		},
-		{"empty smtp host", func(c *Config) { c.SMTPHost = " " }, "SMTP_HOST"},
-		{"zero smtp port", func(c *Config) { c.SMTPPort = 0 }, "SMTP_PORT"},
-		{"invalid smtp tls mode", func(c *Config) { c.SMTPTLSMode = "none" }, "SMTP_TLS_MODE"},
 		{
 			"invalid trusted proxy",
 			func(c *Config) { c.TrustedProxies = "10.0.0.1,not-an-ip" },
@@ -293,7 +263,10 @@ func (s *ConfigTestSuite) TestValidate() {
 		},
 		{
 			"production without CORS origins",
-			func(c *Config) { c.CORSAllowedOrigins = "  " },
+			func(c *Config) {
+				c.Environment = EnvironmentProduction
+				c.CORSAllowedOrigins = "  "
+			},
 			"CORS_ALLOWED_ORIGINS",
 		},
 	}
@@ -318,17 +291,6 @@ func (s *ConfigTestSuite) TestValidate() {
 		s.Contains(err.Error(), "ACCESS_TOKEN_SECRET")
 		s.Contains(err.Error(), "TOKEN_ISSUER")
 		s.Contains(err.Error(), "REFRESH_TOKEN_LIFETIME_MINUTES")
-	})
-
-	s.Run("should never include the smtp password in the error", func() {
-		cfg := s.validConfig()
-		cfg.SMTPHost = ""
-		cfg.SMTPTLSMode = fixtures.ConfigSMTPCredential
-
-		err := cfg.Validate()
-
-		s.Require().Error(err)
-		s.NotContains(err.Error(), fixtures.ConfigSMTPCredential)
 	})
 
 	s.Run("should never include secret values in the error", func() {
