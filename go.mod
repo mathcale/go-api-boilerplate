@@ -1,4 +1,4 @@
-module github.com/mathcale/go-api-boilerplate
+module go-api-boilerplate
 
 go 1.27
 

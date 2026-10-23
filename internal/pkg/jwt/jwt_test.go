@@ -7,8 +7,8 @@ import (
 	jwtlib "github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
-	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
+	"go-api-boilerplate/internal/pkg/jwt"
+	"go-api-boilerplate/internal/tests/fixtures"
 )
 
 type JWTAuthTestSuite struct {

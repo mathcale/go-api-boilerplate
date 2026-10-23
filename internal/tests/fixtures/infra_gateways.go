@@ -6,9 +6,9 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
 
-	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/database/models"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/email"
+	"go-api-boilerplate/internal/domain/user"
+	"go-api-boilerplate/internal/infra/database/models"
+	"go-api-boilerplate/internal/infra/email"
 )
 
 const (

@@ -3,7 +3,7 @@ package apierror
 import (
 	"fmt"
 
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
+	"go-api-boilerplate/internal/pkg/apperror"
 )
 
 type (

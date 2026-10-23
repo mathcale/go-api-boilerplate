@@ -8,11 +8,11 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/config"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/ratelimit"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/clientip"
-	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
+	"go-api-boilerplate/config"
+	"go-api-boilerplate/internal/infra/ratelimit"
+	"go-api-boilerplate/internal/infra/web/handlers"
+	"go-api-boilerplate/internal/pkg/clientip"
+	"go-api-boilerplate/internal/tests/mocks"
 )
 
 type RateLimitMiddlewareTestSuite struct {

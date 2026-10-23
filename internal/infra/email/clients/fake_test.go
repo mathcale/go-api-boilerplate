@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
-	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
+	"go-api-boilerplate/internal/tests/fixtures"
+	"go-api-boilerplate/internal/tests/mocks"
 )
 
 type FakeClientTestSuite struct {

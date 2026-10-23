@@ -7,9 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/mathcale/go-api-boilerplate/config"
-	_ "github.com/mathcale/go-api-boilerplate/docs"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/di"
+	"go-api-boilerplate/config"
+	_ "go-api-boilerplate/docs"
+	"go-api-boilerplate/internal/pkg/di"
 )
 
 // @title						Go API Boilerplate

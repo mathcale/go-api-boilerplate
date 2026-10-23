@@ -1,8 +1,8 @@
 package mappers
 
 import (
-	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/database/models"
+	"go-api-boilerplate/internal/domain/user"
+	"go-api-boilerplate/internal/infra/database/models"
 )
 
 func RefreshTokenModelToDomain(m models.RefreshToken) user.RefreshToken {

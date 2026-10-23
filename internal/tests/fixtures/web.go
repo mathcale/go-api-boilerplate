@@ -6,10 +6,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers/dto"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
-	"github.com/mathcale/go-api-boilerplate/internal/usecases/auth"
+	"go-api-boilerplate/internal/domain/user"
+	"go-api-boilerplate/internal/infra/web/handlers/dto"
+	"go-api-boilerplate/internal/pkg/jwt"
+	"go-api-boilerplate/internal/usecases/auth"
 )
 
 const (

@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
-	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
+	"go-api-boilerplate/internal/domain/user"
+	"go-api-boilerplate/internal/tests/fixtures"
 )
 
 type MappersConfirmationCodeTestSuite struct {

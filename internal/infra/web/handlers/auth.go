@@ -3,10 +3,10 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers/dto"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/webcontext"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
-	"github.com/mathcale/go-api-boilerplate/internal/usecases/auth"
+	"go-api-boilerplate/internal/infra/web/handlers/dto"
+	"go-api-boilerplate/internal/infra/web/webcontext"
+	"go-api-boilerplate/internal/pkg/apperror"
+	"go-api-boilerplate/internal/usecases/auth"
 )
 
 type (

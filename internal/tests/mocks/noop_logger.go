@@ -3,7 +3,7 @@ package mocks
 import (
 	"github.com/rs/zerolog"
 
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
+	"go-api-boilerplate/internal/pkg/logger"
 )
 
 type NoopLogger struct{}

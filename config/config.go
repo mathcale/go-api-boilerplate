@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/clientip"
+	"go-api-boilerplate/internal/pkg/clientip"
 )
 
 const (

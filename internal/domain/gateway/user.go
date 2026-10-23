@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
+	"go-api-boilerplate/internal/domain/user"
 )
 
 type User interface {

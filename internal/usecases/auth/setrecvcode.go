@@ -3,9 +3,9 @@ package auth
 import (
 	"context"
 
-	"github.com/mathcale/go-api-boilerplate/internal/domain/gateway"
-	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
+	"go-api-boilerplate/internal/domain/gateway"
+	"go-api-boilerplate/internal/domain/user"
+	"go-api-boilerplate/internal/pkg/logger"
 )
 
 type (

@@ -3,11 +3,11 @@ package auth
 import (
 	"context"
 
-	"github.com/mathcale/go-api-boilerplate/internal/domain/gateway"
-	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/bcrypt"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
+	"go-api-boilerplate/internal/domain/gateway"
+	"go-api-boilerplate/internal/domain/user"
+	"go-api-boilerplate/internal/pkg/apperror"
+	"go-api-boilerplate/internal/pkg/bcrypt"
+	"go-api-boilerplate/internal/pkg/logger"
 )
 
 type (

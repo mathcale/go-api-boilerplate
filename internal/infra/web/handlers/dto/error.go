@@ -1,6 +1,6 @@
 package dto
 
-import "github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
+import "go-api-boilerplate/internal/pkg/apperror"
 
 type ErrorOutput struct {
 	Message string                 `json:"message"`

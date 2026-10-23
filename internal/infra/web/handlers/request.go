@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
+	"go-api-boilerplate/internal/pkg/apperror"
 )
 
 var requestValidator = newRequestValidator()

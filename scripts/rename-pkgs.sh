@@ -1,5 +1,15 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-read -p "==> Enter your project's name (e.g. mathcale/go-api-boilerplate): " -r PROJECT_NAME
+OLD_NAME="go-api-boilerplate"
+OLD_DISPLAY_NAME="Go API Boilerplate"
 
-grep --exclude=rename-pkgs.sh --exclude-dir=.git "mathcale/go-api-boilerplate" . -lr | xargs sed -i "s|mathcale/go-api-boilerplate|$PROJECT_NAME|g"
+read -p "==> Enter your project's module name (e.g. my-api): " -r PROJECT_NAME
+read -p "==> Enter your project's display name (e.g. My API): " -r DISPLAY_NAME
+
+grep -rlE "$OLD_NAME|$OLD_DISPLAY_NAME" . \
+  --exclude-dir=.git \
+  --exclude=rename-pkgs.sh \
+  --exclude=README.md |
+  xargs sed -i \
+    -e "s|$OLD_NAME|$PROJECT_NAME|g" \
+    -e "s|$OLD_DISPLAY_NAME|$DISPLAY_NAME|g"

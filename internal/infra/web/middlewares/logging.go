@@ -7,8 +7,8 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers/dto"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
+	"go-api-boilerplate/internal/infra/web/handlers/dto"
+	"go-api-boilerplate/internal/pkg/logger"
 )
 
 type loggingMiddleware struct {

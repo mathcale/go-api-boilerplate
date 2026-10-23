@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/database/models"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
+	"go-api-boilerplate/internal/infra/database/models"
+	"go-api-boilerplate/internal/pkg/apperror"
 )
 
 const (

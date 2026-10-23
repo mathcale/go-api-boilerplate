@@ -9,12 +9,12 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/config"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers/dto"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/webcontext"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
-	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
+	"go-api-boilerplate/config"
+	"go-api-boilerplate/internal/infra/web/handlers"
+	"go-api-boilerplate/internal/infra/web/handlers/dto"
+	"go-api-boilerplate/internal/infra/web/webcontext"
+	"go-api-boilerplate/internal/pkg/apperror"
+	"go-api-boilerplate/internal/tests/mocks"
 )
 
 type RequireRoleMiddlewareTestSuite struct {

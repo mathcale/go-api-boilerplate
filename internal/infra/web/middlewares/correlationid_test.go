@@ -11,8 +11,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/webcontext"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
+	"go-api-boilerplate/internal/infra/web/webcontext"
+	"go-api-boilerplate/internal/pkg/logger"
 )
 
 type CorrelationIDMiddlewareTestSuite struct {

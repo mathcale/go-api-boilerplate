@@ -7,8 +7,8 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/config"
-	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
+	"go-api-boilerplate/config"
+	"go-api-boilerplate/internal/tests/mocks"
 )
 
 type PingHandlerTestSuite struct {

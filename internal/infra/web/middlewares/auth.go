@@ -6,11 +6,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/mathcale/go-api-boilerplate/internal/domain/gateway"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/webcontext"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
+	"go-api-boilerplate/internal/domain/gateway"
+	"go-api-boilerplate/internal/infra/web/handlers"
+	"go-api-boilerplate/internal/infra/web/webcontext"
+	"go-api-boilerplate/internal/pkg/apperror"
+	"go-api-boilerplate/internal/pkg/jwt"
 )
 
 type AuthMiddleware interface {

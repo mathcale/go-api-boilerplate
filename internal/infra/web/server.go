@@ -9,9 +9,9 @@ import (
 	"github.com/justinas/alice"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/middlewares"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
+	"go-api-boilerplate/internal/infra/web/handlers"
+	"go-api-boilerplate/internal/infra/web/middlewares"
+	"go-api-boilerplate/internal/pkg/logger"
 )
 
 const (

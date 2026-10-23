@@ -12,7 +12,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
+	"go-api-boilerplate/internal/tests/fixtures"
 )
 
 type UserRepositoryTestSuite struct {

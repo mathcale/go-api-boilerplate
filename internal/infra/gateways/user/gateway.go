@@ -7,10 +7,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/mathcale/go-api-boilerplate/internal/domain/gateway"
-	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/email"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/mappers"
+	"go-api-boilerplate/internal/domain/gateway"
+	"go-api-boilerplate/internal/domain/user"
+	"go-api-boilerplate/internal/infra/email"
+	"go-api-boilerplate/internal/pkg/mappers"
 )
 
 type userGateway struct {

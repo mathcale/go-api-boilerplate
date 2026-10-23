@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
+	"go-api-boilerplate/internal/pkg/apperror"
 )
 
 const MaxPasswordBytes = 72

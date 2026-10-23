@@ -3,7 +3,7 @@ package web
 import (
 	"net/http"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/middlewares"
+	"go-api-boilerplate/internal/infra/web/middlewares"
 )
 
 type MiddlewaresResolver interface {

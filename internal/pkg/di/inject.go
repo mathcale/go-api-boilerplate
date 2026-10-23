@@ -6,19 +6,19 @@ import (
 
 	"github.com/jmoiron/sqlx"
 
-	"github.com/mathcale/go-api-boilerplate/config"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/database"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/email/clients"
-	usergateway "github.com/mathcale/go-api-boilerplate/internal/infra/gateways/user"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/ratelimit"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/middlewares"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/bcrypt"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/clientip"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
-	"github.com/mathcale/go-api-boilerplate/internal/usecases/auth"
+	"go-api-boilerplate/config"
+	"go-api-boilerplate/internal/infra/database"
+	"go-api-boilerplate/internal/infra/email/clients"
+	usergateway "go-api-boilerplate/internal/infra/gateways/user"
+	"go-api-boilerplate/internal/infra/ratelimit"
+	"go-api-boilerplate/internal/infra/web"
+	"go-api-boilerplate/internal/infra/web/handlers"
+	"go-api-boilerplate/internal/infra/web/middlewares"
+	"go-api-boilerplate/internal/pkg/bcrypt"
+	"go-api-boilerplate/internal/pkg/clientip"
+	"go-api-boilerplate/internal/pkg/jwt"
+	"go-api-boilerplate/internal/pkg/logger"
+	"go-api-boilerplate/internal/usecases/auth"
 )
 
 type (

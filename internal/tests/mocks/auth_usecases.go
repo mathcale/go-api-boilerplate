@@ -6,8 +6,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
-	"github.com/mathcale/go-api-boilerplate/internal/usecases/auth"
+	"go-api-boilerplate/internal/domain/user"
+	"go-api-boilerplate/internal/usecases/auth"
 )
 
 type SignInUseCase struct {

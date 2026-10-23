@@ -8,11 +8,11 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
-	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
-	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
-	"github.com/mathcale/go-api-boilerplate/internal/usecases/auth"
+	"go-api-boilerplate/internal/domain/user"
+	"go-api-boilerplate/internal/pkg/apperror"
+	"go-api-boilerplate/internal/tests/fixtures"
+	"go-api-boilerplate/internal/tests/mocks"
+	"go-api-boilerplate/internal/usecases/auth"
 )
 
 type ValidateRecoveryCodeUseCaseTestSuite struct {

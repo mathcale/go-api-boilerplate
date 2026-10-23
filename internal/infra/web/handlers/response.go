@@ -5,10 +5,10 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/mathcale/go-api-boilerplate/config"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers/dto"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
+	"go-api-boilerplate/config"
+	"go-api-boilerplate/internal/infra/web/handlers/dto"
+	"go-api-boilerplate/internal/pkg/apperror"
+	"go-api-boilerplate/internal/pkg/logger"
 )
 
 type (

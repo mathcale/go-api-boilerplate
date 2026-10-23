@@ -3,7 +3,7 @@ package web
 import (
 	"net/http"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
+	"go-api-boilerplate/internal/infra/web/handlers"
 )
 
 const (

@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/database/models"
+	"go-api-boilerplate/internal/infra/database/models"
 )
 
 type UserRepository struct {

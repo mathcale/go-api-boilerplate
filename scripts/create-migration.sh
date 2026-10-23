@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if ! command -v migrate 2>&1 >/dev/null; then
   echo "'migrate' could not be found, please install it by running 'make install-deps'"

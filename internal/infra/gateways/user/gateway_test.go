@@ -9,10 +9,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/internal/domain/gateway"
-	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
-	"github.com/mathcale/go-api-boilerplate/internal/tests/fixtures"
-	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
+	"go-api-boilerplate/internal/domain/gateway"
+	"go-api-boilerplate/internal/domain/user"
+	"go-api-boilerplate/internal/tests/fixtures"
+	"go-api-boilerplate/internal/tests/mocks"
 )
 
 type UserGatewayTestSuite struct {

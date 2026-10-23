@@ -7,10 +7,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 
-	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/database/models"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
-	"github.com/mathcale/go-api-boilerplate/internal/tests/mocks"
+	"go-api-boilerplate/internal/domain/user"
+	"go-api-boilerplate/internal/infra/database/models"
+	"go-api-boilerplate/internal/pkg/jwt"
+	"go-api-boilerplate/internal/tests/mocks"
 )
 
 const (

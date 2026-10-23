@@ -1,6 +1,6 @@
 package auth
 
-import "github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
+import "go-api-boilerplate/internal/pkg/jwt"
 
 const logFieldUserID = "user_id"
 

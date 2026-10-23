@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
+	"go-api-boilerplate/internal/pkg/apperror"
 )
 
 type PasswordTestSuite struct {

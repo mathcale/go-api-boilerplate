@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/mathcale/go-api-boilerplate/internal/domain/user"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/jwt"
+	"go-api-boilerplate/internal/domain/user"
+	"go-api-boilerplate/internal/pkg/jwt"
 )
 
 const AuthAEmail = "jane@example.com"

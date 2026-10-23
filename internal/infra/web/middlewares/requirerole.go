@@ -3,9 +3,9 @@ package middlewares
 import (
 	"net/http"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers"
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/webcontext"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
+	"go-api-boilerplate/internal/infra/web/handlers"
+	"go-api-boilerplate/internal/infra/web/webcontext"
+	"go-api-boilerplate/internal/pkg/apperror"
 )
 
 type (

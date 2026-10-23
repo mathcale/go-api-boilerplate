@@ -96,7 +96,7 @@ formatters:
       sections:
         - standard                                         # Standard library packages
         - default                                          # Third-party packages
-        - prefix(github.com/mathcale/go-api-boilerplate)   # Your project packages
+        - prefix(go-api-boilerplate) # Your project packages
 
 output:
   formats:

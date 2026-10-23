@@ -1,8 +1,8 @@
 package clients
 
 import (
-	"github.com/mathcale/go-api-boilerplate/internal/infra/email"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
+	"go-api-boilerplate/internal/infra/email"
+	"go-api-boilerplate/internal/pkg/logger"
 )
 
 type fake struct {

@@ -3,7 +3,7 @@ package mocks
 import (
 	"github.com/stretchr/testify/mock"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/email"
+	"go-api-boilerplate/internal/infra/email"
 )
 
 type EmailClient struct {
