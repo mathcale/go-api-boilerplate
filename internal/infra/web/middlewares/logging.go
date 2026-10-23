@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"runtime/debug"
 	"time"
 
 	"github.com/mathcale/go-api-boilerplate/internal/infra/web/handlers/dto"
@@ -46,6 +47,7 @@ func (m *loggingMiddleware) Handler(next http.Handler) http.Handler {
 					fmt.Errorf("panic: %v", panicVal),
 					"method", r.Method,
 					"url", r.URL.RequestURI(),
+					"stack", string(debug.Stack()),
 				)
 
 				if !lrw.headerWritten {

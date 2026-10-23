@@ -68,13 +68,27 @@ func (h *response) RespondPlainText(
 
 func (h *response) RespondWithError(w http.ResponseWriter, err error, headers map[string]string) {
 	status := http.StatusInternalServerError
-	output := dto.ErrorOutput{Message: "internal server error"}
+	output := dto.ErrorOutput{
+		Message: "internal server error",
+	}
+	logFields := []any{}
 
 	var appErr apperror.AppError
 	if errors.As(err, &appErr) {
 		status = kindToStatus(appErr.Kind())
 		output.Message = messageForStatus(status)
 		output.Code = appErr.BusinessCode()
+
+		logFields = append(
+			logFields,
+			"kind", appErr.Kind(),
+			"origin", appErr.Origin(),
+			"origin_name", appErr.OriginName(),
+		)
+
+		if bc := appErr.BusinessCode(); bc != nil {
+			logFields = append(logFields, "business_code", *bc)
+		}
 
 		if h.exposeCause() {
 			output.Cause = appErr.Error()
@@ -84,7 +98,7 @@ func (h *response) RespondWithError(w http.ResponseWriter, err error, headers ma
 	}
 
 	if status >= http.StatusInternalServerError {
-		h.logger.Error("request failed", err, "status", status)
+		h.logger.Error("request failed", err, append(logFields, "status", status)...)
 	}
 
 	setHeaders(w, headers)

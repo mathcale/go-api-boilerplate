@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/pkgerrors"
 )
 
 type (
@@ -48,8 +47,6 @@ func NewWithWriter(level string, w io.Writer) Logger {
 }
 
 func newWithWriter(level string, w io.Writer) Logger {
-	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
-
 	instance := zerolog.New(w).Level(toZerologLevel(level)).With().Timestamp().Logger()
 
 	return &logger{
@@ -109,7 +106,7 @@ func (l *logger) Warn(msg string, keysAndValues ...any) {
 }
 
 func (l *logger) Error(msg string, err error, keysAndValues ...any) {
-	l.instance.Error().Fields(fields(keysAndValues)).Err(err).Stack().Msg(msg)
+	l.instance.Error().Fields(fields(keysAndValues)).Err(err).Msg(msg)
 }
 
 func (l *logger) Debug(msg string, keysAndValues ...any) {

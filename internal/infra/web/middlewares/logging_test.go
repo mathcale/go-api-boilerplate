@@ -118,6 +118,7 @@ func (s *LoggingMiddlewareTestSuite) TestHandler() {
 		s.Equal("error", entries[0]["level"])
 		s.Equal("panic: kaboom", entries[0]["error"])
 		s.Equal("p1", entries[0]["correlation_id"])
+		s.Contains(entries[0]["stack"], "logging_test.go")
 		s.EqualValues(http.StatusInternalServerError, entries[1]["status_code"])
 	})
 
