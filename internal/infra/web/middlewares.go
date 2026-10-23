@@ -3,7 +3,7 @@ package web
 import (
 	"net/http"
 
-	"github.com/mathcale/go-api-boilerplate/internal/infra/web/middlewares"
+	"go-api-boilerplate/internal/infra/web/middlewares"
 )
 
 type MiddlewaresResolver interface {
@@ -16,22 +16,43 @@ type middlewareHandler struct {
 }
 
 type middlewareResolver struct {
-	correlationID middlewares.MiddlewareHandler
-	logging       middlewares.MiddlewareHandler
+	securityHeaders middlewares.MiddlewareHandler
+	cors            middlewares.MiddlewareHandler
+	bodyLimit       middlewares.MiddlewareHandler
+	correlationID   middlewares.MiddlewareHandler
+	logging         middlewares.MiddlewareHandler
 }
 
 func NewMiddlewaresResolver(
+	securityHeaders middlewares.MiddlewareHandler,
+	cors middlewares.MiddlewareHandler,
+	bodyLimit middlewares.MiddlewareHandler,
 	correlationID middlewares.MiddlewareHandler,
 	logging middlewares.MiddlewareHandler,
 ) MiddlewaresResolver {
 	return &middlewareResolver{
-		correlationID: correlationID,
-		logging:       logging,
+		securityHeaders: securityHeaders,
+		cors:            cors,
+		bodyLimit:       bodyLimit,
+		correlationID:   correlationID,
+		logging:         logging,
 	}
 }
 
 func (mr *middlewareResolver) Resolve() []middlewareHandler {
 	return []middlewareHandler{
+		{
+			name:        "security_headers",
+			handlerFunc: mr.securityHeaders.Handler,
+		},
+		{
+			name:        "cors",
+			handlerFunc: mr.cors.Handler,
+		},
+		{
+			name:        "body_limit",
+			handlerFunc: mr.bodyLimit.Handler,
+		},
 		{
 			name:        "correlation_id",
 			handlerFunc: mr.correlationID.Handler,

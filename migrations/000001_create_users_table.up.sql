@@ -1,0 +1,16 @@
+CREATE TABLE IF NOT EXISTS users (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  name VARCHAR(255) NOT NULL,
+  surname VARCHAR(255) NOT NULL,
+  avatar_url TEXT NULL,
+  email VARCHAR(255) NOT NULL,
+  password CHAR(60) NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT FALSE,
+  roles TEXT[] NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+  CONSTRAINT users_pk PRIMARY KEY (id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON users (email);

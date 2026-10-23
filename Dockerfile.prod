@@ -1,4 +1,4 @@
-FROM golang:1.24.5-alpine3.22 AS builder
+FROM golang:1.27-alpine AS builder
 
 ARG BUILD_ID
 LABEL stage=builder
@@ -12,9 +12,11 @@ RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s -buildid=" -trimpath -o ./b
 
 # ----------------------------
 
-FROM gcr.io/distroless/static-debian11
+FROM gcr.io/distroless/static-debian12:nonroot
 
 WORKDIR /app
 COPY --from=builder /app/bin/api .
+
+USER nonroot:nonroot
 
 ENTRYPOINT [ "./api" ]

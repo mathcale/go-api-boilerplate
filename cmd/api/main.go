@@ -1,36 +1,44 @@
 package main
 
 import (
+	"context"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
-	"github.com/mathcale/go-api-boilerplate/config"
-	_ "github.com/mathcale/go-api-boilerplate/docs"
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/di"
+	"go-api-boilerplate/config"
+	_ "go-api-boilerplate/docs"
+	"go-api-boilerplate/internal/pkg/di"
 )
 
-//	@title			go-api-boilerplate
-//	@version		1.0
-//	@description	A slightly opinionated HTTP API boilerplate with the Go programming language.
-
-//	@license.name	MIT License
-//	@license.url	https://github.com/mathcale/go-api-boilerplate/blob/main/LICENSE
-
-// @externalDocs.description	OpenAPI v2
-// @externalDocs.url			https://swagger.io/specification/v2/
+// @title						Go API Boilerplate
+// @version					1.0
+// @description				A clean-architecture Go REST API boilerplate with JWT auth.
+// @BasePath					/
+// @securityDefinitions.apikey	BearerAuth
+// @in							header
+// @name						Authorization
+// @description				Type "Bearer" followed by a space and the access token.
 func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+
 	cfg, err := config.Load(".")
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	inj := di.NewDependencyInjector(cfg)
-
-	deps, err := inj.Inject()
+	deps, err := di.NewDependencyInjector(cfg).Inject(ctx)
 	if err != nil {
 		log.Fatalf("Failed to inject dependencies: %v", err)
 	}
 
-	if err := deps.WebServer.Start(); err != nil {
-		log.Fatalf("Failed to start web server: %v", err)
+	serveErr := deps.WebServer.Start(ctx)
+
+	deps.Close()
+	stop()
+
+	if serveErr != nil {
+		log.Fatalf("Web server stopped: %v", serveErr)
 	}
 }

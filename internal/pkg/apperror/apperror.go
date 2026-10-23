@@ -1,8 +1,11 @@
 package apperror
 
+import "fmt"
+
 type AppError interface {
-	Error() string
+	error
 	OriginalError() error
+	Unwrap() error
 	Kind() Kind
 	Origin() Origin
 	OriginName() string
@@ -42,13 +45,25 @@ func New(
 
 func (a *appError) Error() string {
 	if a.message == "" {
-		return a.err.Error()
+		if a.err != nil {
+			return a.err.Error()
+		}
+
+		return ""
+	}
+
+	if a.err != nil {
+		return fmt.Sprintf("%s: %s", a.message, a.err.Error())
 	}
 
 	return a.message
 }
 
 func (a *appError) OriginalError() error {
+	return a.err
+}
+
+func (a *appError) Unwrap() error {
 	return a.err
 }
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [ ! -f .env ]; then
   echo "Please create .env file"
@@ -7,6 +7,13 @@ fi
 
 source .env
 
-docker exec -e PGPASSWORD=$DATABASE_PASSWORD -it go-api-boilerplate-database psql -U $DATABASE_USER -w -c "DROP DATABASE IF EXISTS $DATABASE_NAME"
+CONTAINER="go-api-boilerplate-database"
 
-docker exec -e PGPASSWORD=$DATABASE_PASSWORD -it go-api-boilerplate-database psql -U $DATABASE_USER -w -c "CREATE DATABASE $DATABASE_NAME"
+for _ in $(seq 1 30); do
+  docker exec "$CONTAINER" pg_isready -U "$DATABASE_USER" -q && break
+  sleep 1
+done
+
+docker exec -e PGPASSWORD=$DATABASE_PASSWORD "$CONTAINER" psql -U $DATABASE_USER -w -c "DROP DATABASE IF EXISTS $DATABASE_NAME"
+
+docker exec -e PGPASSWORD=$DATABASE_PASSWORD "$CONTAINER" psql -U $DATABASE_USER -w -c "CREATE DATABASE $DATABASE_NAME"

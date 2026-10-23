@@ -3,34 +3,37 @@ package mocks
 import (
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/mock"
+
+	"go-api-boilerplate/internal/pkg/logger"
 )
 
 type Logger struct {
 	mock.Mock
 }
 
-func (m *Logger) Info(msg string, tags map[string]interface{}) {
-	m.Called(msg, tags)
+func (m *Logger) Info(msg string, kv ...any) {
+	m.Called(msg, kv)
 }
 
-func (m *Logger) Warn(msg string, tags map[string]interface{}) {
-	m.Called(msg, tags)
+func (m *Logger) Warn(msg string, kv ...any) {
+	m.Called(msg, kv)
 }
 
-func (m *Logger) Error(msg string, err error, tags map[string]interface{}) {
-	m.Called(msg, err, tags)
+func (m *Logger) Error(msg string, err error, kv ...any) {
+	m.Called(msg, err, kv)
 }
 
-func (m *Logger) Debug(msg string, tags map[string]interface{}) {
-	m.Called(msg, tags)
+func (m *Logger) Debug(msg string, kv ...any) {
+	m.Called(msg, kv)
 }
 
-func (m *Logger) Trace(msg string, tags map[string]interface{}) {
-	m.Called(msg, tags)
+func (m *Logger) Trace(msg string, kv ...any) {
+	m.Called(msg, kv)
 }
 
-func (m *Logger) SetGlobalValue(key string, value any) {
-	m.Called(key, value)
+func (m *Logger) With(kv ...any) logger.Logger {
+	args := m.Called(kv)
+	return args.Get(0).(logger.Logger)
 }
 
 func (m *Logger) Instance() zerolog.Logger {

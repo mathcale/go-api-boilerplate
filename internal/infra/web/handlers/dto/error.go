@@ -1,8 +1,9 @@
 package dto
 
-import "github.com/mathcale/go-api-boilerplate/internal/pkg/apperror"
+import "go-api-boilerplate/internal/pkg/apperror"
 
 type ErrorOutput struct {
-	Code    *apperror.BusinessCode `json:"code"`
 	Message string                 `json:"message"`
+	Code    *apperror.BusinessCode `json:"code,omitempty"`
+	Cause   string                 `json:"cause,omitempty"`
 }

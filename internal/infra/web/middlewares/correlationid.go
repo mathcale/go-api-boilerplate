@@ -1,34 +1,38 @@
 package middlewares
 
 import (
-	"context"
 	"net/http"
+	"regexp"
 
-	"github.com/rs/xid"
+	"github.com/google/uuid"
 
-	"github.com/mathcale/go-api-boilerplate/internal/pkg/logger"
+	"go-api-boilerplate/internal/infra/web/webcontext"
+	"go-api-boilerplate/internal/pkg/logger"
 )
+
+const correlationIDHeader = "X-Correlation-ID"
+
+var validCorrelationID = regexp.MustCompile(`^[A-Za-z0-9._-]{1,64}$`)
 
 type correlationIDMiddleware struct {
 	logger logger.Logger
 }
 
-func NewCorrelationIDMiddleware(logger logger.Logger) MiddlewareHandler {
-	return &correlationIDMiddleware{
-		logger: logger,
-	}
+func NewCorrelationIDMiddleware(l logger.Logger) MiddlewareHandler {
+	return &correlationIDMiddleware{logger: l}
 }
 
 func (m *correlationIDMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		correlationID := xid.New().String()
+		correlationID := r.Header.Get(correlationIDHeader)
+		if !validCorrelationID.MatchString(correlationID) {
+			correlationID = uuid.NewString()
+		}
 
-		ctx := context.WithValue(r.Context(), "correlation_id", correlationID)
-		r = r.WithContext(ctx)
+		ctx := webcontext.WithCorrelationID(r.Context(), correlationID)
+		ctx = logger.WithCtx(ctx, m.logger.With("correlation_id", correlationID))
+		w.Header().Set(correlationIDHeader, correlationID)
 
-		m.logger.SetGlobalValue("correlation_id", correlationID)
-		w.Header().Add("X-Correlation-ID", correlationID)
-
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

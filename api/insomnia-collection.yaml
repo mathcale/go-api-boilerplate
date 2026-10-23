@@ -1,0 +1,336 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: Go API Boilerplate
+meta:
+  id: wrk_11674b8640aa4913b8627247d0c7ba00
+  created: 1789527584073
+  modified: 1789530000000
+  description: ""
+collection:
+  - url: "{{ _.base_url }}/ping"
+    name: Ping
+    meta:
+      id: req_6409c26065c843f0a9668dad27eb9c5f
+      created: 1789527675574
+      modified: 1789527690006
+      isPrivate: false
+      description: ""
+      sortKey: -1789527675574
+    method: GET
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - name: Auth
+    meta:
+      id: fld_394518f2fbe149dd9521eb4d317ba56c
+      created: 1789527667354
+      modified: 1789530000000
+      sortKey: -1789527667355
+      description: ""
+    children:
+      - url: "{{ _.base_url }}/v1/auth/signup"
+        name: Sign Up
+        meta:
+          id: req_a1b2c3d4e5f647a8b9c0d1e2f3a4b5c6
+          created: 1789530000001
+          modified: 1789530000001
+          isPrivate: false
+          description: Creates an inactive user and emails an account-confirmation code.
+          sortKey: -1789530000001
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "name": "Test",
+              "surname": "User",
+              "email": "test.user@example.com",
+              "password": "Password123!"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/v1/auth/signin"
+        name: Sign In
+        meta:
+          id: req_b2c3d4e5f6a748b9c0d1e2f3a4b5c6d7
+          created: 1789530000002
+          modified: 1789530000002
+          isPrivate: false
+          description: Exchanges credentials for an access + refresh token pair.
+          sortKey: -1789530000002
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "email": "test.user@example.com",
+              "password": "Password123!"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/v1/auth/refresh-token"
+        name: Refresh Token
+        meta:
+          id: req_c3d4e5f6a7b848c9d0e1f2a3b4c5d6e7
+          created: 1789530000003
+          modified: 1789530000003
+          isPrivate: false
+          description: Issues a new access + refresh token pair from a valid refresh token.
+          sortKey: -1789530000003
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "refresh_token": "{{ _.refresh_token }}"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/v1/auth/confirm-account"
+        name: Confirm Account
+        meta:
+          id: req_d4e5f6a7b8c948d9e0f1a2b3c4d5e6f7
+          created: 1789530000004
+          modified: 1789530000004
+          isPrivate: false
+          description: Activates an account using its confirmation code. In dev, the code
+            is logged by the fake email client (or readable from the
+            account_confirmation_codes table).
+          sortKey: -1789530000004
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "user_id": "{{ _.user_id }}",
+              "code": "{{ _.confirmation_code }}"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/v1/auth/resend-confirmation-code"
+        name: Resend Confirmation Code
+        meta:
+          id: req_e5f6a7b8c9d048e9f0a1b2c3d4e5f6a8
+          created: 1789530000005
+          modified: 1789530000005
+          isPrivate: false
+          description: Emails a fresh account-confirmation code.
+          sortKey: -1789530000005
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "email": "test.user@example.com"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/v1/auth/recovery-code"
+        name: Request Password Recovery
+        meta:
+          id: req_f6a7b8c9d0e148f9a0b1c2d3e4f5a6b9
+          created: 1789530000006
+          modified: 1789530000006
+          isPrivate: false
+          description: Emails a password-recovery code if the account exists (always
+            responds 204, regardless of whether the email is registered).
+          sortKey: -1789530000006
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "email": "test.user@example.com"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/v1/auth/recovery-code/validate"
+        name: Validate Recovery Code
+        meta:
+          id: req_a7b8c9d0e1f248a9b0c1d2e3f4a5b6c0
+          created: 1789530000007
+          modified: 1789530000007
+          isPrivate: false
+          description: Checks a recovery code without consuming it.
+          sortKey: -1789530000007
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "user_id": "{{ _.user_id }}",
+              "code": "{{ _.recovery_code }}"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/v1/auth/password"
+        name: Update Password
+        meta:
+          id: req_b8c9d0e1f2a348b9c0d1e2f3a4b5c6d1
+          created: 1789530000008
+          modified: 1789530000008
+          isPrivate: false
+          description: Sets a new password using a valid recovery code.
+          sortKey: -1789530000008
+        method: PUT
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "user_id": "{{ _.user_id }}",
+              "code": "{{ _.recovery_code }}",
+              "new_password": "NewPassword123!"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/v1/auth/me"
+        name: Me
+        meta:
+          id: req_c9d0e1f2a3b448c9d0e1f2a3b4c5d6e2
+          created: 1789530000009
+          modified: 1789530000009
+          isPrivate: false
+          description: Returns the authenticated user's profile. Requires an access token
+            from Sign In.
+          sortKey: -1789530000009
+        method: GET
+        authentication:
+          type: bearer
+          token: "{{ _.access_token }}"
+          prefix: Bearer
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Admin
+    meta:
+      id: fld_5e6f7a8b9c0d41e2f3a4b5c6d7e8f9a0
+      created: 1789530000010
+      modified: 1789530000010
+      sortKey: -1789530000010
+      description: ""
+    children:
+      - url: "{{ _.base_url }}/v1/admin/ping"
+        name: Admin Ping
+        meta:
+          id: req_d0e1f2a3b4c548d9e0f1a2b3c4d5e6f3
+          created: 1789530000011
+          modified: 1789530000011
+          isPrivate: false
+          description: Role-protected demo route. Requires an access token whose JWT roles
+            claim includes "admin".
+          sortKey: -1789530000011
+        method: GET
+        authentication:
+          type: bearer
+          token: "{{ _.access_token }}"
+          prefix: Bearer
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_991247ae6bd1b6040a995adc09e9ec14c263c615
+    created: 1789527584076
+    modified: 1789527584076
+environments:
+  name: Base Environment
+  meta:
+    id: env_991247ae6bd1b6040a995adc09e9ec14c263c615
+    created: 1789527584075
+    modified: 1789530000000
+    isPrivate: false
+  data:
+    base_url: http://localhost:8000
+    access_token: ""
+    refresh_token: ""
+    user_id: ""
+    confirmation_code: ""
+    recovery_code: ""

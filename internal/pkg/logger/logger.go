@@ -1,72 +1,126 @@
 package logger
 
 import (
+	"context"
 	"io"
 	"os"
 	"time"
 
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/pkgerrors"
 )
 
-type logger struct {
-	instance zerolog.Logger
-}
+type (
+	logger struct {
+		instance zerolog.Logger
+	}
 
-type Logger interface {
-	Info(msg string, tags map[string]interface{})
-	Warn(msg string, tags map[string]interface{})
-	Error(msg string, err error, tags map[string]interface{})
-	Debug(msg string, tags map[string]interface{})
-	Trace(msg string, tags map[string]interface{})
-	SetGlobalValue(key string, value any)
-	Instance() zerolog.Logger
-}
+	Logger interface {
+		Info(msg string, keysAndValues ...any)
+		Warn(msg string, keysAndValues ...any)
+		Error(msg string, err error, keysAndValues ...any)
+		Debug(msg string, keysAndValues ...any)
+		Trace(msg string, keysAndValues ...any)
+		With(keysAndValues ...any) Logger
+		Instance() zerolog.Logger
+	}
 
-func NewLogger(level string) Logger {
+	contextKey struct{}
+)
+
+const badKey = "!BADKEY"
+
+func NewLogger(level string, prod bool) Logger {
 	var writer io.Writer = os.Stdout
-	lvl := toZerologLevel(level)
 
-	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
-
-	if lvl == zerolog.DebugLevel || lvl == zerolog.TraceLevel {
+	if !prod {
 		writer = zerolog.ConsoleWriter{
 			Out:        os.Stdout,
 			TimeFormat: time.RFC3339,
 		}
 	}
 
-	instance := zerolog.New(writer).Level(lvl).With().Timestamp().Logger()
+	return newWithWriter(level, writer)
+}
+
+func NewWithWriter(level string, w io.Writer) Logger {
+	return newWithWriter(level, w)
+}
+
+func newWithWriter(level string, w io.Writer) Logger {
+	instance := zerolog.New(w).Level(toZerologLevel(level)).With().Timestamp().Logger()
 
 	return &logger{
 		instance: instance,
 	}
 }
 
-func (l *logger) Info(msg string, tags map[string]interface{}) {
-	l.instance.Info().Fields(tags).Msg(msg)
+func WithCtx(ctx context.Context, l Logger) context.Context {
+	return context.WithValue(ctx, contextKey{}, l)
 }
 
-func (l *logger) Warn(msg string, tags map[string]interface{}) {
-	l.instance.Warn().Fields(tags).Msg(msg)
+func FromCtx(ctx context.Context) Logger {
+	if l, ok := ctx.Value(contextKey{}).(Logger); ok && l != nil {
+		return l
+	}
+
+	return &logger{
+		instance: zerolog.Nop(),
+	}
 }
 
-func (l *logger) Error(msg string, err error, tags map[string]interface{}) {
-	l.instance.Error().Fields(tags).Err(err).Stack().Msg(msg)
+func FromCtxOr(ctx context.Context, fallback Logger) Logger {
+	if l, ok := ctx.Value(contextKey{}).(Logger); ok && l != nil {
+		return l
+	}
+
+	return fallback
 }
 
-func (l *logger) Debug(msg string, tags map[string]interface{}) {
-	l.instance.Debug().Fields(tags).Msg(msg)
+func fields(keysAndValues []any) map[string]any {
+	out := make(map[string]any, len(keysAndValues)/2)
+
+	for i := 0; i < len(keysAndValues); i += 2 {
+		key, ok := keysAndValues[i].(string)
+		if !ok {
+			out[badKey] = keysAndValues[i]
+			continue
+		}
+
+		if i+1 >= len(keysAndValues) {
+			out[badKey] = key
+			break
+		}
+
+		out[key] = keysAndValues[i+1]
+	}
+
+	return out
 }
 
-func (l *logger) Trace(msg string, tags map[string]interface{}) {
-	l.instance.Trace().Fields(tags).Msg(msg)
+func (l *logger) Info(msg string, keysAndValues ...any) {
+	l.instance.Info().Fields(fields(keysAndValues)).Msg(msg)
 }
 
-func (l *logger) SetGlobalValue(key string, value any) {
-	l.instance.UpdateContext(func(c zerolog.Context) zerolog.Context {
-		return c.Any(key, value)
-	})
+func (l *logger) Warn(msg string, keysAndValues ...any) {
+	l.instance.Warn().Fields(fields(keysAndValues)).Msg(msg)
+}
+
+func (l *logger) Error(msg string, err error, keysAndValues ...any) {
+	l.instance.Error().Fields(fields(keysAndValues)).Err(err).Msg(msg)
+}
+
+func (l *logger) Debug(msg string, keysAndValues ...any) {
+	l.instance.Debug().Fields(fields(keysAndValues)).Msg(msg)
+}
+
+func (l *logger) Trace(msg string, keysAndValues ...any) {
+	l.instance.Trace().Fields(fields(keysAndValues)).Msg(msg)
+}
+
+func (l *logger) With(keysAndValues ...any) Logger {
+	return &logger{
+		instance: l.instance.With().Fields(fields(keysAndValues)).Logger(),
+	}
 }
 
 func (l *logger) Instance() zerolog.Logger {

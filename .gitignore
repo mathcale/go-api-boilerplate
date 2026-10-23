@@ -6,5 +6,6 @@ bin/
 **/.env
 coverage.tmp
 coverage.txt
+coverage.html
 profile.out
 .null-ls*
