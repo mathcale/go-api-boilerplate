@@ -83,8 +83,12 @@ jobs:
     - name: gosec
       shell: bash
       run: |
-        go install github.com/securego/gosec/v2/cmd/gosec@v2.29.0
-        gosec ./...
+        # gosec v2.29.0 bundles an x/tools that cannot read the export data
+        # emitted by Go >= 1.27.2, so build it against the latest x/tools.
+        # Drop this and use `go install` once a newer gosec is released.
+        git clone --depth 1 --branch v2.29.0 https://github.com/securego/gosec "$RUNNER_TEMP/gosec"
+        (cd "$RUNNER_TEMP/gosec" && go get golang.org/x/tools@latest && go build -o "$RUNNER_TEMP/gosec-bin" ./cmd/gosec)
+        "$RUNNER_TEMP/gosec-bin" ./...
 
     - name: govulncheck
       shell: bash
