@@ -31,7 +31,9 @@ func (s *SignInUseCaseTestSuite) SetupTest() {
 }
 
 func (s *SignInUseCaseTestSuite) newUseCase() auth.SignInUseCase {
-	dummy := fixtures.AuthBDummyHash
+	s.T().Helper()
+
+	dummy := fixtures.AuthCredsDummyHash
 	s.pw.On("Hash", mock.AnythingOfType("string")).Return(&dummy, nil).Once()
 
 	if len(s.l.ExpectedCalls) == 0 {
@@ -76,31 +78,31 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 			return p.TokenVersion == 6
 		})
 
-		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBEmail).
-			Return(fixtures.AuthBActiveUserWithVersion(6), nil)
-		s.pw.On("Verify", fixtures.AuthBPassword, fixtures.AuthBStoredHash).Return(nil)
-		s.j.On("IssueAccessToken", hasVersion).Return(fixtures.AuthBAccessJWT(), nil)
-		s.j.On("IssueRefreshToken", hasVersion).Return(fixtures.AuthBRefreshJWT(), nil)
+		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
+			Return(fixtures.AuthCredsActiveUserWithVersion(6), nil)
+		s.pw.On("Verify", fixtures.AuthCredsPassword, fixtures.AuthCredsStoredHash).Return(nil)
+		s.j.On("IssueAccessToken", hasVersion).Return(fixtures.AuthCredsAccessJWT(), nil)
+		s.j.On("IssueRefreshToken", hasVersion).Return(fixtures.AuthCredsRefreshJWT(), nil)
 		s.gw.On("SaveRefreshToken", mock.Anything, mock.AnythingOfType("user.RefreshToken")).
 			Return(nil)
 
 		uc := s.newUseCase()
 
-		_, err := uc.Execute(context.Background(), fixtures.AuthBEmail, fixtures.AuthBPassword)
+		_, err := uc.Execute(context.Background(), fixtures.AuthCredsEmail, fixtures.AuthCredsPassword)
 
 		s.Require().NoError(err)
 		s.j.AssertExpectations(s.T())
 	})
 
 	s.Run("should normalise the email before looking up the user", func() {
-		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBEmail).
+		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
 			Return(nil, nil)
 		s.pw.On("Verify", mock.Anything, mock.Anything).Return(errors.New("mismatch"))
 
 		uc := s.newUseCase()
 
 		_, err := uc.Execute(
-			context.Background(), fixtures.AuthBMixedCaseEmail, fixtures.AuthBPassword,
+			context.Background(), fixtures.AuthCredsMixedCaseEmail, fixtures.AuthCredsPassword,
 		)
 
 		s.Require().Error(err)
@@ -108,52 +110,52 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should sign in and return an access and refresh token pair", func() {
-		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBEmail).
-			Return(fixtures.AuthBActiveUser(), nil)
-		s.pw.On("Verify", fixtures.AuthBPassword, fixtures.AuthBStoredHash).Return(nil)
+		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
+			Return(fixtures.AuthCredsActiveUser(), nil)
+		s.pw.On("Verify", fixtures.AuthCredsPassword, fixtures.AuthCredsStoredHash).Return(nil)
 		s.j.On("IssueAccessToken", mock.AnythingOfType("jwt.IssueTokenParams")).
-			Return(fixtures.AuthBAccessJWT(), nil)
+			Return(fixtures.AuthCredsAccessJWT(), nil)
 		s.j.On("IssueRefreshToken", mock.AnythingOfType("jwt.IssueTokenParams")).
-			Return(fixtures.AuthBRefreshJWT(), nil)
+			Return(fixtures.AuthCredsRefreshJWT(), nil)
 		s.gw.On("SaveRefreshToken", mock.Anything, mock.AnythingOfType("user.RefreshToken")).
 			Return(nil)
 
 		uc := s.newUseCase()
 
-		tokens, err := uc.Execute(context.Background(), fixtures.AuthBEmail, fixtures.AuthBPassword)
+		tokens, err := uc.Execute(context.Background(), fixtures.AuthCredsEmail, fixtures.AuthCredsPassword)
 
 		s.Require().NoError(err)
 		s.Require().NotNil(tokens)
-		s.Equal(fixtures.AuthBAccessToken, tokens.AccessToken)
-		s.Equal(fixtures.AuthBRefreshToken, tokens.RefreshToken)
+		s.Equal(fixtures.AuthCredsAccessToken, tokens.AccessToken)
+		s.Equal(fixtures.AuthCredsRefreshToken, tokens.RefreshToken)
 		s.gw.AssertExpectations(s.T())
 		s.pw.AssertExpectations(s.T())
 		s.j.AssertExpectations(s.T())
 	})
 
 	s.Run("should check the limiter with the normalised email", func() {
-		s.l.On("Allow", fixtures.AuthBEmail).Return(true)
-		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBEmail).
+		s.l.On("Allow", fixtures.AuthCredsEmail).Return(true)
+		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
 			Return(nil, nil)
 		s.pw.On("Verify", mock.Anything, mock.Anything).Return(errors.New("mismatch"))
 
 		uc := s.newUseCase()
 
 		_, err := uc.Execute(
-			context.Background(), fixtures.AuthBMixedCaseEmail, fixtures.AuthBPassword,
+			context.Background(), fixtures.AuthCredsMixedCaseEmail, fixtures.AuthCredsPassword,
 		)
 
 		s.Require().Error(err)
-		s.l.AssertCalled(s.T(), "Allow", fixtures.AuthBEmail)
+		s.l.AssertCalled(s.T(), "Allow", fixtures.AuthCredsEmail)
 	})
 
 	s.Run("should return a too-many-requests error when the limiter rejects", func() {
-		s.l.On("Allow", fixtures.AuthBEmail).Return(false)
+		s.l.On("Allow", fixtures.AuthCredsEmail).Return(false)
 
 		uc := s.newUseCase()
 
 		tokens, err := uc.Execute(
-			context.Background(), fixtures.AuthBMixedCaseEmail, fixtures.AuthBPassword,
+			context.Background(), fixtures.AuthCredsMixedCaseEmail, fixtures.AuthCredsPassword,
 		)
 
 		s.Require().Error(err)
@@ -169,15 +171,15 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should return an unauthorized error when the user does not exist", func() {
-		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBUnknownEmail).
+		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthCredsUnknownEmail).
 			Return(nil, nil)
-		s.pw.On("Verify", fixtures.AuthBPassword, fixtures.AuthBDummyHash).
+		s.pw.On("Verify", fixtures.AuthCredsPassword, fixtures.AuthCredsDummyHash).
 			Return(errors.New("mismatch"))
 
 		uc := s.newUseCase()
 
 		tokens, err := uc.Execute(
-			context.Background(), fixtures.AuthBUnknownEmail, fixtures.AuthBPassword,
+			context.Background(), fixtures.AuthCredsUnknownEmail, fixtures.AuthCredsPassword,
 		)
 
 		s.Require().Error(err)
@@ -188,19 +190,19 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 		s.Equal(apperror.UnauthorizedKind, appErr.Kind())
 		s.Require().NotNil(appErr.BusinessCode())
 		s.Equal(apperror.BE1010_INVALID_CREDENTIALS, *appErr.BusinessCode())
-		s.pw.AssertCalled(s.T(), "Verify", fixtures.AuthBPassword, fixtures.AuthBDummyHash)
+		s.pw.AssertCalled(s.T(), "Verify", fixtures.AuthCredsPassword, fixtures.AuthCredsDummyHash)
 	})
 
 	s.Run("should return an unauthorized error when the password does not match", func() {
-		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBEmail).
-			Return(fixtures.AuthBActiveUser(), nil)
-		s.pw.On("Verify", fixtures.AuthBWrongPassword, fixtures.AuthBStoredHash).
+		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
+			Return(fixtures.AuthCredsActiveUser(), nil)
+		s.pw.On("Verify", fixtures.AuthCredsWrongPassword, fixtures.AuthCredsStoredHash).
 			Return(errors.New("mismatch"))
 
 		uc := s.newUseCase()
 
 		tokens, err := uc.Execute(
-			context.Background(), fixtures.AuthBEmail, fixtures.AuthBWrongPassword,
+			context.Background(), fixtures.AuthCredsEmail, fixtures.AuthCredsWrongPassword,
 		)
 
 		s.Require().Error(err)
@@ -215,13 +217,13 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should return a forbidden error when the account is not confirmed", func() {
-		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBEmail).
-			Return(fixtures.AuthBInactiveUser(), nil)
-		s.pw.On("Verify", fixtures.AuthBPassword, fixtures.AuthBStoredHash).Return(nil)
+		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
+			Return(fixtures.AuthCredsInactiveUser(), nil)
+		s.pw.On("Verify", fixtures.AuthCredsPassword, fixtures.AuthCredsStoredHash).Return(nil)
 
 		uc := s.newUseCase()
 
-		tokens, err := uc.Execute(context.Background(), fixtures.AuthBEmail, fixtures.AuthBPassword)
+		tokens, err := uc.Execute(context.Background(), fixtures.AuthCredsEmail, fixtures.AuthCredsPassword)
 
 		s.Require().Error(err)
 		s.Nil(tokens)
@@ -237,12 +239,12 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 	s.Run("should propagate the error when fetching the user fails", func() {
 		gwErr := errors.New("db down")
 
-		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBEmail).
+		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
 			Return(nil, gwErr)
 
 		uc := s.newUseCase()
 
-		tokens, err := uc.Execute(context.Background(), fixtures.AuthBEmail, fixtures.AuthBPassword)
+		tokens, err := uc.Execute(context.Background(), fixtures.AuthCredsEmail, fixtures.AuthCredsPassword)
 
 		s.Require().ErrorIs(err, gwErr)
 		s.Nil(tokens)
@@ -252,15 +254,15 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 	s.Run("should propagate the error when issuing the access token fails", func() {
 		issueErr := errors.New("signing failure")
 
-		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBEmail).
-			Return(fixtures.AuthBActiveUser(), nil)
-		s.pw.On("Verify", fixtures.AuthBPassword, fixtures.AuthBStoredHash).Return(nil)
+		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
+			Return(fixtures.AuthCredsActiveUser(), nil)
+		s.pw.On("Verify", fixtures.AuthCredsPassword, fixtures.AuthCredsStoredHash).Return(nil)
 		s.j.On("IssueAccessToken", mock.AnythingOfType("jwt.IssueTokenParams")).
 			Return(nil, issueErr)
 
 		uc := s.newUseCase()
 
-		tokens, err := uc.Execute(context.Background(), fixtures.AuthBEmail, fixtures.AuthBPassword)
+		tokens, err := uc.Execute(context.Background(), fixtures.AuthCredsEmail, fixtures.AuthCredsPassword)
 
 		s.Require().ErrorIs(err, issueErr)
 		s.Nil(tokens)
@@ -270,17 +272,17 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 	s.Run("should propagate the error when issuing the refresh token fails", func() {
 		issueErr := errors.New("signing failure")
 
-		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBEmail).
-			Return(fixtures.AuthBActiveUser(), nil)
-		s.pw.On("Verify", fixtures.AuthBPassword, fixtures.AuthBStoredHash).Return(nil)
+		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
+			Return(fixtures.AuthCredsActiveUser(), nil)
+		s.pw.On("Verify", fixtures.AuthCredsPassword, fixtures.AuthCredsStoredHash).Return(nil)
 		s.j.On("IssueAccessToken", mock.AnythingOfType("jwt.IssueTokenParams")).
-			Return(fixtures.AuthBAccessJWT(), nil)
+			Return(fixtures.AuthCredsAccessJWT(), nil)
 		s.j.On("IssueRefreshToken", mock.AnythingOfType("jwt.IssueTokenParams")).
 			Return(nil, issueErr)
 
 		uc := s.newUseCase()
 
-		tokens, err := uc.Execute(context.Background(), fixtures.AuthBEmail, fixtures.AuthBPassword)
+		tokens, err := uc.Execute(context.Background(), fixtures.AuthCredsEmail, fixtures.AuthCredsPassword)
 
 		s.Require().ErrorIs(err, issueErr)
 		s.Nil(tokens)
@@ -288,17 +290,17 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should return a dependency error when the refresh token has no expiry", func() {
-		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBEmail).
-			Return(fixtures.AuthBActiveUser(), nil)
-		s.pw.On("Verify", fixtures.AuthBPassword, fixtures.AuthBStoredHash).Return(nil)
+		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
+			Return(fixtures.AuthCredsActiveUser(), nil)
+		s.pw.On("Verify", fixtures.AuthCredsPassword, fixtures.AuthCredsStoredHash).Return(nil)
 		s.j.On("IssueAccessToken", mock.AnythingOfType("jwt.IssueTokenParams")).
-			Return(fixtures.AuthBAccessJWT(), nil)
+			Return(fixtures.AuthCredsAccessJWT(), nil)
 		s.j.On("IssueRefreshToken", mock.AnythingOfType("jwt.IssueTokenParams")).
-			Return(fixtures.AuthBRefreshJWTWithoutExpiry(), nil)
+			Return(fixtures.AuthCredsRefreshJWTWithoutExpiry(), nil)
 
 		uc := s.newUseCase()
 
-		tokens, err := uc.Execute(context.Background(), fixtures.AuthBEmail, fixtures.AuthBPassword)
+		tokens, err := uc.Execute(context.Background(), fixtures.AuthCredsEmail, fixtures.AuthCredsPassword)
 
 		s.Require().Error(err)
 		s.Nil(tokens)
@@ -313,19 +315,19 @@ func (s *SignInUseCaseTestSuite) TestExecute() {
 	s.Run("should return an error when saving the refresh token fails", func() {
 		saveErr := errors.New("db down")
 
-		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthBEmail).
-			Return(fixtures.AuthBActiveUser(), nil)
-		s.pw.On("Verify", fixtures.AuthBPassword, fixtures.AuthBStoredHash).Return(nil)
+		s.gw.On("GetUserByEmailIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
+			Return(fixtures.AuthCredsActiveUser(), nil)
+		s.pw.On("Verify", fixtures.AuthCredsPassword, fixtures.AuthCredsStoredHash).Return(nil)
 		s.j.On("IssueAccessToken", mock.AnythingOfType("jwt.IssueTokenParams")).
-			Return(fixtures.AuthBAccessJWT(), nil)
+			Return(fixtures.AuthCredsAccessJWT(), nil)
 		s.j.On("IssueRefreshToken", mock.AnythingOfType("jwt.IssueTokenParams")).
-			Return(fixtures.AuthBRefreshJWT(), nil)
+			Return(fixtures.AuthCredsRefreshJWT(), nil)
 		s.gw.On("SaveRefreshToken", mock.Anything, mock.AnythingOfType("user.RefreshToken")).
 			Return(saveErr)
 
 		uc := s.newUseCase()
 
-		tokens, err := uc.Execute(context.Background(), fixtures.AuthBEmail, fixtures.AuthBPassword)
+		tokens, err := uc.Execute(context.Background(), fixtures.AuthCredsEmail, fixtures.AuthCredsPassword)
 
 		s.Require().ErrorIs(err, saveErr)
 		s.Nil(tokens)

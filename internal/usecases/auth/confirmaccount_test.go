@@ -40,6 +40,8 @@ func (s *ConfirmAccountUseCaseTestSuite) assertBusinessError(
 	kind apperror.Kind,
 	code apperror.BusinessCode,
 ) {
+	s.T().Helper()
+
 	var appErr apperror.AppError
 	s.Require().ErrorAs(err, &appErr)
 	s.Equal(kind, appErr.Kind())
@@ -53,11 +55,11 @@ func (s *ConfirmAccountUseCaseTestSuite) TestExecute() {
 		codeID := uuid.New()
 
 		s.gw.On("GetUserByID", mock.Anything, userID).
-			Return(fixtures.AuthAUser(userID, false), nil)
+			Return(fixtures.AuthSessionUser(userID, false), nil)
 		s.gw.On(
 			"GetValidConfirmationCode", mock.Anything, userID, "the-code",
 			user.PurposeAccountConfirmation,
-		).Return(fixtures.AuthAValidConfirmationCode(codeID), nil)
+		).Return(fixtures.AuthSessionValidConfirmationCode(codeID), nil)
 		s.gw.On("ActivateUserWithCode", mock.Anything, userID, codeID).Return(true, nil)
 
 		err := s.uc.Execute(context.Background(), userID, "the-code")
@@ -80,7 +82,7 @@ func (s *ConfirmAccountUseCaseTestSuite) TestExecute() {
 	s.Run("should return an error when the account is already confirmed", func() {
 		userID := uuid.New()
 		s.gw.On("GetUserByID", mock.Anything, userID).
-			Return(fixtures.AuthAUser(userID, true), nil)
+			Return(fixtures.AuthSessionUser(userID, true), nil)
 
 		err := s.uc.Execute(context.Background(), userID, "the-code")
 
@@ -94,7 +96,7 @@ func (s *ConfirmAccountUseCaseTestSuite) TestExecute() {
 	s.Run("should return an error when the confirmation code is invalid", func() {
 		userID := uuid.New()
 		s.gw.On("GetUserByID", mock.Anything, userID).
-			Return(fixtures.AuthAUser(userID, false), nil)
+			Return(fixtures.AuthSessionUser(userID, false), nil)
 		s.gw.On(
 			"GetValidConfirmationCode", mock.Anything, userID, "nope",
 			user.PurposeAccountConfirmation,
@@ -112,11 +114,11 @@ func (s *ConfirmAccountUseCaseTestSuite) TestExecute() {
 	s.Run("should return an error when the confirmation code has expired", func() {
 		userID := uuid.New()
 		s.gw.On("GetUserByID", mock.Anything, userID).
-			Return(fixtures.AuthAUser(userID, false), nil)
+			Return(fixtures.AuthSessionUser(userID, false), nil)
 		s.gw.On(
 			"GetValidConfirmationCode", mock.Anything, userID, "old",
 			user.PurposeAccountConfirmation,
-		).Return(fixtures.AuthAExpiredConfirmationCode(uuid.New()), nil)
+		).Return(fixtures.AuthSessionExpiredConfirmationCode(uuid.New()), nil)
 
 		err := s.uc.Execute(context.Background(), userID, "old")
 
@@ -143,7 +145,7 @@ func (s *ConfirmAccountUseCaseTestSuite) TestExecute() {
 		gwErr := errors.New("db down")
 
 		s.gw.On("GetUserByID", mock.Anything, userID).
-			Return(fixtures.AuthAUser(userID, false), nil)
+			Return(fixtures.AuthSessionUser(userID, false), nil)
 		s.gw.On(
 			"GetValidConfirmationCode", mock.Anything, userID, "the-code",
 			user.PurposeAccountConfirmation,
@@ -160,11 +162,11 @@ func (s *ConfirmAccountUseCaseTestSuite) TestExecute() {
 		codeID := uuid.New()
 
 		s.gw.On("GetUserByID", mock.Anything, userID).
-			Return(fixtures.AuthAUser(userID, false), nil)
+			Return(fixtures.AuthSessionUser(userID, false), nil)
 		s.gw.On(
 			"GetValidConfirmationCode", mock.Anything, userID, "the-code",
 			user.PurposeAccountConfirmation,
-		).Return(fixtures.AuthAValidConfirmationCode(codeID), nil)
+		).Return(fixtures.AuthSessionValidConfirmationCode(codeID), nil)
 		s.gw.On("ActivateUserWithCode", mock.Anything, userID, codeID).Return(false, nil)
 
 		err := s.uc.Execute(context.Background(), userID, "the-code")
@@ -182,11 +184,11 @@ func (s *ConfirmAccountUseCaseTestSuite) TestExecute() {
 		activateErr := errors.New("db down")
 
 		s.gw.On("GetUserByID", mock.Anything, userID).
-			Return(fixtures.AuthAUser(userID, false), nil)
+			Return(fixtures.AuthSessionUser(userID, false), nil)
 		s.gw.On(
 			"GetValidConfirmationCode", mock.Anything, userID, "the-code",
 			user.PurposeAccountConfirmation,
-		).Return(fixtures.AuthAValidConfirmationCode(codeID), nil)
+		).Return(fixtures.AuthSessionValidConfirmationCode(codeID), nil)
 		s.gw.On("ActivateUserWithCode", mock.Anything, userID, codeID).
 			Return(false, activateErr)
 

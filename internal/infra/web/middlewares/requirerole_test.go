@@ -92,6 +92,8 @@ func (s *RequireRoleMiddlewareTestSuite) requestWithRoles(roles []string) *http.
 }
 
 func (s *RequireRoleMiddlewareTestSuite) assertForbidden(rec *httptest.ResponseRecorder) {
+	s.T().Helper()
+
 	s.Equal(http.StatusForbidden, rec.Code)
 
 	var out dto.ErrorOutput

@@ -34,12 +34,12 @@ func TestValidateRecoveryCodeUseCase(t *testing.T) {
 
 func (s *ValidateRecoveryCodeUseCaseTestSuite) TestExecute() {
 	s.Run("should succeed when the recovery code is valid and not expired", func() {
-		userID := fixtures.AuthBNewID()
+		userID := fixtures.AuthCredsNewID()
 
 		s.gw.On(
 			"GetValidConfirmationCode", mock.Anything, userID, "the-code",
 			user.PurposePasswordRecovery,
-		).Return(fixtures.AuthBValidConfirmationCode(), nil)
+		).Return(fixtures.AuthCredsValidConfirmationCode(), nil)
 
 		uc := auth.NewValidateRecoveryCodeUseCase(mocks.NoopLogger{}, s.gw)
 
@@ -50,7 +50,7 @@ func (s *ValidateRecoveryCodeUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should return a mismatch business error when the code does not match", func() {
-		userID := fixtures.AuthBNewID()
+		userID := fixtures.AuthCredsNewID()
 
 		s.gw.On(
 			"GetValidConfirmationCode", mock.Anything, userID, "bad",
@@ -71,12 +71,12 @@ func (s *ValidateRecoveryCodeUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should return an expired business error when the code has expired", func() {
-		userID := fixtures.AuthBNewID()
+		userID := fixtures.AuthCredsNewID()
 
 		s.gw.On(
 			"GetValidConfirmationCode", mock.Anything, userID, "old",
 			user.PurposePasswordRecovery,
-		).Return(fixtures.AuthBExpiredConfirmationCode(), nil)
+		).Return(fixtures.AuthCredsExpiredConfirmationCode(), nil)
 
 		uc := auth.NewValidateRecoveryCodeUseCase(mocks.NoopLogger{}, s.gw)
 
@@ -92,17 +92,17 @@ func (s *ValidateRecoveryCodeUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should propagate the error returned by the gateway", func() {
-		userID := fixtures.AuthBNewID()
+		userID := fixtures.AuthCredsNewID()
 		gwErr := errors.New("db down")
 
 		s.gw.On(
-			"GetValidConfirmationCode", mock.Anything, userID, fixtures.AuthBCode,
+			"GetValidConfirmationCode", mock.Anything, userID, fixtures.AuthCredsCode,
 			user.PurposePasswordRecovery,
 		).Return(nil, gwErr)
 
 		uc := auth.NewValidateRecoveryCodeUseCase(mocks.NoopLogger{}, s.gw)
 
-		err := uc.Execute(context.Background(), userID, fixtures.AuthBCode)
+		err := uc.Execute(context.Background(), userID, fixtures.AuthCredsCode)
 
 		s.Require().ErrorIs(err, gwErr)
 	})

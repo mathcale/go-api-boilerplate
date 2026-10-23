@@ -20,6 +20,8 @@ const (
 	DomainPkgAudience      = "boilerplate-clients"
 	DomainPkgAvatarURL     = "https://example.com/avatar.png"
 	DomainPkgTokenVersion  = 7
+
+	DomainPkgHashedPassword = "hashed"
 )
 
 func DomainPkgCreateUserParams() user.CreateUserParams {
@@ -27,7 +29,7 @@ func DomainPkgCreateUserParams() user.CreateUserParams {
 		Name:     "  Jane  ",
 		Surname:  "  Doe  ",
 		Email:    "  Jane@Example.com  ",
-		Password: "hashed",
+		Password: DomainPkgHashedPassword,
 		Active:   false,
 	}
 }
@@ -38,11 +40,11 @@ func DomainPkgUser() user.User {
 
 	return user.User{
 		ID:        uuid.New(),
-		Name:      "Jane",
-		Surname:   "Doe",
+		Name:      WebName,
+		Surname:   WebSurname,
 		AvatarURL: &avatarURL,
 		Email:     "jane@example.com",
-		Password:  "hashed",
+		Password:  DomainPkgHashedPassword,
 		Active:    true,
 		Roles:     []string{"admin"},
 		CreatedAt: now,
@@ -58,11 +60,11 @@ func DomainPkgUserModel() models.User {
 
 	return models.User{
 		ID:        uuid.New(),
-		Name:      "Jane",
-		Surname:   "Doe",
+		Name:      WebName,
+		Surname:   WebSurname,
 		AvatarURL: &avatarURL,
 		Email:     "jane@example.com",
-		Password:  "hashed",
+		Password:  DomainPkgHashedPassword,
 		Active:    true,
 		Roles:     pq.StringArray{"admin"},
 		CreatedAt: now,
@@ -201,6 +203,7 @@ func DomainPkgSharedSecretJWTAuth() jwt.JWTAuth {
 }
 
 func DomainPkgSignAccessClaims(claims jwtlib.MapClaims) (string, error) {
-	return jwtlib.NewWithClaims(jwtlib.SigningMethodHS512, claims).
+	return jwtlib.
+		NewWithClaims(jwtlib.SigningMethodHS512, claims).
 		SignedString([]byte(DomainPkgAccessSecret))
 }

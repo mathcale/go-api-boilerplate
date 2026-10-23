@@ -39,14 +39,14 @@ func (s *MeUseCaseTestSuite) TestExecute() {
 		userID := uuid.New()
 
 		s.gw.On("GetUserByID", mock.Anything, userID).
-			Return(fixtures.AuthAUser(userID, true), nil)
+			Return(fixtures.AuthSessionUser(userID, true), nil)
 
 		got, err := s.uc.Execute(context.Background(), userID)
 
 		s.Require().NoError(err)
 		s.Require().NotNil(got)
 		s.Equal(userID, got.ID)
-		s.Equal(fixtures.AuthAEmail, got.Email)
+		s.Equal(fixtures.AuthSessionEmail, got.Email)
 		s.gw.AssertExpectations(s.T())
 	})
 

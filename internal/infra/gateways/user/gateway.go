@@ -34,7 +34,10 @@ func NewGateway(
 	}
 }
 
-func (g *userGateway) UserExistsIncludingInactive(ctx context.Context, email string) (*bool, error) {
+func (g *userGateway) UserExistsIncludingInactive(
+	ctx context.Context,
+	email string,
+) (*bool, error) {
 	return g.repo.ExistsIncludingInactive(ctx, email)
 }
 

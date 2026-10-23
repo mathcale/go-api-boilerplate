@@ -152,6 +152,8 @@ func (s *AuthMiddlewareTestSuite) failingNext() http.Handler {
 }
 
 func (s *AuthMiddlewareTestSuite) assertRejected(rec *httptest.ResponseRecorder) {
+	s.T().Helper()
+
 	s.Equal(http.StatusUnauthorized, rec.Code)
 
 	var out dto.ErrorOutput

@@ -29,7 +29,7 @@ func (s *ConfigTestSuite) SetupSubTest() {
 }
 
 func (s *ConfigTestSuite) TearDownTest() {
-	os.RemoveAll(s.tempDir)
+	s.Require().NoError(os.RemoveAll(s.tempDir))
 }
 
 func (s *ConfigTestSuite) TearDownSubTest() {
@@ -67,15 +67,15 @@ MAILER_PROVIDER=fake
 PASSWORD_RECOVERY_BASE_URL=https://example.com/recover`
 
 		envPath := filepath.Join(s.tempDir, ".env")
-		err := os.WriteFile(envPath, []byte(envContent), 0644)
-		s.NoError(err)
+		err := os.WriteFile(envPath, []byte(envContent), 0600)
+		s.Require().NoError(err)
 
 		cfg, err := Load(s.tempDir)
 		if err != nil {
 			s.T().Logf("Load error: %v", err)
 		}
 
-		s.NoError(err)
+		s.Require().NoError(err)
 		s.NotNil(cfg)
 		s.Equal("development", cfg.Environment)
 		s.Equal("debug", cfg.LogLevel)

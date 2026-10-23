@@ -100,7 +100,11 @@ type ValidateRecoveryCodeUseCase struct {
 	mock.Mock
 }
 
-func (m *ValidateRecoveryCodeUseCase) Execute(ctx context.Context, userID uuid.UUID, code string) error {
+func (m *ValidateRecoveryCodeUseCase) Execute(
+	ctx context.Context,
+	userID uuid.UUID,
+	code string,
+) error {
 	return m.Called(ctx, userID, code).Error(0)
 }
 

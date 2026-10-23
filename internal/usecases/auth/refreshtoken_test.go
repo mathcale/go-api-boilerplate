@@ -44,7 +44,7 @@ func TestRefreshTokenUseCase(t *testing.T) {
 
 func (s *RefreshTokenUseCaseTestSuite) expectVerified(userID uuid.UUID, tokenID string) {
 	s.j.On("VerifyRefreshToken", oldRefreshToken).
-		Return(fixtures.AuthAVerifiedJWT(userID, tokenID), nil)
+		Return(fixtures.AuthSessionVerifiedJWT(userID, tokenID), nil)
 }
 
 func (s *RefreshTokenUseCaseTestSuite) expectRotationStart(
@@ -54,13 +54,15 @@ func (s *RefreshTokenUseCaseTestSuite) expectRotationStart(
 	s.expectVerified(userID, familyID.String())
 	s.gw.On("GetRefreshToken", mock.Anything, familyID).Return(stored, nil)
 	s.gw.On("MarkRefreshTokenUsed", mock.Anything, familyID).Return(true, nil)
-	s.gw.On("GetUserByID", mock.Anything, userID).Return(fixtures.AuthAUser(userID, true), nil)
+	s.gw.On("GetUserByID", mock.Anything, userID).Return(fixtures.AuthSessionUser(userID, true), nil)
 }
 
-func (s *RefreshTokenUseCaseTestSuite) assertUnauthorized(err error, kind apperror.Kind) {
+func (s *RefreshTokenUseCaseTestSuite) assertUnauthorized(err error) {
+	s.T().Helper()
+
 	var appErr apperror.AppError
 	s.Require().ErrorAs(err, &appErr)
-	s.Equal(kind, appErr.Kind())
+	s.Equal(apperror.UnauthorizedKind, appErr.Kind())
 	s.Require().NotNil(appErr.BusinessCode())
 	s.Equal(apperror.BE0003_UNAUTHORIZED, *appErr.BusinessCode())
 }
@@ -71,11 +73,11 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 		familyID := uuid.New()
 		expiresAt := time.Now().Add(24 * time.Hour)
 
-		s.expectRotationStart(userID, familyID, fixtures.AuthAStoredRefreshToken(userID, familyID))
+		s.expectRotationStart(userID, familyID, fixtures.AuthSessionStoredRefreshToken(userID, familyID))
 		s.j.On("IssueAccessToken", mock.AnythingOfType("jwt.IssueTokenParams")).
-			Return(fixtures.AuthAAccessJWT("new-access-token"), nil)
+			Return(fixtures.AuthSessionAccessJWT("new-access-token"), nil)
 		s.j.On("IssueRefreshToken", mock.AnythingOfType("jwt.IssueTokenParams")).
-			Return(fixtures.AuthARefreshJWT("new-refresh-token", &expiresAt), nil)
+			Return(fixtures.AuthSessionRefreshJWT("new-refresh-token", &expiresAt), nil)
 		s.gw.On("SaveRefreshToken", mock.Anything, mock.AnythingOfType("user.RefreshToken")).
 			Return(nil)
 
@@ -98,16 +100,16 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 		})
 
 		s.j.On("VerifyRefreshToken", oldRefreshToken).
-			Return(fixtures.AuthAVerifiedJWTWithVersion(userID, familyID.String(), 3), nil)
+			Return(fixtures.AuthSessionVerifiedJWTWithVersion(userID, familyID.String(), 3), nil)
 		s.gw.On("GetRefreshToken", mock.Anything, familyID).
-			Return(fixtures.AuthAStoredRefreshToken(userID, familyID), nil)
+			Return(fixtures.AuthSessionStoredRefreshToken(userID, familyID), nil)
 		s.gw.On("MarkRefreshTokenUsed", mock.Anything, familyID).Return(true, nil)
 		s.gw.On("GetUserByID", mock.Anything, userID).
-			Return(fixtures.AuthAUserWithVersion(userID, 3), nil)
+			Return(fixtures.AuthSessionUserWithVersion(userID, 3), nil)
 		s.j.On("IssueAccessToken", hasVersion).
-			Return(fixtures.AuthAAccessJWT("new-access-token"), nil)
+			Return(fixtures.AuthSessionAccessJWT("new-access-token"), nil)
 		s.j.On("IssueRefreshToken", hasVersion).
-			Return(fixtures.AuthARefreshJWT("new-refresh-token", &expiresAt), nil)
+			Return(fixtures.AuthSessionRefreshJWT("new-refresh-token", &expiresAt), nil)
 		s.gw.On("SaveRefreshToken", mock.Anything, mock.AnythingOfType("user.RefreshToken")).
 			Return(nil)
 
@@ -129,14 +131,14 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 
 		s.expectVerified(userID, familyID.String())
 		s.gw.On("GetRefreshToken", mock.Anything, familyID).
-			Return(fixtures.AuthAStoredRefreshToken(userID, familyID), nil)
+			Return(fixtures.AuthSessionStoredRefreshToken(userID, familyID), nil)
 		s.gw.On("MarkRefreshTokenUsed", mock.Anything, familyID).Return(true, nil)
 		s.gw.On("GetUserByID", mock.Anything, userID).
-			Return(fixtures.AuthAUserWithRoles(userID, currentRoles), nil)
+			Return(fixtures.AuthSessionUserWithRoles(userID, currentRoles), nil)
 		s.j.On("IssueAccessToken", hasCurrentRoles).
-			Return(fixtures.AuthAAccessJWT("new-access-token"), nil)
+			Return(fixtures.AuthSessionAccessJWT("new-access-token"), nil)
 		s.j.On("IssueRefreshToken", hasCurrentRoles).
-			Return(fixtures.AuthARefreshJWT("new-refresh-token", &expiresAt), nil)
+			Return(fixtures.AuthSessionRefreshJWT("new-refresh-token", &expiresAt), nil)
 		s.gw.On("SaveRefreshToken", mock.Anything, mock.AnythingOfType("user.RefreshToken")).
 			Return(nil)
 
@@ -154,7 +156,7 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 
 		s.Require().Error(err)
 		s.Nil(tokens)
-		s.assertUnauthorized(err, apperror.UnauthorizedKind)
+		s.assertUnauthorized(err)
 		s.gw.AssertNotCalled(s.T(), "GetRefreshToken", mock.Anything, mock.Anything)
 	})
 
@@ -165,7 +167,7 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 
 		s.Require().Error(err)
 		s.Nil(tokens)
-		s.assertUnauthorized(err, apperror.UnauthorizedKind)
+		s.assertUnauthorized(err)
 		s.gw.AssertNotCalled(s.T(), "GetRefreshToken", mock.Anything, mock.Anything)
 	})
 
@@ -176,7 +178,7 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 
 		s.Require().Error(err)
 		s.Nil(tokens)
-		s.assertUnauthorized(err, apperror.UnauthorizedKind)
+		s.assertUnauthorized(err)
 		s.gw.AssertNotCalled(s.T(), "GetRefreshToken", mock.Anything, mock.Anything)
 	})
 
@@ -190,7 +192,7 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 
 		s.Require().Error(err)
 		s.Nil(tokens)
-		s.assertUnauthorized(err, apperror.UnauthorizedKind)
+		s.assertUnauthorized(err)
 		s.j.AssertNotCalled(s.T(), "IssueAccessToken", mock.Anything)
 	})
 
@@ -200,13 +202,13 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 
 		s.expectVerified(userID, familyID.String())
 		s.gw.On("GetRefreshToken", mock.Anything, familyID).
-			Return(fixtures.AuthARevokedRefreshToken(userID, familyID), nil)
+			Return(fixtures.AuthSessionRevokedRefreshToken(userID, familyID), nil)
 
 		tokens, err := s.uc.Execute(context.Background(), oldRefreshToken)
 
 		s.Require().Error(err)
 		s.Nil(tokens)
-		s.assertUnauthorized(err, apperror.UnauthorizedKind)
+		s.assertUnauthorized(err)
 		s.gw.AssertNotCalled(s.T(), "RevokeRefreshTokenFamily", mock.Anything, mock.Anything)
 		s.j.AssertNotCalled(s.T(), "IssueAccessToken", mock.Anything)
 	})
@@ -219,7 +221,7 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 
 		s.expectVerified(userID, familyID.String())
 		s.gw.On("GetRefreshToken", mock.Anything, familyID).
-			Return(fixtures.AuthAUsedRefreshToken(userID, familyID), nil)
+			Return(fixtures.AuthSessionUsedRefreshToken(userID, familyID), nil)
 		s.gw.On("RevokeRefreshTokenFamily", mock.Anything, familyID).Return(nil)
 		log.On("Warn", mock.Anything, mock.MatchedBy(func(kv []any) bool {
 			i := slices.Index(kv, any("business_code"))
@@ -232,7 +234,7 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 
 		s.Require().Error(err)
 		s.Nil(tokens)
-		s.assertUnauthorized(err, apperror.UnauthorizedKind)
+		s.assertUnauthorized(err)
 		s.gw.AssertExpectations(s.T())
 		log.AssertExpectations(s.T())
 		s.j.AssertNotCalled(s.T(), "IssueAccessToken", mock.Anything)
@@ -248,7 +250,7 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 
 		s.expectVerified(userID, familyID.String())
 		s.gw.On("GetRefreshToken", mock.Anything, familyID).
-			Return(fixtures.AuthAUsedRefreshToken(userID, familyID), nil)
+			Return(fixtures.AuthSessionUsedRefreshToken(userID, familyID), nil)
 		s.gw.On("RevokeRefreshTokenFamily", mock.Anything, familyID).Return(revokeErr)
 		log.On("Error", mock.Anything, revokeErr, mock.Anything).Return()
 
@@ -256,7 +258,7 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 
 		s.Require().Error(err)
 		s.Nil(tokens)
-		s.assertUnauthorized(err, apperror.UnauthorizedKind)
+		s.assertUnauthorized(err)
 		log.AssertExpectations(s.T())
 		log.AssertNotCalled(s.T(), "Warn", mock.Anything, mock.Anything)
 	})
@@ -267,9 +269,9 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 
 		s.expectVerified(userID, familyID.String())
 		s.gw.On("GetRefreshToken", mock.Anything, familyID).
-			Return(fixtures.AuthAStoredRefreshToken(userID, familyID), nil)
+			Return(fixtures.AuthSessionStoredRefreshToken(userID, familyID), nil)
 		s.gw.On("GetUserByID", mock.Anything, userID).
-			Return(fixtures.AuthAUser(userID, true), nil)
+			Return(fixtures.AuthSessionUser(userID, true), nil)
 		s.gw.On("MarkRefreshTokenUsed", mock.Anything, familyID).Return(false, nil)
 		s.gw.On("RevokeRefreshTokenFamily", mock.Anything, familyID).Return(nil)
 
@@ -277,7 +279,7 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 
 		s.Require().Error(err)
 		s.Nil(tokens)
-		s.assertUnauthorized(err, apperror.UnauthorizedKind)
+		s.assertUnauthorized(err)
 		s.gw.AssertExpectations(s.T())
 		s.j.AssertNotCalled(s.T(), "IssueAccessToken", mock.Anything)
 		s.j.AssertNotCalled(s.T(), "IssueRefreshToken", mock.Anything)
@@ -304,9 +306,9 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 
 		s.expectVerified(userID, familyID.String())
 		s.gw.On("GetRefreshToken", mock.Anything, familyID).
-			Return(fixtures.AuthAStoredRefreshToken(userID, familyID), nil)
+			Return(fixtures.AuthSessionStoredRefreshToken(userID, familyID), nil)
 		s.gw.On("GetUserByID", mock.Anything, userID).
-			Return(fixtures.AuthAUser(userID, true), nil)
+			Return(fixtures.AuthSessionUser(userID, true), nil)
 		s.gw.On("MarkRefreshTokenUsed", mock.Anything, familyID).Return(false, markErr)
 
 		tokens, err := s.uc.Execute(context.Background(), oldRefreshToken)
@@ -322,14 +324,14 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 
 		s.expectVerified(userID, familyID.String())
 		s.gw.On("GetRefreshToken", mock.Anything, familyID).
-			Return(fixtures.AuthAStoredRefreshToken(userID, familyID), nil)
+			Return(fixtures.AuthSessionStoredRefreshToken(userID, familyID), nil)
 		s.gw.On("GetUserByID", mock.Anything, userID).Return(nil, nil)
 
 		tokens, err := s.uc.Execute(context.Background(), oldRefreshToken)
 
 		s.Require().Error(err)
 		s.Nil(tokens)
-		s.assertUnauthorized(err, apperror.UnauthorizedKind)
+		s.assertUnauthorized(err)
 		s.j.AssertNotCalled(s.T(), "IssueAccessToken", mock.Anything)
 	})
 
@@ -339,15 +341,15 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 
 		s.expectVerified(userID, familyID.String())
 		s.gw.On("GetRefreshToken", mock.Anything, familyID).
-			Return(fixtures.AuthAStoredRefreshToken(userID, familyID), nil)
+			Return(fixtures.AuthSessionStoredRefreshToken(userID, familyID), nil)
 		s.gw.On("GetUserByID", mock.Anything, userID).
-			Return(fixtures.AuthAUser(userID, false), nil)
+			Return(fixtures.AuthSessionUser(userID, false), nil)
 
 		tokens, err := s.uc.Execute(context.Background(), oldRefreshToken)
 
 		s.Require().Error(err)
 		s.Nil(tokens)
-		s.assertUnauthorized(err, apperror.UnauthorizedKind)
+		s.assertUnauthorized(err)
 		s.j.AssertNotCalled(s.T(), "IssueAccessToken", mock.Anything)
 	})
 
@@ -356,18 +358,18 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 		familyID := uuid.New()
 
 		s.j.On("VerifyRefreshToken", oldRefreshToken).
-			Return(fixtures.AuthAVerifiedJWTWithVersion(userID, familyID.String(), 2), nil)
+			Return(fixtures.AuthSessionVerifiedJWTWithVersion(userID, familyID.String(), 2), nil)
 		s.gw.On("GetRefreshToken", mock.Anything, familyID).
-			Return(fixtures.AuthAStoredRefreshToken(userID, familyID), nil)
+			Return(fixtures.AuthSessionStoredRefreshToken(userID, familyID), nil)
 		s.gw.On("GetUserByID", mock.Anything, userID).
-			Return(fixtures.AuthAUserWithVersion(userID, 3), nil)
+			Return(fixtures.AuthSessionUserWithVersion(userID, 3), nil)
 		s.gw.On("RevokeRefreshTokenFamily", mock.Anything, familyID).Return(nil)
 
 		tokens, err := s.uc.Execute(context.Background(), oldRefreshToken)
 
 		s.Require().Error(err)
 		s.Nil(tokens)
-		s.assertUnauthorized(err, apperror.UnauthorizedKind)
+		s.assertUnauthorized(err)
 		s.gw.AssertExpectations(s.T())
 		s.gw.AssertNotCalled(s.T(), "MarkRefreshTokenUsed", mock.Anything, mock.Anything)
 		s.j.AssertNotCalled(s.T(), "IssueAccessToken", mock.Anything)
@@ -380,18 +382,18 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 		revokeErr := errors.New("db down")
 
 		s.j.On("VerifyRefreshToken", oldRefreshToken).
-			Return(fixtures.AuthAVerifiedJWTWithVersion(userID, familyID.String(), 2), nil)
+			Return(fixtures.AuthSessionVerifiedJWTWithVersion(userID, familyID.String(), 2), nil)
 		s.gw.On("GetRefreshToken", mock.Anything, familyID).
-			Return(fixtures.AuthAStoredRefreshToken(userID, familyID), nil)
+			Return(fixtures.AuthSessionStoredRefreshToken(userID, familyID), nil)
 		s.gw.On("GetUserByID", mock.Anything, userID).
-			Return(fixtures.AuthAUserWithVersion(userID, 3), nil)
+			Return(fixtures.AuthSessionUserWithVersion(userID, 3), nil)
 		s.gw.On("RevokeRefreshTokenFamily", mock.Anything, familyID).Return(revokeErr)
 
 		tokens, err := s.uc.Execute(context.Background(), oldRefreshToken)
 
 		s.Require().ErrorIs(err, revokeErr)
 		s.Nil(tokens)
-		s.assertUnauthorized(err, apperror.UnauthorizedKind)
+		s.assertUnauthorized(err)
 		s.j.AssertNotCalled(s.T(), "IssueAccessToken", mock.Anything)
 	})
 
@@ -402,7 +404,7 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 
 		s.expectVerified(userID, familyID.String())
 		s.gw.On("GetRefreshToken", mock.Anything, familyID).
-			Return(fixtures.AuthAStoredRefreshToken(userID, familyID), nil)
+			Return(fixtures.AuthSessionStoredRefreshToken(userID, familyID), nil)
 		s.gw.On("GetUserByID", mock.Anything, userID).Return(nil, gwErr)
 
 		tokens, err := s.uc.Execute(context.Background(), oldRefreshToken)
@@ -417,7 +419,7 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 		familyID := uuid.New()
 		issueErr := errors.New("signing failure")
 
-		s.expectRotationStart(userID, familyID, fixtures.AuthAStoredRefreshToken(userID, familyID))
+		s.expectRotationStart(userID, familyID, fixtures.AuthSessionStoredRefreshToken(userID, familyID))
 		s.j.On("IssueAccessToken", mock.AnythingOfType("jwt.IssueTokenParams")).
 			Return(nil, issueErr)
 
@@ -433,9 +435,9 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 		familyID := uuid.New()
 		issueErr := errors.New("signing failure")
 
-		s.expectRotationStart(userID, familyID, fixtures.AuthAStoredRefreshToken(userID, familyID))
+		s.expectRotationStart(userID, familyID, fixtures.AuthSessionStoredRefreshToken(userID, familyID))
 		s.j.On("IssueAccessToken", mock.AnythingOfType("jwt.IssueTokenParams")).
-			Return(fixtures.AuthAAccessJWT("new-access-token"), nil)
+			Return(fixtures.AuthSessionAccessJWT("new-access-token"), nil)
 		s.j.On("IssueRefreshToken", mock.AnythingOfType("jwt.IssueTokenParams")).
 			Return(nil, issueErr)
 
@@ -450,11 +452,11 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 		userID := uuid.New()
 		familyID := uuid.New()
 
-		s.expectRotationStart(userID, familyID, fixtures.AuthAStoredRefreshToken(userID, familyID))
+		s.expectRotationStart(userID, familyID, fixtures.AuthSessionStoredRefreshToken(userID, familyID))
 		s.j.On("IssueAccessToken", mock.AnythingOfType("jwt.IssueTokenParams")).
-			Return(fixtures.AuthAAccessJWT("new-access-token"), nil)
+			Return(fixtures.AuthSessionAccessJWT("new-access-token"), nil)
 		s.j.On("IssueRefreshToken", mock.AnythingOfType("jwt.IssueTokenParams")).
-			Return(fixtures.AuthARefreshJWT("new-refresh-token", nil), nil)
+			Return(fixtures.AuthSessionRefreshJWT("new-refresh-token", nil), nil)
 
 		tokens, err := s.uc.Execute(context.Background(), oldRefreshToken)
 
@@ -474,11 +476,11 @@ func (s *RefreshTokenUseCaseTestSuite) TestExecute() {
 		expiresAt := time.Now().Add(24 * time.Hour)
 		saveErr := errors.New("db down")
 
-		s.expectRotationStart(userID, familyID, fixtures.AuthAStoredRefreshToken(userID, familyID))
+		s.expectRotationStart(userID, familyID, fixtures.AuthSessionStoredRefreshToken(userID, familyID))
 		s.j.On("IssueAccessToken", mock.AnythingOfType("jwt.IssueTokenParams")).
-			Return(fixtures.AuthAAccessJWT("new-access-token"), nil)
+			Return(fixtures.AuthSessionAccessJWT("new-access-token"), nil)
 		s.j.On("IssueRefreshToken", mock.AnythingOfType("jwt.IssueTokenParams")).
-			Return(fixtures.AuthARefreshJWT("new-refresh-token", &expiresAt), nil)
+			Return(fixtures.AuthSessionRefreshJWT("new-refresh-token", &expiresAt), nil)
 		s.gw.On("SaveRefreshToken", mock.Anything, mock.AnythingOfType("user.RefreshToken")).
 			Return(saveErr)
 

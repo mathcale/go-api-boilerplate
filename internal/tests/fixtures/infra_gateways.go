@@ -17,10 +17,12 @@ const (
 	InfraConfirmPurpose = "account_confirmation"
 )
 
+const colCreatedAt = "created_at"
+
 func InfraDomainUser() user.User {
 	return user.User{
 		ID:    uuid.New(),
-		Name:  "Jane",
+		Name:  WebName,
 		Email: InfraUserEmail,
 	}
 }
@@ -72,11 +74,12 @@ func InfraModelRefreshToken() models.RefreshToken {
 func InfraUserRows(id uuid.UUID) *sqlmock.Rows {
 	columns := []string{
 		"id", "name", "surname", "avatar_url", "email",
-		"password", "active", "roles", "created_at", "updated_at", "token_version",
+		"password", "active", "roles", colCreatedAt, "updated_at", "token_version",
 	}
 
 	return sqlmock.NewRows(columns).AddRow(
-		id, "Jane", "Doe", nil, InfraUserEmail, "hashed", true, "{}", time.Now(), time.Now(), 4,
+		id, WebName, WebSurname, nil, InfraUserEmail, DomainPkgHashedPassword, true, "{}",
+		time.Now(), time.Now(), 4,
 	)
 }
 
@@ -89,7 +92,7 @@ func InfraModelUserAuthState() models.UserAuthState {
 }
 
 func InfraConfirmationCodeRows(id, userID uuid.UUID, code string) *sqlmock.Rows {
-	columns := []string{"id", "user_id", "code", "purpose", "expires_at", "used", "created_at"}
+	columns := []string{"id", "user_id", "code", "purpose", "expires_at", "used", colCreatedAt}
 
 	return sqlmock.NewRows(columns).AddRow(
 		id, userID, code, InfraConfirmPurpose, time.Now(), false, time.Now(),
@@ -98,7 +101,7 @@ func InfraConfirmationCodeRows(id, userID uuid.UUID, code string) *sqlmock.Rows 
 
 func InfraRefreshTokenRows(id, userID, familyID uuid.UUID) *sqlmock.Rows {
 	columns := []string{
-		"id", "user_id", "family_id", "expires_at", "used_at", "revoked_at", "created_at",
+		"id", "user_id", "family_id", "expires_at", "used_at", "revoked_at", colCreatedAt,
 	}
 
 	return sqlmock.NewRows(columns).AddRow(
@@ -108,7 +111,7 @@ func InfraRefreshTokenRows(id, userID, familyID uuid.UUID) *sqlmock.Rows {
 
 func InfraEmailSendInput() email.SendInput {
 	return email.SendInput{
-		RecipientName:  "Jane",
+		RecipientName:  WebName,
 		RecipientEmail: InfraUserEmail,
 		Subject:        "Hello",
 		HTMLBody:       "<p>Hello Jane</p>",

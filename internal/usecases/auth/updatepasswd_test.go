@@ -38,21 +38,21 @@ func TestUpdatePasswordUseCase(t *testing.T) {
 
 func (s *UpdatePasswordUseCaseTestSuite) TestExecute() {
 	s.Run("should consume the code, update the password and revoke sessions", func() {
-		userID := fixtures.AuthBNewID()
-		code := fixtures.AuthBValidConfirmationCode()
-		hashed := fixtures.AuthBNewHash
+		userID := fixtures.AuthCredsNewID()
+		code := fixtures.AuthCredsValidConfirmationCode()
+		hashed := fixtures.AuthCredsNewHash
 
 		s.gw.On(
-			"GetValidConfirmationCode", mock.Anything, userID, fixtures.AuthBCode,
+			"GetValidConfirmationCode", mock.Anything, userID, fixtures.AuthCredsCode,
 			user.PurposePasswordRecovery,
 		).Return(code, nil)
-		s.pw.On("Hash", fixtures.AuthBNewPassword).Return(&hashed, nil)
+		s.pw.On("Hash", fixtures.AuthCredsNewPassword).Return(&hashed, nil)
 		s.gw.On("UpdatePasswordWithCode", mock.Anything, userID, code.ID, hashed).
 			Return(true, nil)
 		s.gw.On("RevokeUserRefreshTokens", mock.Anything, userID).Return(nil)
 
 		err := s.uc.Execute(
-			context.Background(), userID, fixtures.AuthBCode, fixtures.AuthBNewPassword,
+			context.Background(), userID, fixtures.AuthCredsCode, fixtures.AuthCredsNewPassword,
 		)
 
 		s.Require().NoError(err)
@@ -61,14 +61,14 @@ func (s *UpdatePasswordUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should return a recovery code mismatch error when the code is invalid", func() {
-		userID := fixtures.AuthBNewID()
+		userID := fixtures.AuthCredsNewID()
 
 		s.gw.On(
 			"GetValidConfirmationCode", mock.Anything, userID, "bad",
 			user.PurposePasswordRecovery,
 		).Return(nil, nil)
 
-		err := s.uc.Execute(context.Background(), userID, "bad", fixtures.AuthBNewPassword)
+		err := s.uc.Execute(context.Background(), userID, "bad", fixtures.AuthCredsNewPassword)
 
 		s.Require().Error(err)
 
@@ -82,14 +82,14 @@ func (s *UpdatePasswordUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should return an error when the confirmation code has expired", func() {
-		userID := fixtures.AuthBNewID()
+		userID := fixtures.AuthCredsNewID()
 
 		s.gw.On(
 			"GetValidConfirmationCode", mock.Anything, userID, "old",
 			user.PurposePasswordRecovery,
-		).Return(fixtures.AuthBExpiredConfirmationCode(), nil)
+		).Return(fixtures.AuthCredsExpiredConfirmationCode(), nil)
 
-		err := s.uc.Execute(context.Background(), userID, "old", fixtures.AuthBNewPassword)
+		err := s.uc.Execute(context.Background(), userID, "old", fixtures.AuthCredsNewPassword)
 
 		s.Require().Error(err)
 
@@ -102,16 +102,16 @@ func (s *UpdatePasswordUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should propagate the error when fetching the confirmation code fails", func() {
-		userID := fixtures.AuthBNewID()
+		userID := fixtures.AuthCredsNewID()
 		gwErr := errors.New("db down")
 
 		s.gw.On(
-			"GetValidConfirmationCode", mock.Anything, userID, fixtures.AuthBCode,
+			"GetValidConfirmationCode", mock.Anything, userID, fixtures.AuthCredsCode,
 			user.PurposePasswordRecovery,
 		).Return(nil, gwErr)
 
 		err := s.uc.Execute(
-			context.Background(), userID, fixtures.AuthBCode, fixtures.AuthBNewPassword,
+			context.Background(), userID, fixtures.AuthCredsCode, fixtures.AuthCredsNewPassword,
 		)
 
 		s.Require().ErrorIs(err, gwErr)
@@ -119,15 +119,15 @@ func (s *UpdatePasswordUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should reject an invalid raw password before hashing", func() {
-		userID := fixtures.AuthBNewID()
+		userID := fixtures.AuthCredsNewID()
 
 		s.gw.On(
-			"GetValidConfirmationCode", mock.Anything, userID, fixtures.AuthBCode,
+			"GetValidConfirmationCode", mock.Anything, userID, fixtures.AuthCredsCode,
 			user.PurposePasswordRecovery,
-		).Return(fixtures.AuthBValidConfirmationCode(), nil)
+		).Return(fixtures.AuthCredsValidConfirmationCode(), nil)
 
 		err := s.uc.Execute(
-			context.Background(), userID, fixtures.AuthBCode, fixtures.AuthBLongPassword(),
+			context.Background(), userID, fixtures.AuthCredsCode, fixtures.AuthCredsLongPassword(),
 		)
 
 		var appErr apperror.AppError
@@ -143,17 +143,17 @@ func (s *UpdatePasswordUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should propagate the error when hashing the new password fails", func() {
-		userID := fixtures.AuthBNewID()
+		userID := fixtures.AuthCredsNewID()
 		hashErr := errors.New("hash failure")
 
 		s.gw.On(
-			"GetValidConfirmationCode", mock.Anything, userID, fixtures.AuthBCode,
+			"GetValidConfirmationCode", mock.Anything, userID, fixtures.AuthCredsCode,
 			user.PurposePasswordRecovery,
-		).Return(fixtures.AuthBValidConfirmationCode(), nil)
-		s.pw.On("Hash", fixtures.AuthBNewPassword).Return(nil, hashErr)
+		).Return(fixtures.AuthCredsValidConfirmationCode(), nil)
+		s.pw.On("Hash", fixtures.AuthCredsNewPassword).Return(nil, hashErr)
 
 		err := s.uc.Execute(
-			context.Background(), userID, fixtures.AuthBCode, fixtures.AuthBNewPassword,
+			context.Background(), userID, fixtures.AuthCredsCode, fixtures.AuthCredsNewPassword,
 		)
 
 		s.Require().ErrorIs(err, hashErr)
@@ -161,20 +161,20 @@ func (s *UpdatePasswordUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should return a recovery code mismatch error when the code was consumed concurrently", func() {
-		userID := fixtures.AuthBNewID()
-		code := fixtures.AuthBValidConfirmationCode()
-		hashed := fixtures.AuthBNewHash
+		userID := fixtures.AuthCredsNewID()
+		code := fixtures.AuthCredsValidConfirmationCode()
+		hashed := fixtures.AuthCredsNewHash
 
 		s.gw.On(
-			"GetValidConfirmationCode", mock.Anything, userID, fixtures.AuthBCode,
+			"GetValidConfirmationCode", mock.Anything, userID, fixtures.AuthCredsCode,
 			user.PurposePasswordRecovery,
 		).Return(code, nil)
-		s.pw.On("Hash", fixtures.AuthBNewPassword).Return(&hashed, nil)
+		s.pw.On("Hash", fixtures.AuthCredsNewPassword).Return(&hashed, nil)
 		s.gw.On("UpdatePasswordWithCode", mock.Anything, userID, code.ID, hashed).
 			Return(false, nil)
 
 		err := s.uc.Execute(
-			context.Background(), userID, fixtures.AuthBCode, fixtures.AuthBNewPassword,
+			context.Background(), userID, fixtures.AuthCredsCode, fixtures.AuthCredsNewPassword,
 		)
 
 		s.Require().Error(err)
@@ -189,21 +189,21 @@ func (s *UpdatePasswordUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should propagate the error when consuming the code and updating fails", func() {
-		userID := fixtures.AuthBNewID()
-		code := fixtures.AuthBValidConfirmationCode()
-		hashed := fixtures.AuthBNewHash
+		userID := fixtures.AuthCredsNewID()
+		code := fixtures.AuthCredsValidConfirmationCode()
+		hashed := fixtures.AuthCredsNewHash
 		updateErr := errors.New("db down")
 
 		s.gw.On(
-			"GetValidConfirmationCode", mock.Anything, userID, fixtures.AuthBCode,
+			"GetValidConfirmationCode", mock.Anything, userID, fixtures.AuthCredsCode,
 			user.PurposePasswordRecovery,
 		).Return(code, nil)
-		s.pw.On("Hash", fixtures.AuthBNewPassword).Return(&hashed, nil)
+		s.pw.On("Hash", fixtures.AuthCredsNewPassword).Return(&hashed, nil)
 		s.gw.On("UpdatePasswordWithCode", mock.Anything, userID, code.ID, hashed).
 			Return(false, updateErr)
 
 		err := s.uc.Execute(
-			context.Background(), userID, fixtures.AuthBCode, fixtures.AuthBNewPassword,
+			context.Background(), userID, fixtures.AuthCredsCode, fixtures.AuthCredsNewPassword,
 		)
 
 		s.Require().ErrorIs(err, updateErr)
@@ -211,22 +211,22 @@ func (s *UpdatePasswordUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should propagate the error when revoking the user refresh tokens fails", func() {
-		userID := fixtures.AuthBNewID()
-		code := fixtures.AuthBValidConfirmationCode()
-		hashed := fixtures.AuthBNewHash
+		userID := fixtures.AuthCredsNewID()
+		code := fixtures.AuthCredsValidConfirmationCode()
+		hashed := fixtures.AuthCredsNewHash
 		revokeErr := errors.New("db down")
 
 		s.gw.On(
-			"GetValidConfirmationCode", mock.Anything, userID, fixtures.AuthBCode,
+			"GetValidConfirmationCode", mock.Anything, userID, fixtures.AuthCredsCode,
 			user.PurposePasswordRecovery,
 		).Return(code, nil)
-		s.pw.On("Hash", fixtures.AuthBNewPassword).Return(&hashed, nil)
+		s.pw.On("Hash", fixtures.AuthCredsNewPassword).Return(&hashed, nil)
 		s.gw.On("UpdatePasswordWithCode", mock.Anything, userID, code.ID, hashed).
 			Return(true, nil)
 		s.gw.On("RevokeUserRefreshTokens", mock.Anything, userID).Return(revokeErr)
 
 		err := s.uc.Execute(
-			context.Background(), userID, fixtures.AuthBCode, fixtures.AuthBNewPassword,
+			context.Background(), userID, fixtures.AuthCredsCode, fixtures.AuthCredsNewPassword,
 		)
 
 		s.Require().ErrorIs(err, revokeErr)

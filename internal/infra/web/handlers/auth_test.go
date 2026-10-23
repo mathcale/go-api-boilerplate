@@ -541,6 +541,8 @@ func (s *AuthHandlerTestSuite) assertError(
 	status int,
 	code apperror.BusinessCode,
 ) {
+	s.T().Helper()
+
 	s.Equal(status, rec.Code)
 
 	var out dto.ErrorOutput

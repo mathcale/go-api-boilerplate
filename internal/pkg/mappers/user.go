@@ -9,17 +9,16 @@ import (
 
 func UserModelToDomain(m models.User) user.User {
 	return user.User{
-		ID:        m.ID,
-		Name:      m.Name,
-		Surname:   m.Surname,
-		AvatarURL: m.AvatarURL,
-		Email:     m.Email,
-		Password:  m.Password,
-		Active:    m.Active,
-		Roles:     []string(m.Roles),
-		CreatedAt: m.CreatedAt,
-		UpdatedAt: m.UpdatedAt,
-
+		ID:           m.ID,
+		Name:         m.Name,
+		Surname:      m.Surname,
+		AvatarURL:    m.AvatarURL,
+		Email:        m.Email,
+		Password:     m.Password,
+		Active:       m.Active,
+		Roles:        []string(m.Roles),
+		CreatedAt:    m.CreatedAt,
+		UpdatedAt:    m.UpdatedAt,
 		TokenVersion: m.TokenVersion,
 	}
 }
@@ -39,17 +38,16 @@ func UserDomainToModel(u user.User) models.User {
 	}
 
 	return models.User{
-		ID:        u.ID,
-		Name:      u.Name,
-		Surname:   u.Surname,
-		AvatarURL: u.AvatarURL,
-		Email:     u.Email,
-		Password:  u.Password,
-		Active:    u.Active,
-		Roles:     pq.StringArray(roles),
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
-
+		ID:           u.ID,
+		Name:         u.Name,
+		Surname:      u.Surname,
+		AvatarURL:    u.AvatarURL,
+		Email:        u.Email,
+		Password:     u.Password,
+		Active:       u.Active,
+		Roles:        pq.StringArray(roles),
+		CreatedAt:    u.CreatedAt,
+		UpdatedAt:    u.UpdatedAt,
 		TokenVersion: u.TokenVersion,
 	}
 }

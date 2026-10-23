@@ -22,7 +22,10 @@ func (m *UserRepository) ExistsIncludingInactive(ctx context.Context, email stri
 	return args.Get(0).(*bool), args.Error(1)
 }
 
-func (m *UserRepository) GetIncludingInactive(ctx context.Context, email string) (*models.User, error) {
+func (m *UserRepository) GetIncludingInactive(
+	ctx context.Context,
+	email string,
+) (*models.User, error) {
 	args := m.Called(ctx, email)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -40,7 +43,11 @@ func (m *UserRepository) GetByID(ctx context.Context, userID uuid.UUID) (*models
 	return args.Get(0).(*models.User), args.Error(1)
 }
 
-func (m *UserRepository) Save(ctx context.Context, u models.User, code models.ConfirmationCode) error {
+func (m *UserRepository) Save(
+	ctx context.Context,
+	u models.User,
+	code models.ConfirmationCode,
+) error {
 	return m.Called(ctx, u, code).Error(0)
 }
 
@@ -77,7 +84,10 @@ func (m *UserRepository) ActivateUserWithCode(
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *UserRepository) SaveConfirmationCode(ctx context.Context, code models.ConfirmationCode) error {
+func (m *UserRepository) SaveConfirmationCode(
+	ctx context.Context,
+	code models.ConfirmationCode,
+) error {
 	return m.Called(ctx, code).Error(0)
 }
 
@@ -99,7 +109,10 @@ func (m *UserRepository) SaveRefreshToken(ctx context.Context, token models.Refr
 	return m.Called(ctx, token).Error(0)
 }
 
-func (m *UserRepository) GetRefreshToken(ctx context.Context, tokenID uuid.UUID) (*models.RefreshToken, error) {
+func (m *UserRepository) GetRefreshToken(
+	ctx context.Context,
+	tokenID uuid.UUID,
+) (*models.RefreshToken, error) {
 	args := m.Called(ctx, tokenID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)

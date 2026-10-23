@@ -32,16 +32,16 @@ type (
 		closers   []func()
 	}
 
+	rateLimiters struct {
+		ip       *ratelimit.KeyedLimiter
+		signIn   *ratelimit.KeyedLimiter
+		resolver *clientip.Resolver
+	}
+
 	dependencyInjector struct {
 		config *config.Config
 	}
 )
-
-func (d *Dependencies) Close() {
-	for _, closeFn := range d.closers {
-		closeFn()
-	}
-}
 
 func NewDependencyInjector(cfg *config.Config) DependencyInjector {
 	return &dependencyInjector{
@@ -66,34 +66,34 @@ func (di *dependencyInjector) Inject(ctx context.Context) (*Dependencies, error)
 		di.config.TokenAudience,
 	)
 
+	limiters, err := di.newRateLimiters()
+	if err != nil {
+		return nil, err
+	}
+
 	// Database
 	db, err := di.connectToDatabase(log)
 	if err != nil {
 		return nil, err
 	}
 
-	// Email
+	// Clients
 	emailClient := clients.NewFake(log, di.config.MailerSenderName, di.config.MailerSenderEmail)
 
-	// Repositories & gateways
-	userRepo := usergateway.NewUserRepository(db)
-
 	userGateway := usergateway.NewGateway(
-		userRepo,
+		usergateway.NewUserRepository(db),
 		emailClient,
 		di.config.AccountConfirmationBaseURL,
 		di.config.PasswordRecoveryBaseURL,
 	)
 
-	// Rate limiting
-	limiters, err := di.newRateLimiters()
-	if err != nil {
-		return nil, err
-	}
-
 	// Use-cases
 	signInUseCase, err := auth.NewSignInUseCase(
-		log, userGateway, password, jwtAuth, limiters.signIn,
+		log,
+		userGateway,
+		password,
+		jwtAuth,
+		limiters.signIn,
 	)
 	if err != nil {
 		limiters.Close()
@@ -120,10 +120,6 @@ func (di *dependencyInjector) Inject(ctx context.Context) (*Dependencies, error)
 	authHandler := handlers.NewAuthHandler(rh, authUseCases)
 
 	// Middlewares
-	securityHeadersMiddleware := middlewares.NewSecurityHeadersMiddleware()
-	corsMiddleware := middlewares.NewCORSMiddleware(di.corsAllowedOrigins())
-	correlationIDMiddleware := middlewares.NewCorrelationIDMiddleware(log)
-	loggingMiddleware := middlewares.NewLoggingMiddleware(log)
 	authMiddleware := middlewares.NewAuthMiddleware(jwtAuth, userGateway, rh)
 	rateLimitMiddleware := middlewares.NewRateLimitMiddleware(
 		limiters.ip,
@@ -132,11 +128,11 @@ func (di *dependencyInjector) Inject(ctx context.Context) (*Dependencies, error)
 	)
 
 	globalMiddlewares := web.NewMiddlewaresResolver(
-		securityHeadersMiddleware,
-		corsMiddleware,
+		middlewares.NewSecurityHeadersMiddleware(),
+		middlewares.NewCORSMiddleware(di.corsAllowedOrigins()),
 		middlewares.NewBodyLimitMiddleware(middlewares.MaxRequestBodyBytes),
-		correlationIDMiddleware,
-		loggingMiddleware,
+		middlewares.NewCorrelationIDMiddleware(log),
+		middlewares.NewLoggingMiddleware(log),
 	).Resolve()
 
 	// Web server setup
@@ -160,15 +156,10 @@ func (di *dependencyInjector) Inject(ctx context.Context) (*Dependencies, error)
 	}, nil
 }
 
-type rateLimiters struct {
-	ip       *ratelimit.KeyedLimiter
-	signIn   *ratelimit.KeyedLimiter
-	resolver *clientip.Resolver
-}
-
-func (r rateLimiters) Close() {
-	r.ip.Close()
-	r.signIn.Close()
+func (d *Dependencies) Close() {
+	for _, closeFn := range d.closers {
+		closeFn()
+	}
 }
 
 func (di *dependencyInjector) newRateLimiters() (rateLimiters, error) {
@@ -220,4 +211,9 @@ func (di *dependencyInjector) connectToDatabase(l logger.Logger) (*sqlx.DB, erro
 	)
 
 	return db.Connect()
+}
+
+func (r rateLimiters) Close() {
+	r.ip.Close()
+	r.signIn.Close()
 }

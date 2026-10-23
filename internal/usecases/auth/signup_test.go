@@ -36,11 +36,11 @@ func TestSignUpUseCase(t *testing.T) {
 
 func (s *SignUpUseCaseTestSuite) TestExecute() {
 	s.Run("should create an inactive user with hashed password and send confirmation", func() {
-		hashed := fixtures.AuthBHashedPassword
+		hashed := fixtures.AuthCredsHashedPassword
 
-		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthBEmail).
-			Return(fixtures.AuthBBoolPtr(false), nil)
-		s.pw.On("Hash", fixtures.AuthBPassword).Return(&hashed, nil)
+		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
+			Return(fixtures.AuthCredsBoolPtr(false), nil)
+		s.pw.On("Hash", fixtures.AuthCredsPassword).Return(&hashed, nil)
 		s.gw.On(
 			"SaveUser", mock.Anything, mock.AnythingOfType("user.User"),
 			mock.AnythingOfType("user.ConfirmationCode"),
@@ -52,11 +52,11 @@ func (s *SignUpUseCaseTestSuite) TestExecute() {
 
 		uc := auth.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
 
-		created, err := uc.Execute(context.Background(), fixtures.AuthBSignUpInput())
+		created, err := uc.Execute(context.Background(), fixtures.AuthCredsSignUpInput())
 
 		s.Require().NoError(err)
 		s.Require().NotNil(created)
-		s.Equal(fixtures.AuthBEmail, created.Email)
+		s.Equal(fixtures.AuthCredsEmail, created.Email)
 		s.False(created.Active)
 		s.Equal(hashed, created.Password)
 		s.gw.AssertExpectations(s.T())
@@ -64,14 +64,14 @@ func (s *SignUpUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should normalise the email before checking existence and saving", func() {
-		hashed := fixtures.AuthBHashedPassword
+		hashed := fixtures.AuthCredsHashedPassword
 
-		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthBEmail).
-			Return(fixtures.AuthBBoolPtr(false), nil)
-		s.pw.On("Hash", fixtures.AuthBPassword).Return(&hashed, nil)
+		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
+			Return(fixtures.AuthCredsBoolPtr(false), nil)
+		s.pw.On("Hash", fixtures.AuthCredsPassword).Return(&hashed, nil)
 		s.gw.On(
 			"SaveUser", mock.Anything,
-			mock.MatchedBy(func(u user.User) bool { return u.Email == fixtures.AuthBEmail }),
+			mock.MatchedBy(func(u user.User) bool { return u.Email == fixtures.AuthCredsEmail }),
 			mock.AnythingOfType("user.ConfirmationCode"),
 		).Return(nil)
 		s.gw.On("SendConfirmationEmail", mock.Anything, mock.Anything, mock.Anything).
@@ -80,7 +80,7 @@ func (s *SignUpUseCaseTestSuite) TestExecute() {
 		uc := auth.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
 
 		_, err := uc.Execute(
-			context.Background(), fixtures.AuthBSignUpInputWithMixedCaseEmail(),
+			context.Background(), fixtures.AuthCredsSignUpInputWithMixedCaseEmail(),
 		)
 
 		s.Require().NoError(err)
@@ -88,18 +88,18 @@ func (s *SignUpUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should still create the user even when sending the confirmation email fails", func() {
-		hashed := fixtures.AuthBHashedPassword
+		hashed := fixtures.AuthCredsHashedPassword
 
-		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthBEmail).
-			Return(fixtures.AuthBBoolPtr(false), nil)
-		s.pw.On("Hash", fixtures.AuthBPassword).Return(&hashed, nil)
+		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
+			Return(fixtures.AuthCredsBoolPtr(false), nil)
+		s.pw.On("Hash", fixtures.AuthCredsPassword).Return(&hashed, nil)
 		s.gw.On("SaveUser", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 		s.gw.On("SendConfirmationEmail", mock.Anything, mock.Anything, mock.Anything).
 			Return(errors.New("smtp down"))
 
 		uc := auth.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
 
-		created, err := uc.Execute(context.Background(), fixtures.AuthBSignUpInput())
+		created, err := uc.Execute(context.Background(), fixtures.AuthCredsSignUpInput())
 
 		s.Require().NoError(err)
 		s.Require().NotNil(created)
@@ -107,12 +107,12 @@ func (s *SignUpUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should return a conflict error when the email is already registered", func() {
-		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthBEmail).
-			Return(fixtures.AuthBBoolPtr(true), nil)
+		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
+			Return(fixtures.AuthCredsBoolPtr(true), nil)
 
 		uc := auth.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
 
-		created, err := uc.Execute(context.Background(), fixtures.AuthBSignUpInput())
+		created, err := uc.Execute(context.Background(), fixtures.AuthCredsSignUpInput())
 
 		s.Require().Error(err)
 		s.Nil(created)
@@ -127,13 +127,13 @@ func (s *SignUpUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should return a conflict when the email only differs by casing", func() {
-		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthBEmail).
-			Return(fixtures.AuthBBoolPtr(true), nil)
+		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
+			Return(fixtures.AuthCredsBoolPtr(true), nil)
 
 		uc := auth.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
 
 		_, err := uc.Execute(
-			context.Background(), fixtures.AuthBSignUpInputWithMixedCaseEmail(),
+			context.Background(), fixtures.AuthCredsSignUpInputWithMixedCaseEmail(),
 		)
 
 		var appErr apperror.AppError
@@ -145,16 +145,16 @@ func (s *SignUpUseCaseTestSuite) TestExecute() {
 
 	s.Run("should reject invalid raw passwords before hashing", func() {
 		for _, pw := range []string{
-			fixtures.AuthBShortPassword, "        ", fixtures.AuthBLongPassword(),
+			fixtures.AuthCredsShortPassword, "        ", fixtures.AuthCredsLongPassword(),
 		} {
 			s.SetupTest()
-			s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthBEmail).
-				Return(fixtures.AuthBBoolPtr(false), nil)
+			s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
+				Return(fixtures.AuthCredsBoolPtr(false), nil)
 
 			uc := auth.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
 
 			created, err := uc.Execute(
-				context.Background(), fixtures.AuthBSignUpInputWithPassword(pw),
+				context.Background(), fixtures.AuthCredsSignUpInputWithPassword(pw),
 			)
 
 			s.Nil(created)
@@ -174,12 +174,12 @@ func (s *SignUpUseCaseTestSuite) TestExecute() {
 	s.Run("should propagate the error from checking if the user already exists", func() {
 		gwErr := errors.New("db down")
 
-		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthBEmail).
+		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
 			Return(nil, gwErr)
 
 		uc := auth.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
 
-		created, err := uc.Execute(context.Background(), fixtures.AuthBSignUpInput())
+		created, err := uc.Execute(context.Background(), fixtures.AuthCredsSignUpInput())
 
 		s.Require().ErrorIs(err, gwErr)
 		s.Nil(created)
@@ -189,13 +189,13 @@ func (s *SignUpUseCaseTestSuite) TestExecute() {
 	s.Run("should propagate the password hashing error without saving the user", func() {
 		hashErr := errors.New("boom")
 
-		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthBEmail).
-			Return(fixtures.AuthBBoolPtr(false), nil)
-		s.pw.On("Hash", fixtures.AuthBPassword).Return(nil, hashErr)
+		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
+			Return(fixtures.AuthCredsBoolPtr(false), nil)
+		s.pw.On("Hash", fixtures.AuthCredsPassword).Return(nil, hashErr)
 
 		uc := auth.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
 
-		created, err := uc.Execute(context.Background(), fixtures.AuthBSignUpInput())
+		created, err := uc.Execute(context.Background(), fixtures.AuthCredsSignUpInput())
 
 		s.Require().ErrorIs(err, hashErr)
 		s.Nil(created)
@@ -203,15 +203,15 @@ func (s *SignUpUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should return a validation error when the domain input is invalid", func() {
-		hashed := fixtures.AuthBHashedPassword
+		hashed := fixtures.AuthCredsHashedPassword
 
-		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthBEmail).
-			Return(fixtures.AuthBBoolPtr(false), nil)
-		s.pw.On("Hash", fixtures.AuthBPassword).Return(&hashed, nil)
+		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
+			Return(fixtures.AuthCredsBoolPtr(false), nil)
+		s.pw.On("Hash", fixtures.AuthCredsPassword).Return(&hashed, nil)
 
 		uc := auth.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
 
-		created, err := uc.Execute(context.Background(), fixtures.AuthBSignUpInputWithoutName())
+		created, err := uc.Execute(context.Background(), fixtures.AuthCredsSignUpInputWithoutName())
 
 		s.Require().Error(err)
 		s.Nil(created)
@@ -225,12 +225,12 @@ func (s *SignUpUseCaseTestSuite) TestExecute() {
 	})
 
 	s.Run("should propagate the save error and not send the confirmation email", func() {
-		hashed := fixtures.AuthBHashedPassword
+		hashed := fixtures.AuthCredsHashedPassword
 		saveErr := errors.New("db down")
 
-		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthBEmail).
-			Return(fixtures.AuthBBoolPtr(false), nil)
-		s.pw.On("Hash", fixtures.AuthBPassword).Return(&hashed, nil)
+		s.gw.On("UserExistsIncludingInactive", mock.Anything, fixtures.AuthCredsEmail).
+			Return(fixtures.AuthCredsBoolPtr(false), nil)
+		s.pw.On("Hash", fixtures.AuthCredsPassword).Return(&hashed, nil)
 		s.gw.On(
 			"SaveUser", mock.Anything, mock.AnythingOfType("user.User"),
 			mock.AnythingOfType("user.ConfirmationCode"),
@@ -238,7 +238,7 @@ func (s *SignUpUseCaseTestSuite) TestExecute() {
 
 		uc := auth.NewSignUpUseCase(mocks.NoopLogger{}, s.gw, s.pw)
 
-		created, err := uc.Execute(context.Background(), fixtures.AuthBSignUpInput())
+		created, err := uc.Execute(context.Background(), fixtures.AuthCredsSignUpInput())
 
 		s.Require().ErrorIs(err, saveErr)
 		s.Nil(created)

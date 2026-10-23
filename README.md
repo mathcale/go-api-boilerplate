@@ -10,12 +10,16 @@ A slightly opinionated HTTP API boilerplate with the Go programming language, fo
 ## Features
 
 - HTTP server with [net/http](https://pkg.go.dev/net/http#hdr-Servers);
+- JWT authentication (access and refresh tokens) with role-based access control;
+- Per-IP and per-account rate limiting;
+- OpenAPI docs with [swag](https://github.com/swaggo/swag);
 - Testing suites, assertions and mocks with [testify](https://github.com/stretchr/testify);
 - Live reload with [air](https://github.com/air-verse/air);
 - Logging with [zerolog](https://github.com/rs/zerolog);
 - Configuration with [viper](https://github.com/spf13/viper);
-- PostgreSQL database connection with [pgx](https://github.com/jackc/pgx) and [sqlx](https://github.com/jmoiron/sqlx)
+- PostgreSQL database connection with [pgx](https://github.com/jackc/pgx) and [sqlx](https://github.com/jmoiron/sqlx);
 - Pre-configured CI job with Github Actions;
+- Deploy anywhere using Docker;
 
 ## Requirements
 
@@ -29,54 +33,46 @@ A slightly opinionated HTTP API boilerplate with the Go programming language, fo
 
 ## Running locally
 
-1. Create .env file
+1. Create the `.env` file
 
 ```sh
 cp .env.example .env
 ```
 
-Then fill in `ACCESS_TOKEN_SECRET` and `REFRESH_TOKEN_SECRET` with distinct values of at
-least 64 bytes (e.g. `openssl rand -base64 64`). The API refuses to start otherwise.
+2. Generate two distinct secrets (run it twice, the API needs at least 64 bytes each)
 
-Access tokens are short-lived (`ACCESS_TOKEN_LIFETIME_MINUTES`, 15 by default). Each user carries a
-`token_version` that is bumped on password change; tokens issued with an older version are rejected.
+```sh
+openssl rand -base64 64 | tr -d '\n'
+```
 
-Email delivery is controlled by `MAILER_PROVIDER`:
+3. Set them as `ACCESS_TOKEN_SECRET` and `REFRESH_TOKEN_SECRET` in `.env`. The API refuses to start otherwise.
 
-- `fake` (default): emails are not sent. Add your own provider before going to production.
-
-Rate limiting is keyed by client IP (IPv6 clients by their /64). By default only the TCP peer
-address is used. When running behind a reverse proxy or load balancer, set `TRUSTED_PROXIES` to a
-comma-separated list of the proxies' IPs/CIDRs (e.g. `10.0.0.0/8,192.168.1.5`); `X-Forwarded-For`
-is then honoured only for requests coming from those addresses, taking the first untrusted entry
-from the right. Leave it empty otherwise, or clients could spoof their address.
-
-Sign-in attempts are additionally limited per account email (`SIGNIN_RATE_LIMIT_PER_MINUTE` and
-`SIGNIN_RATE_LIMIT_BURST`, 5 and 5 by default).
-
-> Rate limits are kept in process memory and are not shared across replicas: with several
-> instances each one enforces its own limits. Use a shared store such as Redis if you need limits
-> that hold across replicas.
-
-2. Rename packages to your project's name
+4. Rename packages to your project's name (also update the image name in the Docker section below)
 
 ```sh
 make rename-pkgs
 ```
 
-3. Run setup script
+5. Install tools, start the database and run migrations
 
 ```sh
 make setup
 ```
 
-4. Start server
+6. Start the server
 
 ```sh
 make run
 ```
 
 Interactive API docs are then available at `http://localhost:8000/swagger/`.
+
+## Configuration
+
+- **Tokens:** access tokens are short-lived (`ACCESS_TOKEN_LIFETIME_MINUTES`, 15 by default). Each user carries a `token_version` that is bumped on password change; tokens issued with an older version are rejected.
+- **Email:** `MAILER_PROVIDER=fake` (default) does not send emails. Add your own provider before going to production.
+- **Rate limiting:** keyed by client IP (IPv6 clients by their /64), and sign-in attempts are also limited per account email (`SIGNIN_RATE_LIMIT_PER_MINUTE`, `SIGNIN_RATE_LIMIT_BURST`). Limits live in process memory and are not shared across replicas; use a shared store such as Redis if you need that.
+- **Reverse proxies:** only the TCP peer address is used by default. Behind a proxy or load balancer, set `TRUSTED_PROXIES` to a comma-separated list of its IPs/CIDRs (e.g. `10.0.0.0/8,192.168.1.5`); `X-Forwarded-For` is then honoured only for those addresses. Leave it empty otherwise, or clients could spoof their address.
 
 ## Testing
 
@@ -85,6 +81,8 @@ To execute all tests with a coverage report, run:
 ```sh
 make test
 ```
+
+Pass `--no-open` (`./scripts/test.sh --no-open`) to write `coverage.html` instead of opening it.
 
 ## Linting
 
